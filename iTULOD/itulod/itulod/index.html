@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iTULOD — Ride. Deliver. Send. All in one app.</title>
+    <meta
+      name="description"
+      content="iTULOD is an all-in-one transportation booking and on-demand delivery platform for rides, food, and parcels."
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="container">
+        <a href="index.html" class="brand">iTULOD<span class="dot">.</span></a>
+        <div class="nav-links">
+          <a href="#about">About</a>
+          <a href="#services">Services</a>
+          <a href="#vehicles">Vehicles</a>
+          <a href="#features">Features</a>
+          <a href="#testimonials">Testimonials</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <div class="nav-actions">
+          <a href="login.html" class="btn btn-outline btn-sm">Log in</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+        <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </nav>
+
+    <!-- ============================= HERO ============================= -->
+    <header class="hero">
+      <div class="container">
+        <div>
+          <span class="eyebrow"
+            ><i class="fa-solid fa-bolt"></i> Ilocos Transport &amp; Utility and
+            Logistics Operation for Delivery</span
+          >
+          <h1>
+            One app to <span class="accent">ride</span>, eat, and
+            <span class="accent">send</span> across Ilocos Norte.
+          </h1>
+          <p class="lead">
+            iTULOD connects riders and customers across Ilocos Norte for
+            transportation, food delivery, and parcel sending with fair fares,
+            live status tracking, and nine vehicle types to choose from.
+          </p>
+          <div class="hero-cta">
+            <a href="register.html" class="btn btn-primary">Book a ride now</a>
+            <a href="register.html?role=rider" class="btn btn-outline"
+              >Drive with iTULOD</a
+            >
+          </div>
+          <div class="hero-stats">
+            <div><strong>9</strong><span>Vehicle types</span></div>
+            <div><strong>3</strong><span>Services in one app</span></div>
+            <div><strong>24/7</strong><span>On-demand support</span></div>
+          </div>
+        </div>
+
+        <div class="route-board">
+          <span class="board-label"
+            ><i class="fa-solid fa-route"></i> Your route, tracked live</span
+          >
+          <div class="route-track">
+            <div class="route-line"></div>
+            <div class="route-stops">
+              <div class="route-stop origin">
+                <span class="pin"><i class="fa-solid fa-house"></i></span
+                ><span class="label">Pickup</span>
+              </div>
+              <div class="route-stop">
+                <span class="pin"><i class="fa-solid fa-motorcycle"></i></span
+                ><span class="label">Rider assigned</span>
+              </div>
+              <div class="route-stop">
+                <span class="pin"><i class="fa-solid fa-road"></i></span
+                ><span class="label">In transit</span>
+              </div>
+              <div class="route-stop dest">
+                <span class="pin"
+                  ><i class="fa-solid fa-flag-checkered"></i></span
+                ><span class="label">Drop-off</span>
+              </div>
+            </div>
+          </div>
+          <div class="board-fare">
+            <span>Estimated fare</span>
+            <strong>₱00.00</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================= ABOUT ============================= -->
+    <section class="section" id="about">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"
+            ><i class="fa-solid fa-circle-info"></i> About iTULOD</span
+          >
+          <h2>Built for how Ilocanos actually get around.</h2>
+          <p>
+            From the tricycle down your street in Laoag to a same-day parcel
+            across Ilocos Norte, iTULOD brings every trip and delivery into a
+            single, transparent platform — for riders, customers, and the admins
+            who keep it running.
+          </p>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="icon" style="background: var(--blue)">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h3>Verified riders</h3>
+            <p>
+              Every rider is screened — license, OR/CR, and vehicle details
+              reviewed by our admin team before they accept a single booking.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: var(--orange)">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <h3>Upfront fares</h3>
+            <p>
+              See your estimated fare before you confirm — based on real base
+              rates and per-kilometer pricing for each vehicle type.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: var(--green)">
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <h3>Rated by the community</h3>
+            <p>
+              Every completed trip and delivery can be rated, so quality service
+              is always visible and rewarded.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= SERVICES ============================= -->
+    <section class="section section--muted" id="services">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"
+            ><i class="fa-solid fa-list-check"></i> Services</span
+          >
+          <h2>Three ways to send something forward in Ilocos Norte.</h2>
+          <p>
+            "Itulod" means to push something ahead — that's the whole app, in
+            one word.
+          </p>
+        </div>
+        <div class="service-strip">
+          <div class="service-plate plate--ride">
+            <span class="step">01</span><i class="fa-solid fa-car"></i>
+            <h3>Transportation booking</h3>
+            <p>
+              Pick your vehicle, set pickup and destination within Ilocos Norte,
+              and get an instant fare estimate.
+            </p>
+          </div>
+          <div class="service-plate plate--food">
+            <span class="step">02</span><i class="fa-solid fa-utensils"></i>
+            <h3>Food delivery</h3>
+            <p>
+              Order from restaurants in Laoag, Batac, Sarrat, and nearby towns —
+              a rider brings it straight to you.
+            </p>
+          </div>
+          <div class="service-plate plate--parcel">
+            <span class="step">03</span><i class="fa-solid fa-box"></i>
+            <h3>Parcel delivery</h3>
+            <p>
+              Send documents or packages across Ilocos Norte municipalities with
+              sender and receiver details tracked end-to-end.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= VEHICLES ============================= -->
+    <section class="section" id="vehicles">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"
+            ><i class="fa-solid fa-car-side"></i> Vehicle categories</span
+          >
+          <h2>Nine ways to get moving.</h2>
+          <p>
+            From a bicycle courier to a full truck for cargo choose what fits
+            the trip.
+          </p>
+        </div>
+        <div class="vehicle-grid" id="vehicle-grid">
+          <!-- populated by js/landing.js from the vehicles table; static fallback below -->
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-motorcycle"></i><span>Motorcycle</span
+            ><small>1 seat</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-bicycle"></i><span>Tricycle</span
+            ><small>3 seats</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-bicycle"></i><span>Bicycle</span
+            ><small>food delivery</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-car"></i><span>Car</span
+            ><small>4 seats</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-car-side"></i><span>SUV</span
+            ><small>6 seats</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-shuttle-van"></i><span>Van</span
+            ><small>8 seats</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-bus-alt"></i><span>Jeepney</span
+            ><small>14 seats</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-bus"></i><span>Bus</span
+            ><small>40 seats</small>
+          </div>
+          <div class="vehicle-chip">
+            <i class="fa-solid fa-truck"></i><span>Truck</span
+            ><small>Cargo</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= FEATURES ============================= -->
+    <section class="section section--muted" id="features">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"
+            ><i class="fa-solid fa-layer-group"></i> Features</span
+          >
+          <h2>Everything a modern delivery platform needs.</h2>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="icon" style="background: var(--blue)">
+              <i class="fa-solid fa-bell"></i>
+            </div>
+            <h3>Real-time notifications</h3>
+            <p>
+              Booking updates, rider assignment, and status changes reach you
+              instantly.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: var(--orange)">
+              <i class="fa-solid fa-credit-card"></i>
+            </div>
+            <h3>Flexible payments</h3>
+            <p>Cash today, with GCash and card payments on the roadmap.</p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: var(--green)">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h3>Admin analytics</h3>
+            <p>
+              Live dashboards for bookings, deliveries, riders, and platform
+              revenue.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: var(--ink)">
+              <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <h3>Responsive by design</h3>
+            <p>
+              Book from your phone, tablet, or desktop with the same smooth
+              experience.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: var(--blue-dark)">
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+            <h3>Rider verification</h3>
+            <p>
+              License, OR/CR, and vehicle documents reviewed before approval.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="icon" style="background: #dc2626">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <h3>Full history</h3>
+            <p>
+              Every ride and delivery saved to your account, searchable anytime.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= TESTIMONIALS ============================= -->
+    <section class="section" id="testimonials">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"
+            ><i class="fa-solid fa-quote-left"></i> Testimonials</span
+          >
+          <h2>What our early riders and customers say.</h2>
+        </div>
+        <div class="testimonial-grid">
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i
+              ><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i
+              ><i class="fa-solid fa-star"></i>
+            </div>
+            <p class="quote">
+              Booking a tricycle to the Laoag City Market used to mean waiting
+              on the corner. Now I just track it from my phone.
+            </p>
+            <div class="who">
+              <div class="avatar">MJ</div>
+              <div>
+                <strong>Maria J.</strong><span>Customer, Laoag City</span>
+              </div>
+            </div>
+          </div>
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i
+              ><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i
+              ><i class="fa-solid fa-star"></i>
+            </div>
+            <p class="quote">
+              The earnings dashboard actually shows me daily, weekly, and
+              monthly totals — no more guessing at the end of the week.
+            </p>
+            <div class="who">
+              <div class="avatar">RD</div>
+              <div><strong>Rico D.</strong><span>Rider, Batac City</span></div>
+            </div>
+          </div>
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i
+              ><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i
+              ><i class="fa-solid fa-star-half-stroke"></i>
+            </div>
+            <p class="quote">
+              Sent a parcel to my sister in Pagudpud and could see exactly when
+              it was picked up and delivered.
+            </p>
+            <div class="who">
+              <div class="avatar">AL</div>
+              <div><strong>Ana L.</strong><span>Customer, Vintar</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= CONTACT ============================= -->
+    <section class="section section--muted" id="contact">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow"
+            ><i class="fa-solid fa-envelope"></i> Contact</span
+          >
+          <h2>Questions before you sign up?</h2>
+        </div>
+        <div class="contact-grid">
+          <ul class="contact-info">
+            <li>
+              <i class="fa-solid fa-location-dot"></i>
+              <div>
+                <strong>Head office</strong>
+                <p>Sample location, to be anounce</p>
+              </div>
+            </li>
+            <li>
+              <i class="fa-solid fa-phone"></i>
+              <div>
+                <strong>Support hotline</strong>
+                <p>to be set soon</p>
+              </div>
+            </li>
+            <li>
+              <i class="fa-solid fa-envelope-open-text"></i>
+              <div>
+                <strong>Email</strong>
+                <p>support@itulod.app</p>
+              </div>
+            </li>
+          </ul>
+          <div class="form-card">
+            <form id="contact-form">
+              <div class="field">
+                <label>Full name</label><input type="text" required />
+              </div>
+              <div class="field">
+                <label>Email address</label><input type="email" required />
+              </div>
+              <div class="field">
+                <label>Message</label><textarea rows="4" required></textarea>
+              </div>
+              <button class="btn btn-primary btn-block" type="submit">
+                Send message
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top: 0">
+      <div class="container">
+        <div class="cta-band">
+          <div>
+            <h2>Ready to push forward?</h2>
+            <p>Create your free iTULOD account in under a minute.</p>
+          </div>
+          <a href="register.html" class="btn btn-accent">Create an account</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= FOOTER ============================= -->
+    <footer class="footer">
+      <div class="container">
+        <div>
+          <div class="brand">iTULOD<span class="dot">.</span></div>
+          <p class="tag">
+            Intelligent Transport and Unified Logistics On Demand Delivery
+            serving Laoag, Batac, Pagudpud, Vintar, Marcos, Dingras, Sarrat,
+            Piddig, and all municipalities of Ilocos Norte.
+          </p>
+        </div>
+        <div>
+          <h4>Services</h4>
+          <ul>
+            <li><a href="#services">Transportation</a></li>
+            <li><a href="#services">Food delivery</a></li>
+            <li><a href="#services">Parcel delivery</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#testimonials">Testimonials</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Get started</h4>
+          <ul>
+            <li><a href="register.html">Sign up as customer</a></li>
+            <li><a href="register.html?role=rider">Sign up as rider</a></li>
+            <li><a href="login.html">Login</a></li>
+          </ul>
+        </div>
+        <div class="bottom" style="grid-column: 1/-1">
+          <span>© 2026 iTULOD. All rights reserved.</span
+          ><span>Serving riders and customers across Ilocos Norte.</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabaseClient.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/landing.js"></script>
+  </body>
+</html>

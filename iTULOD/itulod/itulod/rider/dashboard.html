@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rider Dashboard — iTULOD</title>
+  <meta name="description" content="iTULOD rider dashboard — manage booking requests, earnings, and your profile." />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.css">
+  <style>
+    #nav-map {
+      width: 100%;
+      height: 420px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- =================== SIDEBAR =================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="../index.html" class="brand">iTULOD<span class="dot">.</span></a>
+    </div>
+
+    <nav class="side-nav">
+      <button class="side-link active" data-tab="requests">
+        <i class="fa-solid fa-inbox"></i> Booking requests
+      </button>
+      <button class="side-link" data-tab="accepted">
+        <i class="fa-solid fa-route"></i> Accepted bookings
+      </button>
+      <button class="side-link" data-tab="earnings">
+        <i class="fa-solid fa-sack-dollar"></i> Earnings
+      </button>
+      <button class="side-link" data-tab="history">
+        <i class="fa-solid fa-clock-rotate-left"></i> History
+      </button>
+      <button class="side-link" data-tab="vehicle">
+        <i class="fa-solid fa-car"></i> Vehicle info
+      </button>
+      <button class="side-link" data-tab="profile">
+        <i class="fa-solid fa-user"></i> Profile
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="user-chip">
+        <div class="avatar" id="side-avatar" style="background:var(--green)">?</div>
+        <div class="chip-text">
+          <strong id="side-name">Loading…</strong>
+          <span id="side-role">rider</span>
+        </div>
+        <span class="badge badge--role-rider" style="margin-left:auto">Rider</span>
+      </div>
+      <button class="side-link logout-btn" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Log out
+      </button>
+    </div>
+  </aside>
+
+  <!-- =================== MAIN =================== -->
+  <main class="main">
+    <div class="mobile-topbar">
+      <button onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <span class="brand" style="font-size:1.1rem;color:var(--blue)">
+        iTULOD<span class="dot">.</span>
+      </span>
+      <span></span>
+    </div>
+
+    <div class="page-head">
+      <div>
+        <h1 id="page-title">Booking requests</h1>
+        <p id="page-sub">New bookings waiting for a rider.</p>
+      </div>
+      <div id="approval-banner"></div>
+    </div>
+
+    <!-- ===================== REQUESTS ===================== -->
+    <section class="tab-panel active" id="tab-requests">
+      <div id="requests-list">
+        <!-- Default empty state (JS replaces when requests load) -->
+        <div class="card">
+          <div class="empty-state">
+            <i class="fa-solid fa-inbox" style="font-size:2.4rem;color:var(--border)"></i>
+            <h4>No requests right now</h4>
+            <p>New booking requests will appear here as they come in.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ACCEPTED BOOKINGS ===================== -->
+    <section class="tab-panel" id="tab-accepted">
+      <div class="grid-2">
+        <!-- Booking details + status steps -->
+        <div>
+          <div id="accepted-list">
+            <div class="card">
+              <div class="empty-state">
+                <i class="fa-solid fa-route" style="font-size:2.2rem;color:var(--border)"></i>
+                <h4>No active booking</h4>
+                <p>Accept a booking request to start navigating.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trip progress steps (JS updates .active/.done classes) -->
+          <div class="card" id="trip-steps-card" style="display:none">
+            <div class="card-head"><h3>Trip progress</h3></div>
+            <div class="status-steps">
+              <div class="status-step active" id="step-navigate">
+                <div class="step-bubble"><i class="fa-solid fa-location-arrow"></i></div>
+                <div class="step-body">
+                  <h4>Navigate to pickup</h4>
+                  <p>Head to the customer's pickup location</p>
+                </div>
+              </div>
+              <div class="status-step" id="step-pickup">
+                <div class="step-bubble"><i class="fa-solid fa-user"></i></div>
+                <div class="step-body">
+                  <h4>Pick up passenger / parcel</h4>
+                  <p>Confirm pickup and start the trip</p>
+                </div>
+              </div>
+              <div class="status-step" id="step-dropoff">
+                <div class="step-bubble"><i class="fa-solid fa-flag-checkered"></i></div>
+                <div class="step-body">
+                  <h4>Drop off at destination</h4>
+                  <p>Complete the delivery and collect payment</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="card">
+          <div class="card-head"><h3>Navigation</h3></div>
+          <div id="nav-map"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== EARNINGS ===================== -->
+    <section class="tab-panel" id="tab-earnings">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="top">
+            <div class="icon icon--blue"><i class="fa-solid fa-calendar-day"></i></div>
+          </div>
+          <strong id="earn-daily">₱0.00</strong>
+          <span class="label">Today</span>
+        </div>
+        <div class="stat-card">
+          <div class="top">
+            <div class="icon icon--orange"><i class="fa-solid fa-calendar-week"></i></div>
+          </div>
+          <strong id="earn-weekly">₱0.00</strong>
+          <span class="label">This week</span>
+        </div>
+        <div class="stat-card">
+          <div class="top">
+            <div class="icon icon--green"><i class="fa-solid fa-calendar"></i></div>
+          </div>
+          <strong id="earn-monthly">₱0.00</strong>
+          <span class="label">This month</span>
+        </div>
+        <div class="stat-card">
+          <div class="top">
+            <div class="icon icon--yellow"><i class="fa-solid fa-star"></i></div>
+          </div>
+          <strong id="earn-rating">—</strong>
+          <span class="label">Average rating</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>Earnings — last 7 days</h3>
+            <p class="card-sub">Daily breakdown (₱)</p>
+          </div>
+        </div>
+        <div class="bar-chart" id="earnings-chart"></div>
+        <div class="bar-labels" id="earnings-labels"></div>
+      </div>
+    </section>
+
+    <!-- ===================== HISTORY ===================== -->
+    <section class="tab-panel" id="tab-history">
+      <div class="card" style="margin-bottom:0">
+        <div class="tab-row" style="margin-bottom:20px">
+          <button class="tab-btn active" data-history="transport">
+            <i class="fa-solid fa-car" style="margin-right:6px"></i>Rides
+          </button>
+          <button class="tab-btn" data-history="food">
+            <i class="fa-solid fa-utensils" style="margin-right:6px"></i>Food
+          </button>
+          <button class="tab-btn" data-history="parcel">
+            <i class="fa-solid fa-box" style="margin-right:6px"></i>Parcels
+          </button>
+        </div>
+        <div id="history-list"></div>
+        <div class="pagination" id="history-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ===================== VEHICLE INFO ===================== -->
+    <section class="tab-panel" id="tab-vehicle">
+      <div class="card" style="max-width:580px">
+        <div class="card-head">
+          <h3>Your application &amp; vehicle</h3>
+          <!-- Status badge populated by JS -->
+          <span id="vehicle-status-badge"></span>
+        </div>
+
+        <!-- Pending / not-yet-submitted placeholder -->
+        <div id="vehicle-info">
+          <div class="empty-state" style="padding:36px 20px">
+            <i class="fa-solid fa-car" style="font-size:2.2rem;color:var(--border)"></i>
+            <h4>No vehicle on file</h4>
+            <p>Submit your vehicle and documents during registration to get approved.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PROFILE ===================== -->
+    <section class="tab-panel" id="tab-profile">
+      <div class="card" style="max-width:560px">
+        <div class="card-head"><h3>Edit profile</h3></div>
+        <div class="avatar-upload">
+          <div class="preview" id="profile-avatar-preview">
+            ?
+            <div class="overlay"><i class="fa-solid fa-camera"></i></div>
+          </div>
+          <div class="upload-info">
+            <input type="file" id="profile-avatar-file" accept="image/*" style="font-size:0.82rem">
+            <small>JPG or PNG. Square images look best.</small>
+          </div>
+        </div>
+
+        <form id="profile-form">
+          <div class="field">
+            <label>Full name</label>
+            <input type="text" id="profile-name" required>
+          </div>
+          <div class="field">
+            <label>Phone number</label>
+            <input type="tel" id="profile-phone">
+          </div>
+          <div class="field" style="margin-bottom:24px">
+            <label>Email</label>
+            <input type="email" id="profile-email" disabled>
+          </div>
+          <button class="btn btn-primary" id="profile-submit" type="submit" style="width:100%">
+            <i class="fa-solid fa-floppy-disk"></i> Save changes
+          </button>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js"></script>
+<script src="../js/map.js"></script>
+<script src="../js/rider.js"></script>
+</body>
+</html>

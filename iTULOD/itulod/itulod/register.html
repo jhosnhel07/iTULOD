@@ -1,0 +1,2857 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Create Account — iTULOD | Ilocos Transport, Delivery & Logistics
+    </title>
+    <meta
+      name="description"
+      content="Join iTULOD — sign up as a customer or rider to access ride booking, food delivery, parcel sending, and logistics services in Ilocos."
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/main.css" />
+    <style>
+      /* ============================================================
+   REGISTER PAGE — Premium Multi-Step Wizard Redesign
+   ============================================================ */
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f8fafc;
+        color: #0f172a;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── Shared Layout ─────────────────────────────────────── */
+      .reg-page {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 45% 55%;
+      }
+
+      /* ── Left Branding Panel (same as login) ──────────────── */
+      .brand-panel {
+        background: linear-gradient(
+          145deg,
+          #1e40af 0%,
+          #2563eb 40%,
+          #3b82f6 75%,
+          #60a5fa 100%
+        );
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 44px 48px 44px;
+        overflow: hidden;
+        min-height: 100vh;
+      }
+      .brand-panel::before {
+        content: "";
+        position: absolute;
+        top: -120px;
+        right: -120px;
+        width: 400px;
+        height: 400px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        pointer-events: none;
+      }
+      .brand-panel::after {
+        content: "";
+        position: absolute;
+        bottom: -80px;
+        left: -80px;
+        width: 350px;
+        height: 350px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        pointer-events: none;
+      }
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        animation: floatOrb 8s ease-in-out infinite;
+        pointer-events: none;
+      }
+      .orb-1 {
+        width: 180px;
+        height: 180px;
+        top: 30%;
+        left: -40px;
+        animation-delay: 0s;
+      }
+      .orb-2 {
+        width: 100px;
+        height: 100px;
+        top: 55%;
+        right: 20px;
+        animation-delay: 2s;
+      }
+      .orb-3 {
+        width: 60px;
+        height: 60px;
+        top: 15%;
+        right: 60px;
+        animation-delay: 4s;
+      }
+      @keyframes floatOrb {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+        50% {
+          transform: translateY(-20px) scale(1.05);
+        }
+      }
+
+      .bp-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        z-index: 2;
+        position: relative;
+      }
+      .bp-logo img {
+        width: 52px;
+        height: 52px;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+      }
+      .bp-logo-text {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: #fff;
+        letter-spacing: -0.5px;
+      }
+      .bp-logo-text span {
+        color: #f97316;
+      }
+
+      .bp-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 2;
+        position: relative;
+        margin: 32px 0;
+      }
+
+      .bp-tagline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 6px 14px;
+        border-radius: 999px;
+        margin-bottom: 22px;
+        width: fit-content;
+      }
+      .bp-tagline i {
+        color: #f97316;
+      }
+
+      .bp-headline {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+        color: #fff;
+        line-height: 1.2;
+        margin-bottom: 16px;
+        max-width: 22ch;
+      }
+      .bp-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        max-width: 36ch;
+        margin-bottom: 28px;
+      }
+
+      /* Steps preview on left */
+      .bp-steps-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 32px;
+      }
+      .bp-step-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .bp-step-dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1.5px solid rgba(255, 255, 255, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .bp-step-dot.active {
+        background: #f97316;
+        border-color: #f97316;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.25);
+      }
+      .bp-step-dot.done {
+        background: #22c55e;
+        border-color: #22c55e;
+      }
+      .bp-step-info {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.88rem;
+      }
+      .bp-step-info strong {
+        display: block;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .bp-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        z-index: 2;
+        position: relative;
+      }
+      .bp-stat-card {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 18px;
+        padding: 18px 20px;
+        transition:
+          transform 0.25s ease,
+          background 0.25s;
+      }
+      .bp-stat-card:hover {
+        transform: translateY(-3px);
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .bp-stat-icon {
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .bp-stat-value {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: #fff;
+        display: block;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .bp-stat-label {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        font-weight: 500;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition:
+          color 0.2s,
+          gap 0.2s;
+        z-index: 2;
+        position: relative;
+      }
+      .back-link:hover {
+        color: #fff;
+        gap: 10px;
+      }
+
+      /* ── Right Form Panel ─────────────────────────────────── */
+      .form-panel {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 40px 48px;
+        background: #f8fafc;
+        overflow-y: auto;
+        min-height: 100vh;
+      }
+
+      .reg-card {
+        width: 100%;
+        max-width: 540px;
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow:
+          0 4px 6px rgba(15, 23, 42, 0.04),
+          0 20px 60px rgba(15, 23, 42, 0.1),
+          0 0 0 1px rgba(15, 23, 42, 0.04);
+        padding: 44px 44px;
+        margin: auto;
+        animation: cardEntry 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+      @keyframes cardEntry {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Mobile logo row */
+      .card-logo-row {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 28px;
+        text-decoration: none;
+      }
+      .card-logo-row img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+      }
+      .card-logo-row span {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: #0f172a;
+      }
+      .card-logo-row span em {
+        color: #f97316;
+        font-style: normal;
+      }
+
+      /* ── Wizard Steps Indicator ───────────────────────────── */
+      .step-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 36px;
+        gap: 0;
+      }
+      .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        flex: 1;
+      }
+      .step-item:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        width: 100%;
+        height: 2px;
+        background: #e5e7eb;
+        z-index: 0;
+        transition: background 0.4s;
+      }
+      .step-item.completed:not(:last-child)::after {
+        background: #22c55e;
+      }
+      .step-item.active:not(:last-child)::after {
+        background: linear-gradient(90deg, #2563eb, #e5e7eb);
+      }
+
+      .step-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #e5e7eb;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #94a3b8;
+        z-index: 1;
+        position: relative;
+        transition: all 0.3s;
+      }
+      .step-item.active .step-circle {
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+      }
+      .step-item.completed .step-circle {
+        border-color: #22c55e;
+        background: #22c55e;
+        color: #fff;
+      }
+      .step-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-top: 6px;
+        text-align: center;
+        transition: color 0.3s;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .step-item.active .step-label {
+        color: #2563eb;
+      }
+      .step-item.completed .step-label {
+        color: #22c55e;
+      }
+
+      /* ── Wizard Panels ────────────────────────────────────── */
+      .wizard-panel {
+        display: none;
+        animation: fadeSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+      .wizard-panel.active {
+        display: block;
+      }
+      @keyframes fadeSlideIn {
+        from {
+          opacity: 0;
+          transform: translateX(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .panel-title {
+        font-family: "Poppins", sans-serif;
+        font-weight: 700;
+        font-size: 1.35rem;
+        color: #0f172a;
+        margin-bottom: 6px;
+      }
+      .panel-sub {
+        color: #64748b;
+        font-size: 0.88rem;
+        margin-bottom: 28px;
+        line-height: 1.6;
+      }
+
+      /* ── User Type Selection Cards ────────────────────────── */
+      .role-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      .role-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 28px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        background: #fafafa;
+        position: relative;
+        overflow: hidden;
+      }
+      .role-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.25s;
+      }
+      .role-card.customer::before {
+        background: linear-gradient(
+          135deg,
+          rgba(37, 99, 235, 0.06) 0%,
+          rgba(37, 99, 235, 0.02) 100%
+        );
+      }
+      .role-card.rider::before {
+        background: linear-gradient(
+          135deg,
+          rgba(249, 115, 22, 0.08) 0%,
+          rgba(249, 115, 22, 0.02) 100%
+        );
+      }
+      .role-card.selected {
+        border-color: #2563eb;
+        box-shadow:
+          0 0 0 4px rgba(37, 99, 235, 0.12),
+          0 8px 24px rgba(37, 99, 235, 0.15);
+        transform: translateY(-4px);
+      }
+      .role-card.selected.rider {
+        border-color: #f97316;
+        box-shadow:
+          0 0 0 4px rgba(249, 115, 22, 0.12),
+          0 8px 24px rgba(249, 115, 22, 0.15);
+      }
+      .role-card.selected::before {
+        opacity: 1;
+      }
+      .role-card:hover:not(.selected) {
+        border-color: #93c5fd;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+      }
+      .role-card-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        margin: 0 auto 14px;
+        transition: all 0.25s;
+      }
+      .role-card.customer .role-card-icon {
+        background: #eff4ff;
+        color: #2563eb;
+      }
+      .role-card.rider .role-card-icon {
+        background: #fff7ed;
+        color: #f97316;
+      }
+      .role-card.selected.customer .role-card-icon {
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.35);
+      }
+      .role-card.selected.rider .role-card-icon {
+        background: #f97316;
+        color: #fff;
+        box-shadow: 0 8px 16px rgba(249, 115, 22, 0.35);
+      }
+      .role-card-title {
+        font-family: "Poppins", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        color: #0f172a;
+        margin-bottom: 6px;
+      }
+      .role-card-desc {
+        font-size: 0.8rem;
+        color: #64748b;
+        line-height: 1.5;
+      }
+      .role-card .selected-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: #fff;
+        font-size: 0.65rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .role-card.selected.rider .selected-badge {
+        background: #f97316;
+      }
+      .role-card.selected .selected-badge {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      /* ── Form fields ──────────────────────────────────────── */
+      .input-group {
+        margin-bottom: 18px;
+      }
+      .input-group label {
+        display: block;
+        font-size: 0.83rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        letter-spacing: 0.01em;
+      }
+      .input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .input-icon {
+        position: absolute;
+        left: 14px;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        pointer-events: none;
+        transition: color 0.2s;
+        z-index: 1;
+      }
+      .input-wrap input,
+      .input-wrap select {
+        width: 100%;
+        padding: 13px 14px 13px 42px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 12px;
+        font-family: "Inter", sans-serif;
+        font-size: 0.95rem;
+        color: #0f172a;
+        background: #f8fafc;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+        outline: none;
+        appearance: none;
+      }
+      .input-wrap input:focus,
+      .input-wrap select:focus {
+        border-color: #2563eb;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .input-wrap:focus-within .input-icon {
+        color: #2563eb;
+      }
+      .input-wrap input::placeholder {
+        color: #cbd5e1;
+      }
+      .pw-toggle-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        padding: 4px;
+        border-radius: 6px;
+        transition:
+          color 0.2s,
+          background 0.2s;
+      }
+      .pw-toggle-btn:hover {
+        color: #2563eb;
+        background: #eff4ff;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      /* Password strength meter */
+      .pw-strength {
+        margin-top: 8px;
+      }
+      .pw-strength-bar {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 5px;
+      }
+      .pw-strength-seg {
+        flex: 1;
+        height: 4px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        transition: background 0.3s;
+      }
+      .pw-strength-seg.weak {
+        background: #ef4444;
+      }
+      .pw-strength-seg.fair {
+        background: #f59e0b;
+      }
+      .pw-strength-seg.good {
+        background: #3b82f6;
+      }
+      .pw-strength-seg.strong {
+        background: #22c55e;
+      }
+      .pw-strength-label {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+      .pw-strength-label.weak {
+        color: #ef4444;
+      }
+      .pw-strength-label.fair {
+        color: #f59e0b;
+      }
+      .pw-strength-label.good {
+        color: #3b82f6;
+      }
+      .pw-strength-label.strong {
+        color: #22c55e;
+      }
+
+      /* Terms checkbox */
+      .terms-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 24px;
+        padding: 14px 16px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1.5px solid #e5e7eb;
+      }
+      .terms-row input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #2563eb;
+        margin-top: 1px;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+      .terms-row label {
+        font-size: 0.85rem;
+        color: #64748b;
+        line-height: 1.5;
+        cursor: pointer;
+      }
+      .terms-row label a {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .terms-row label a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Vehicle Cards Grid ───────────────────────────────── */
+      .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .vehicle-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.22s;
+        background: #fafafa;
+      }
+      .vehicle-card:hover:not(.selected) {
+        border-color: #93c5fd;
+        background: #f0f9ff;
+        transform: translateY(-2px);
+      }
+      .vehicle-card.selected {
+        border-color: #2563eb;
+        background: #eff4ff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        transform: translateY(-2px);
+      }
+      .vehicle-card .vc-icon {
+        font-size: 1.5rem;
+        margin-bottom: 6px;
+        display: block;
+        color: #94a3b8;
+        transition: color 0.22s;
+      }
+      .vehicle-card.selected .vc-icon {
+        color: #2563eb;
+      }
+      .vehicle-card .vc-name {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #64748b;
+        transition: color 0.22s;
+      }
+      .vehicle-card.selected .vc-name {
+        color: #2563eb;
+      }
+
+      /* ── Upload Zones ─────────────────────────────────────── */
+      .upload-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+      .upload-zone {
+        border: 2px dashed #e5e7eb;
+        border-radius: 16px;
+        padding: 22px 14px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s;
+        position: relative;
+        overflow: hidden;
+        background: #fafafa;
+        min-height: 130px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .upload-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0.01;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+      }
+      .upload-zone .upload-action {
+        margin-top: 8px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 0.72rem;
+        font-weight: 700;
+        pointer-events: none;
+      }
+      .upload-zone:hover {
+        border-color: #2563eb;
+        background: #f0f9ff;
+        transform: translateY(-2px);
+      }
+      .upload-zone.has-file {
+        border-color: #22c55e;
+        background: #f0fdf4;
+        border-style: solid;
+      }
+      .upload-zone.dragging {
+        border-color: #2563eb;
+        background: #eff4ff;
+        transform: scale(1.02);
+      }
+      .upload-icon {
+        font-size: 1.6rem;
+        color: #94a3b8;
+        margin-bottom: 8px;
+        transition: color 0.25s;
+      }
+      .upload-zone:hover .upload-icon {
+        color: #2563eb;
+      }
+      .upload-zone.has-file .upload-icon {
+        color: #22c55e;
+      }
+      .upload-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 3px;
+      }
+      .upload-hint {
+        font-size: 0.7rem;
+        color: #94a3b8;
+      }
+      .upload-preview {
+        width: 100%;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        display: none;
+      }
+      .upload-zone.has-file .upload-preview {
+        display: block;
+      }
+      .upload-zone.has-file .upload-icon {
+        font-size: 1.2rem;
+      }
+      .upload-check {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #22c55e;
+        color: #fff;
+        font-size: 0.65rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .upload-zone.has-file .upload-check {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .upload-optional {
+        font-size: 0.68rem;
+        color: #94a3b8;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-top: 4px;
+      }
+
+      /* ── Navigation Buttons ───────────────────────────────── */
+      .wizard-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .btn-back {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 13px 20px;
+        background: #f1f5f9;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 12px;
+        font-family: "Inter", sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-back:hover {
+        background: #e2e8f0;
+        color: #374151;
+      }
+      .btn-next {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-family: "Poppins", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        position: relative;
+        overflow: hidden;
+      }
+      .btn-next::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.15),
+          transparent
+        );
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .btn-next:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+      }
+      .btn-next:hover::before {
+        opacity: 1;
+      }
+      .btn-next:active {
+        transform: translateY(0);
+      }
+      .btn-next:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-next.orange {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+      }
+      .btn-next.orange:hover {
+        box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+      }
+
+      /* Login link */
+      .login-link {
+        text-align: center;
+        font-size: 0.88rem;
+        color: #64748b;
+        margin-top: 16px;
+      }
+      .login-link a {
+        color: #2563eb;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .login-link a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Review / Summary ────────────────────────────────── */
+      .review-summary {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+        text-align: left;
+      }
+      .review-summary-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 10px;
+      }
+      .review-summary-list {
+        display: grid;
+        gap: 8px;
+      }
+      .review-summary-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.82rem;
+        color: #475569;
+      }
+      .review-summary-item strong {
+        color: #0f172a;
+        font-weight: 600;
+      }
+      .review-summary-success {
+        text-align: left;
+        margin: 0 auto 24px;
+        max-width: 560px;
+      }
+
+      /* ── Success Panel ────────────────────────────────────── */
+      .success-panel {
+        text-align: center;
+        padding: 20px 0;
+      }
+      .success-icon-wrap {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 2.5rem;
+        color: #fff;
+        box-shadow: 0 8px 32px rgba(34, 197, 94, 0.35);
+        animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+      @keyframes successPop {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .success-rider-illo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 3rem;
+        color: #fff;
+        box-shadow: 0 8px 32px rgba(249, 115, 22, 0.35);
+        animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+      .success-title {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: #0f172a;
+        margin-bottom: 10px;
+      }
+      .success-message {
+        color: #64748b;
+        font-size: 0.92rem;
+        line-height: 1.7;
+        margin-bottom: 28px;
+        max-width: 34ch;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .success-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff7ed;
+        border: 1.5px solid #fed7aa;
+        color: #ea580c;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 999px;
+        margin-bottom: 28px;
+      }
+      .btn-goto-login {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 32px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-family: "Poppins", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      }
+      .btn-goto-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+      }
+
+      /* ── Responsive ───────────────────────────────────────── */
+      @media (max-width: 900px) {
+        .reg-page {
+          grid-template-columns: 1fr;
+        }
+        .brand-panel {
+          min-height: auto;
+          padding: 28px 24px;
+        }
+        .bp-body {
+          margin: 20px 0;
+        }
+        .bp-headline {
+          font-size: 1.25rem;
+        }
+        .bp-steps-preview {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .bp-step-row {
+          flex: 1;
+          min-width: 140px;
+        }
+        .bp-stats {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+        .bp-stat-card {
+          padding: 12px 10px;
+        }
+        .bp-stat-value {
+          font-size: 1rem;
+        }
+        .form-panel {
+          padding: 28px 20px;
+          min-height: auto;
+        }
+        .reg-card {
+          padding: 32px 24px;
+        }
+        .card-logo-row {
+          display: flex;
+        }
+      }
+      @media (max-width: 600px) {
+        .brand-panel {
+          padding: 20px 18px;
+        }
+        .bp-stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        .form-panel {
+          padding: 20px 14px;
+        }
+        .reg-card {
+          padding: 24px 18px;
+          border-radius: 18px;
+        }
+        .vehicle-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .upload-grid {
+          grid-template-columns: 1fr;
+        }
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+        .role-cards {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reg-page">
+      <!-- ═══════════════ LEFT BRANDING PANEL ═══════════════ -->
+      <aside class="brand-panel">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <a href="index.html" class="bp-logo">
+          <img
+            src="assets/logo.png"
+            alt="iTULOD logo"
+            onerror="this.style.display = 'none'"
+          />
+          <span class="bp-logo-text">iTULOD<span>.</span></span>
+        </a>
+
+        <div class="bp-body">
+          <div class="bp-tagline">
+            <i class="fa-solid fa-user-plus"></i> Join the Platform
+          </div>
+          <h1 class="bp-headline">Start your journey with iTULOD today</h1>
+          <p class="bp-subtitle">
+            Create your account in minutes. Book rides, get deliveries, or earn
+            as a rider.
+          </p>
+
+          <div class="bp-steps-preview" id="bp-steps-preview">
+            <div class="bp-step-row">
+              <div class="bp-step-dot active" id="bpd-0">1</div>
+              <div class="bp-step-info">
+                <strong>Choose Role</strong>Customer or Rider
+              </div>
+            </div>
+            <div class="bp-step-row">
+              <div class="bp-step-dot" id="bpd-1">2</div>
+              <div class="bp-step-info">
+                <strong>Personal Info</strong>Your details
+              </div>
+            </div>
+            <div class="bp-step-row" id="rider-step-2-preview">
+              <div class="bp-step-dot" id="bpd-2">3</div>
+              <div class="bp-step-info">
+                <strong>Vehicle</strong>Select type
+              </div>
+            </div>
+            <div class="bp-step-row" id="rider-step-3-preview">
+              <div class="bp-step-dot" id="bpd-3">4</div>
+              <div class="bp-step-info">
+                <strong>Documents</strong>Upload files
+              </div>
+            </div>
+            <div class="bp-step-row" id="rider-step-4-preview">
+              <div class="bp-step-dot" id="bpd-4">5</div>
+              <div class="bp-step-info">
+                <strong>Review</strong>Confirm details
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bp-stats">
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">⭐</span
+            ><span class="bp-stat-value">4.9</span
+            ><span class="bp-stat-label">Rating</span>
+          </div>
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">🛵</span
+            ><span class="bp-stat-value">800+</span
+            ><span class="bp-stat-label">Riders</span>
+          </div>
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">📦</span
+            ><span class="bp-stat-value">15K+</span
+            ><span class="bp-stat-label">Deliveries</span>
+          </div>
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">🚗</span
+            ><span class="bp-stat-value">2,500+</span
+            ><span class="bp-stat-label">Bookings/day</span>
+          </div>
+        </div>
+
+        <a href="login.html" class="back-link" style="margin-top: 28px">
+          <i class="fa-solid fa-arrow-left"></i> Already have an account? Login
+        </a>
+      </aside>
+
+      <!-- ═══════════════ RIGHT FORM PANEL ═══════════════ -->
+      <main class="form-panel">
+        <div class="reg-card">
+          <!-- Mobile logo -->
+          <a href="index.html" class="card-logo-row">
+            <img
+              src="assets/logo.png"
+              alt="iTULOD"
+              onerror="this.style.display = 'none'"
+            />
+            <span>iTULOD<em>.</em></span>
+          </a>
+
+          <!-- ─── Step Indicator ─── -->
+          <div class="step-indicator" id="step-indicator">
+            <div class="step-item active" id="si-0">
+              <div class="step-circle">
+                <i class="fa-solid fa-check" style="display: none"></i
+                ><span>1</span>
+              </div>
+              <div class="step-label">Role</div>
+            </div>
+            <div class="step-item" id="si-1">
+              <div class="step-circle">
+                <i class="fa-solid fa-check" style="display: none"></i
+                ><span>2</span>
+              </div>
+              <div class="step-label">Personal</div>
+            </div>
+            <div class="step-item" id="si-2">
+              <div class="step-circle">
+                <i class="fa-solid fa-check" style="display: none"></i
+                ><span>3</span>
+              </div>
+              <div class="step-label">Vehicle</div>
+            </div>
+            <div class="step-item" id="si-3">
+              <div class="step-circle">
+                <i class="fa-solid fa-check" style="display: none"></i
+                ><span>4</span>
+              </div>
+              <div class="step-label">Documents</div>
+            </div>
+            <div class="step-item" id="si-4">
+              <div class="step-circle">
+                <i class="fa-solid fa-check" style="display: none"></i
+                ><span>5</span>
+              </div>
+              <div class="step-label">Review</div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+           STEP 0 — Role Selection
+           ════════════════════════════════ -->
+          <div class="wizard-panel active" id="step-0">
+            <h2 class="panel-title">Who are you?</h2>
+            <p class="panel-sub">
+              Choose how you'll use iTULOD. You can always add more roles later.
+            </p>
+
+            <div class="role-cards">
+              <!-- Customer -->
+              <div
+                class="role-card customer selected"
+                data-role="customer"
+                id="role-customer"
+                onclick="selectRole('customer')"
+              >
+                <div class="selected-badge">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="role-card-icon">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="role-card-title">Customer</div>
+                <div class="role-card-desc">
+                  Book rides, order food, send parcels
+                </div>
+              </div>
+              <!-- Rider -->
+              <div
+                class="role-card rider"
+                data-role="rider"
+                id="role-rider"
+                onclick="selectRole('rider')"
+              >
+                <div class="selected-badge">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="role-card-icon">
+                  <i class="fa-solid fa-motorcycle"></i>
+                </div>
+                <div class="role-card-title">Rider</div>
+                <div class="role-card-desc">
+                  Earn by delivering and accepting rides
+                </div>
+              </div>
+            </div>
+
+            <div class="wizard-nav">
+              <button class="btn-next" id="btn-role-next" onclick="goToStep(1)">
+                Continue <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <p class="login-link" style="margin-top: 20px">
+              Already have an account? <a href="login.html">Login</a>
+            </p>
+          </div>
+
+          <!-- ════════════════════════════════
+           STEP 1 — Personal Information
+           ════════════════════════════════ -->
+          <div class="wizard-panel" id="step-1">
+            <h2 class="panel-title">Personal Information</h2>
+            <p class="panel-sub" id="step1-sub">
+              Tell us a bit about yourself to create your account.
+            </p>
+
+            <div class="field-row">
+              <div class="input-group">
+                <label for="full_name">Full Name</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-user input-icon"></i>
+                  <input
+                    type="text"
+                    id="full_name"
+                    placeholder="Juan dela Cruz"
+                    autocomplete="name"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label for="phone">Phone Number</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-phone input-icon"></i>
+                  <input
+                    type="tel"
+                    id="phone"
+                    placeholder="09XX XXX XXXX"
+                    autocomplete="tel"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="email">Email Address</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-envelope input-icon"></i>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="juandelacruz@email.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="input-group">
+                <label for="password">Password</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-lock input-icon"></i>
+                  <input
+                    type="password"
+                    id="password"
+                    placeholder="Create a password"
+                    autocomplete="new-password"
+                    required
+                    oninput="updateStrength(this.value)"
+                  />
+                  <button
+                    type="button"
+                    class="pw-toggle-btn"
+                    onclick="togglePw('password', this)"
+                  >
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+                <div class="pw-strength" id="pw-strength" style="display: none">
+                  <div class="pw-strength-bar">
+                    <div class="pw-strength-seg" id="ps-1"></div>
+                    <div class="pw-strength-seg" id="ps-2"></div>
+                    <div class="pw-strength-seg" id="ps-3"></div>
+                    <div class="pw-strength-seg" id="ps-4"></div>
+                  </div>
+                  <span class="pw-strength-label" id="ps-label"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <label for="password2">Confirm Password</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-lock input-icon"></i>
+                  <input
+                    type="password"
+                    id="password2"
+                    placeholder="Repeat password"
+                    autocomplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="pw-toggle-btn"
+                    onclick="togglePw('password2', this)"
+                  >
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="terms-row">
+              <input type="checkbox" id="terms" required />
+              <label for="terms"
+                >I agree to the
+                <a href="#" target="_blank">Terms of Service</a> and
+                <a href="#" target="_blank">Privacy Policy</a> of iTULOD.</label
+              >
+            </div>
+
+            <div class="wizard-nav">
+              <button class="btn-back" onclick="goToStep(0)">
+                <i class="fa-solid fa-arrow-left"></i> Back
+              </button>
+              <button
+                class="btn-next"
+                id="btn-personal-next"
+                onclick="submitPersonalStep()"
+              >
+                Continue <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+           STEP 2 — Vehicle Selection (Rider only)
+           ════════════════════════════════ -->
+          <div class="wizard-panel" id="step-2">
+            <h2 class="panel-title">Your Vehicle</h2>
+            <p class="panel-sub">
+              Select the type of vehicle you'll use for deliveries and rides.
+            </p>
+
+            <div class="vehicle-grid" id="vehicle-grid">
+              <div
+                class="vehicle-card selected"
+                data-vehicle="Motorcycle"
+                onclick="selectVehicle(this, 'Motorcycle')"
+              >
+                <span class="vc-icon"
+                  ><i class="fa-solid fa-motorcycle"></i
+                ></span>
+                <span class="vc-name">Motorcycle</span>
+              </div>
+              <div
+                class="vehicle-card"
+                data-vehicle="Tricycle"
+                onclick="selectVehicle(this, 'Tricycle')"
+              >
+                <span class="vc-icon">🛺</span>
+                <span class="vc-name">Tricycle</span>
+              </div>
+              <div
+                class="vehicle-card"
+                data-vehicle="Car"
+                onclick="selectVehicle(this, 'Car')"
+              >
+                <span class="vc-icon"><i class="fa-solid fa-car"></i></span>
+                <span class="vc-name">Car</span>
+              </div>
+              <div
+                class="vehicle-card"
+                data-vehicle="SUV"
+                onclick="selectVehicle(this, 'SUV')"
+              >
+                <span class="vc-icon"
+                  ><i class="fa-solid fa-car-side"></i
+                ></span>
+                <span class="vc-name">SUV</span>
+              </div>
+              <div
+                class="vehicle-card"
+                data-vehicle="Van"
+                onclick="selectVehicle(this, 'Van')"
+              >
+                <span class="vc-icon"
+                  ><i class="fa-solid fa-van-shuttle"></i
+                ></span>
+                <span class="vc-name">Van</span>
+              </div>
+              <div
+                class="vehicle-card"
+                data-vehicle="Pickup"
+                onclick="selectVehicle(this, 'Pickup')"
+              >
+                <span class="vc-icon"
+                  ><i class="fa-solid fa-truck-pickup"></i
+                ></span>
+                <span class="vc-name">Pickup</span>
+              </div>
+              <div
+                class="vehicle-card"
+                data-vehicle="Truck"
+                onclick="selectVehicle(this, 'Truck')"
+              >
+                <span class="vc-icon"><i class="fa-solid fa-truck"></i></span>
+                <span class="vc-name">Truck</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="input-group">
+                <label for="vehicle_color">Vehicle Color</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-palette input-icon"></i>
+                  <input
+                    type="text"
+                    id="vehicle_color"
+                    placeholder="e.g. Red"
+                  />
+                </div>
+              </div>
+              <div class="input-group">
+                <label for="vehicle_model">Vehicle Model</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-tag input-icon"></i>
+                  <select id="vehicle_model" required>
+                    <option value="">Select vehicle model</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="wizard-nav">
+              <button class="btn-back" onclick="goToStep(1)">
+                <i class="fa-solid fa-arrow-left"></i> Back
+              </button>
+              <button class="btn-next orange" onclick="goToStep(4)">
+                Continue <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+           STEP 4 — Document Uploads (Rider only)
+           ════════════════════════════════ -->
+          <div class="wizard-panel" id="step-4">
+            <h2 class="panel-title">Upload Documents</h2>
+            <p class="panel-sub">
+              Upload each required document separately. Choose the correct
+              paper, permit, or license for every slot below.
+            </p>
+
+            <div class="upload-grid">
+              <!-- Driver's License -->
+              <label
+                class="upload-zone"
+                id="uz-license"
+                for="license_file"
+                ondragover="handleDragOver(event, this)"
+                ondragleave="handleDragLeave(this)"
+                ondrop="handleDrop(event, this, 'license_file')"
+              >
+                <input
+                  type="file"
+                  id="license_file"
+                  accept="image/*,.pdf"
+                  onchange="
+                    handleFileSelect(this, 'uz-license', 'prev-license')
+                  "
+                />
+                <img
+                  class="upload-preview"
+                  id="prev-license"
+                  alt="License preview"
+                />
+                <div class="upload-check">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="upload-icon">
+                  <i class="fa-solid fa-id-card"></i>
+                </div>
+                <div class="upload-label">Driver's License</div>
+                <div class="upload-hint">
+                  Upload your valid driver's license photo or PDF
+                </div>
+                <div class="upload-action">Choose file</div>
+              </label>
+
+              <!-- OR/CR -->
+              <label
+                class="upload-zone"
+                id="uz-orcr"
+                for="orcr_file"
+                ondragover="handleDragOver(event, this)"
+                ondragleave="handleDragLeave(this)"
+                ondrop="handleDrop(event, this, 'orcr_file')"
+              >
+                <input
+                  type="file"
+                  id="orcr_file"
+                  accept="image/*,.pdf"
+                  onchange="handleFileSelect(this, 'uz-orcr', 'prev-orcr')"
+                />
+                <img
+                  class="upload-preview"
+                  id="prev-orcr"
+                  alt="OR/CR preview"
+                />
+                <div class="upload-check">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="upload-icon">
+                  <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div class="upload-label">OR / CR Paper</div>
+                <div class="upload-hint">
+                  Upload your official receipt or registration paper
+                </div>
+                <div class="upload-action">Choose file</div>
+              </label>
+
+              <!-- Selfie -->
+              <label
+                class="upload-zone"
+                id="uz-selfie"
+                for="selfie_file"
+                ondragover="handleDragOver(event, this)"
+                ondragleave="handleDragLeave(this)"
+                ondrop="handleDrop(event, this, 'selfie_file')"
+              >
+                <input
+                  type="file"
+                  id="selfie_file"
+                  accept="image/*"
+                  capture="user"
+                  onchange="handleFileSelect(this, 'uz-selfie', 'prev-selfie')"
+                />
+                <img
+                  class="upload-preview"
+                  id="prev-selfie"
+                  alt="Selfie preview"
+                />
+                <div class="upload-check">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="upload-icon">
+                  <i class="fa-solid fa-camera"></i>
+                </div>
+                <div class="upload-label">Selfie Verification</div>
+                <div class="upload-hint">
+                  Upload a clear selfie for identity confirmation
+                </div>
+                <div class="upload-action">Choose file</div>
+              </label>
+
+              <!-- Vehicle Photo -->
+              <label
+                class="upload-zone"
+                id="uz-vehicle"
+                for="vehicle_file"
+                ondragover="handleDragOver(event, this)"
+                ondragleave="handleDragLeave(this)"
+                ondrop="handleDrop(event, this, 'vehicle_file')"
+              >
+                <input
+                  type="file"
+                  id="vehicle_file"
+                  accept="image/*"
+                  onchange="
+                    handleFileSelect(this, 'uz-vehicle', 'prev-vehicle')
+                  "
+                />
+                <img
+                  class="upload-preview"
+                  id="prev-vehicle"
+                  alt="Vehicle preview"
+                />
+                <div class="upload-check">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="upload-icon">
+                  <i class="fa-solid fa-motorcycle"></i>
+                </div>
+                <div class="upload-label">Vehicle Photo</div>
+                <div class="upload-hint">
+                  Upload a clear photo of your vehicle
+                </div>
+                <div class="upload-action">Choose file</div>
+              </label>
+
+              <!-- NBI Clearance (Optional) -->
+              <label
+                class="upload-zone"
+                id="uz-nbi"
+                style="grid-column: 1/-1"
+                for="nbi_file"
+                ondragover="handleDragOver(event, this)"
+                ondragleave="handleDragLeave(this)"
+                ondrop="handleDrop(event, this, 'nbi_file')"
+              >
+                <input
+                  type="file"
+                  id="nbi_file"
+                  accept="image/*,.pdf"
+                  onchange="handleFileSelect(this, 'uz-nbi', 'prev-nbi')"
+                />
+                <img class="upload-preview" id="prev-nbi" alt="NBI preview" />
+                <div class="upload-check">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="upload-icon">
+                  <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="upload-label">NBI Clearance</div>
+                <div class="upload-hint">
+                  Upload your clearance if you have one
+                </div>
+                <div class="upload-action">Choose file</div>
+                <div class="upload-optional">Optional</div>
+              </label>
+            </div>
+
+            <div class="wizard-nav">
+              <button class="btn-back" onclick="goToStep(2)">
+                <i class="fa-solid fa-arrow-left"></i> Back
+              </button>
+              <button class="btn-next orange" onclick="submitDocumentsStep()">
+                Continue to Review <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+           STEP 5 — Customer Success
+           ════════════════════════════════ -->
+          <div class="wizard-panel" id="step-5-customer">
+            <div class="success-panel">
+              <div class="success-icon-wrap">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <h2 class="success-title">Account Created!</h2>
+              <p class="success-message">
+                Welcome to iTULOD! Your customer account is ready. Start booking
+                rides, ordering food, or sending parcels right away.
+              </p>
+              <a href="login.html" class="btn-goto-login"
+                ><i class="fa-solid fa-right-to-bracket"></i> Login Now</a
+              >
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════
+           STEP 5 — Rider Review
+           ════════════════════════════════ -->
+          <div class="wizard-panel" id="step-5-rider">
+            <h2 class="panel-title" id="rider-step5-title">
+              Review Your Application
+            </h2>
+            <p class="panel-sub" id="rider-step5-message">
+              Please confirm all details below before submitting your rider
+              application.
+            </p>
+            <div class="review-summary" id="rider-summary-content"></div>
+            <div class="wizard-nav" id="rider-step5-actions">
+              <button class="btn-back" onclick="goToStep(4)">
+                <i class="fa-solid fa-arrow-left"></i> Back
+              </button>
+              <button
+                class="btn-next orange"
+                id="btn-submit-rider"
+                onclick="submitRiderRegistration()"
+              >
+                Submit Application <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+            <p
+              id="rider-step5-note"
+              style="
+                font-size: 0.82rem;
+                color: #94a3b8;
+                margin-top: 16px;
+                text-align: center;
+              "
+            >
+              You'll receive an SMS & email notification once approved.
+            </p>
+          </div>
+
+          <div class="wizard-panel" id="step-5-rider-success">
+            <div class="success-panel">
+              <div class="success-rider-illo">
+                <i class="fa-solid fa-motorcycle"></i>
+              </div>
+              <div class="success-badge">
+                <i class="fa-solid fa-clock"></i> Pending Approval
+              </div>
+              <h2 class="success-title">Registration Submitted!</h2>
+              <p class="success-message">
+                Your rider application has been submitted successfully. Our
+                admin team will review your documents and approve your account.
+              </p>
+              <a href="login.html" class="btn-goto-login"
+                ><i class="fa-solid fa-right-to-bracket"></i> Go to Login</a
+              >
+              <p style="font-size: 0.82rem; color: #94a3b8; margin-top: 20px">
+                You will receive an SMS and email notification once approved.
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- /reg-card -->
+      </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/imask@7/dist/imask.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabaseClient.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      /* ============================================================
+   Registration Wizard — UI Logic
+   ============================================================ */
+
+      let currentStep = 0;
+      let selectedRole = "customer";
+      let selectedVehicle = "Motorcycle";
+      const REGISTER_DRAFT_KEY = "itulod-register-draft";
+      const vehicleModelsByType = {
+        Motorcycle: [
+          "Honda Click 125",
+          "Honda Beat",
+          "Honda Wave",
+          "Honda XRM",
+          "Honda TMX",
+          "Honda Supra",
+          "Honda CB110",
+          "Honda CBR150",
+          "Honda ADV150",
+          "Yamaha Mio",
+          "Yamaha Mio Soul",
+          "Yamaha NMAX",
+          "Yamaha Aerox",
+          "Yamaha FZ",
+          "Yamaha R15",
+          "Suzuki Raider",
+          "Suzuki Smash",
+          "Suzuki Satria",
+          "Suzuki Address",
+          "Kymco Like",
+          "Kymco Dink",
+          "Kymco Zing",
+          "TVS Rx",
+          "TVS XL",
+          "TVS Apache",
+          "Bajaj CT100",
+          "Bajaj Pulsar",
+          "Bajaj Dominar",
+          "Kawasaki W175",
+          "Kawasaki Rouser",
+          "Royal Enfield Hunter",
+          "Royal Enfield Classic",
+        ],
+        Tricycle: [
+          "Bajaj RE",
+          "Kymco",
+          "TVS King",
+          "Mitsubishi",
+          "Honda",
+          "Suzuki",
+          "Yamaha",
+          "Piaggio",
+          "Vespa",
+          "Bajaj Maxima",
+          "Bajaj Qute",
+          "Lifan",
+          "CPI",
+          "Daihatsu",
+          "Ape",
+          "Kymco ATV",
+          "TVS XL",
+          "Rusi",
+          "Mikasa",
+          "Bajaj Boxer",
+        ],
+        Car: [
+          "Toyota Vios",
+          "Toyota Corolla",
+          "Toyota Camry",
+          "Toyota Yaris",
+          "Honda City",
+          "Honda Civic",
+          "Honda Accord",
+          "Honda Jazz",
+          "Mitsubishi Mirage",
+          "Mitsubishi Attrage",
+          "Hyundai Eon",
+          "Hyundai Accent",
+          "Hyundai Elantra",
+          "Ford Fiesta",
+          "Ford Focus",
+          "Nissan Almera",
+          "Nissan Sylphy",
+          "Suzuki Dzire",
+          "Suzuki Swift",
+          "Mazda 2",
+          "Mazda 3",
+          "Chevrolet Spark",
+          "Chevrolet Aveo",
+          "Kia Rio",
+          "Kia Picanto",
+          "Subaru Impreza",
+          "Toyota Wigo",
+        ],
+        SUV: [
+          "Toyota Fortuner",
+          "Toyota Rush",
+          "Toyota Corolla Cross",
+          "Honda CR-V",
+          "Honda HR-V",
+          "Honda BR-V",
+          "Mitsubishi Xpander",
+          "Mitsubishi Montero",
+          "Mitsubishi Outlander",
+          "Hyundai Tucson",
+          "Hyundai Santa Fe",
+          "Ford Explorer",
+          "Ford Escape",
+          "Nissan X-Trail",
+          "Nissan Terra",
+          "Mazda CX-5",
+          "Mazda CX-8",
+          "Subaru Forester",
+          "Subaru Outback",
+          "Kia Sportage",
+          "Kia Sorento",
+          "Isuzu MU-X",
+          "MG ZS",
+          "Chery Tiggo",
+          "Jeep Compass",
+          "Toyota Innova",
+        ],
+        Van: [
+          "Toyota Hiace",
+          "Toyota Coaster",
+          "Nissan Urvan",
+          "Ford Transit",
+          "Isuzu Traviz",
+          "Mitsubishi Fuso Rosa",
+          "Hyundai H-100",
+          "Suzuki Carry",
+          "Chevrolet Express",
+          "Mercedes-Benz Sprinter",
+          "Mercedes-Benz Vito",
+          "Volkswagen Transporter",
+          "Peugeot Expert",
+          "Renault Master",
+          "Kia K2500",
+          "Isuzu N-Series",
+          "Foton View",
+          "Maxus V80",
+        ],
+        Pickup: [
+          "Toyota Hilux",
+          "Toyota Tacoma",
+          "Mitsubishi Strada",
+          "Mitsubishi L200",
+          "Ford Ranger",
+          "Ford F-150",
+          "Isuzu D-Max",
+          "Nissan Navara",
+          "Nissan Frontier",
+          "Mazda BT-50",
+          "Chevrolet Colorado",
+          "Chevrolet S10",
+          "Honda Ridgeline",
+          "Toyota Revo",
+          "Isuzu MU-X",
+          "Ford Ranger Raptor",
+          "Ram 1500",
+          "GMC Sierra",
+          "Jeep Gladiator",
+        ],
+        Truck: [
+          "Isuzu Elf",
+          "Isuzu Giga",
+          "Fuso Canter",
+          "Fuso Fighter",
+          "Hino 300",
+          "Hino 500",
+          "Mitsubishi Fuso",
+          "Volvo FM",
+          "Volvo FH",
+          "Scania P-series",
+          "Scania G-series",
+          "MAN TGS",
+          "MAN TGX",
+          "Kenworth T680",
+          "Freightliner Cascadia",
+          "Peterbilt 579",
+          "Mercedes-Benz Actros",
+          "DAF XF",
+          "Iveco Stralis",
+        ],
+      };
+
+      // ── Role Selection ─────────────────────────────────────────
+      function selectRole(role) {
+        selectedRole = role;
+        saveRegistrationDraft();
+        document
+          .getElementById("role-customer")
+          .classList.toggle("selected", role === "customer");
+        document
+          .getElementById("role-rider")
+          .classList.toggle("selected", role === "rider");
+        // Next button color
+        const btn = document.getElementById("btn-role-next");
+        btn.className = "btn-next" + (role === "rider" ? " orange" : "");
+        // Update step 1 subtitle
+        document.getElementById("step1-sub").textContent =
+          role === "rider"
+            ? "Provide your personal info to start your rider application."
+            : "Tell us a bit about yourself to create your account.";
+        // Show/hide rider-specific steps in sidebar preview
+        updateBrandingSteps();
+      }
+
+      // ── Step Navigation ────────────────────────────────────────
+      function goToStep(n) {
+        currentStep = n;
+        // Hide all panels
+        document
+          .querySelectorAll(".wizard-panel")
+          .forEach((p) => p.classList.remove("active"));
+        // If going to a rider-only step but role is customer, go to success
+        if (selectedRole === "customer" && n >= 2) {
+          showCustomerSuccess();
+          return;
+        }
+        if (selectedRole === "rider" && n === 3) n = 4;
+        if (n === 5) {
+          if (selectedRole === "rider") showRiderSummary();
+          else showCustomerSuccess();
+          return;
+        }
+        const panel = document.getElementById("step-" + n);
+        if (panel) panel.classList.add("active");
+        updateStepIndicator(n);
+        updateBrandingSteps();
+        saveRegistrationDraft();
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function getRegistrationSummaryData() {
+        const fullName =
+          document.getElementById("full_name")?.value.trim() || "Not provided";
+        const phone =
+          document.getElementById("phone")?.value.trim() || "Not provided";
+        const email =
+          document.getElementById("email")?.value.trim() || "Not provided";
+        const role = selectedRole === "rider" ? "Rider" : "Customer";
+        const vehicleType = selectedVehicle || "Not selected";
+        const vehicleModel =
+          document.getElementById("vehicle_model")?.value.trim() ||
+          "Not selected";
+        const vehicleColor =
+          document.getElementById("vehicle_color")?.value.trim() ||
+          "Not provided";
+        const docs = [
+          [
+            "Driver's License",
+            document.getElementById("license_file")?.files[0]?.name ||
+              "Not uploaded",
+          ],
+          [
+            "OR / CR Paper",
+            document.getElementById("orcr_file")?.files[0]?.name ||
+              "Not uploaded",
+          ],
+          [
+            "Selfie",
+            document.getElementById("selfie_file")?.files[0]?.name ||
+              "Not uploaded",
+          ],
+          [
+            "Vehicle Photo",
+            document.getElementById("vehicle_file")?.files[0]?.name ||
+              "Not uploaded",
+          ],
+          [
+            "NBI Clearance",
+            document.getElementById("nbi_file")?.files[0]?.name || "Optional",
+          ],
+        ];
+
+        return {
+          fullName,
+          phone,
+          email,
+          role,
+          vehicleType,
+          vehicleModel,
+          vehicleColor,
+          docs,
+        };
+      }
+
+      function renderRegistrationSummary(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        const data = getRegistrationSummaryData();
+        const rows = [
+          ["Full Name", data.fullName],
+          ["Phone", data.phone],
+          ["Email", data.email],
+          ["Account Type", data.role],
+        ];
+
+        if (selectedRole === "rider") {
+          rows.push(["Vehicle Type", data.vehicleType]);
+          rows.push(["Vehicle Model", data.vehicleModel]);
+          rows.push(["Vehicle Color", data.vehicleColor]);
+        }
+
+        const docsMarkup = data.docs
+          .map(
+            ([label, value]) =>
+              `<div class="review-summary-item"><strong>${escapeHtml(label)}:</strong><span>${escapeHtml(value)}</span></div>`,
+          )
+          .join("");
+        const rowsMarkup = rows
+          .map(
+            ([label, value]) =>
+              `<div class="review-summary-item"><strong>${escapeHtml(label)}:</strong><span>${escapeHtml(value)}</span></div>`,
+          )
+          .join("");
+
+        target.innerHTML = `
+    <div class="review-summary-list">
+      ${rowsMarkup}
+      ${selectedRole === "rider" ? `<div class="review-summary-item"><strong>Uploaded Documents:</strong><span></span></div>${docsMarkup}` : ""}
+    </div>
+  `;
+      }
+
+      function showCustomerSuccess() {
+        document
+          .querySelectorAll(".wizard-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("step-5-customer").classList.add("active");
+        updateStepIndicator(99); // all done
+        currentStep = 99;
+        saveRegistrationDraft();
+      }
+      function wizardToIndicatorIndex(step) {
+        if (selectedRole !== "rider") return step >= 99 ? 4 : Math.min(step, 1);
+        if (step >= 99) return 4;
+        if (step === 4) return 3;
+        if (step === 5) return 4;
+        return step;
+      }
+
+      function wizardToBrandingIndex(step) {
+        if (step <= 2) return step;
+        if (step === 4) return 3;
+        if (step === 5 || step >= 99) return 4;
+        return step;
+      }
+
+      function showRiderSummary() {
+        document
+          .querySelectorAll(".wizard-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("step-5-rider").classList.add("active");
+        updateStepIndicator(5);
+        currentStep = 5;
+        renderRegistrationSummary("rider-summary-content");
+        saveRegistrationDraft();
+      }
+      function showRiderSuccess() {
+        document
+          .querySelectorAll(".wizard-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("step-5-rider-success").classList.add("active");
+        updateStepIndicator(99);
+        currentStep = 99;
+        saveRegistrationDraft();
+      }
+
+      // ── Step Indicator Updates ─────────────────────────────────
+      function updateStepIndicator(active) {
+        const stepItems = document.querySelectorAll(".step-item");
+        const indicatorActive = wizardToIndicatorIndex(active);
+
+        stepItems.forEach((item, i) => {
+          item.classList.remove("active", "completed");
+          const circle = item.querySelector(".step-circle");
+          const num = circle.querySelector("span");
+          const check = circle.querySelector("i");
+          if (i < indicatorActive) {
+            item.classList.add("completed");
+            if (num) num.style.display = "none";
+            if (check) check.style.display = "";
+          } else if (i === indicatorActive) {
+            item.classList.add("active");
+            if (num) num.style.display = "";
+            if (check) check.style.display = "none";
+          } else {
+            if (num) num.style.display = "";
+            if (check) check.style.display = "none";
+          }
+        });
+
+        const si2 = document.getElementById("si-2");
+        const si3 = document.getElementById("si-3");
+        const si4 = document.getElementById("si-4");
+        if (selectedRole === "customer") {
+          if (si2) si2.style.opacity = "0.3";
+          if (si3) si3.style.opacity = "0.3";
+          if (si4) si4.style.opacity = "0.3";
+        } else {
+          if (si2) si2.style.opacity = "";
+          if (si3) si3.style.opacity = "";
+          if (si4) si4.style.opacity = "";
+        }
+      }
+
+      // ── Branding panel step dots ───────────────────────────────
+      function updateBrandingSteps() {
+        const isRider = selectedRole === "rider";
+        const rp2 = document.getElementById("rider-step-2-preview");
+        const rp3 = document.getElementById("rider-step-3-preview");
+        const rp4 = document.getElementById("rider-step-4-preview");
+        if (rp2) rp2.style.opacity = isRider ? "1" : "0.3";
+        if (rp3) rp3.style.opacity = isRider ? "1" : "0.3";
+        if (rp4) rp4.style.opacity = isRider ? "1" : "0.3";
+
+        const brandingActive = wizardToBrandingIndex(currentStep);
+        for (let i = 0; i <= 4; i++) {
+          const dot = document.getElementById("bpd-" + i);
+          if (!dot) continue;
+          dot.className = "bp-step-dot";
+          if (currentStep >= 99 || i < brandingActive)
+            dot.classList.add("done");
+          else if (i === brandingActive) dot.classList.add("active");
+        }
+      }
+
+      function submitDocumentsStep() {
+        goToStep(5);
+      }
+
+      // ── Personal Step Validation ───────────────────────────────
+      function submitPersonalStep() {
+        const name = document.getElementById("full_name").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const pw = document.getElementById("password").value;
+        const pw2 = document.getElementById("password2").value;
+        const terms = document.getElementById("terms").checked;
+
+        if (!name || !phone || !email || !pw) {
+          if (typeof toast === "function")
+            toast("Please fill in all required fields.", "error");
+          else alert("Please fill in all required fields.");
+          return;
+        }
+        if (pw !== pw2) {
+          if (typeof toast === "function")
+            toast("Passwords do not match.", "error");
+          else alert("Passwords do not match.");
+          return;
+        }
+        if (!terms) {
+          if (typeof toast === "function")
+            toast("Please accept the Terms & Privacy Policy.", "error");
+          else alert("Please accept the Terms & Privacy Policy.");
+          return;
+        }
+
+        if (selectedRole === "rider") {
+          goToStep(2);
+        } else {
+          // Customer — submit and show success
+          submitCustomerRegistration();
+        }
+      }
+
+      let __customerSubmitting = false;
+      async function submitCustomerRegistration() {
+        if (__customerSubmitting) return;
+        __customerSubmitting = true;
+
+        const btn = document.getElementById("btn-personal-next");
+        const originalBtnHtml = btn ? btn.innerHTML : null;
+
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> Creating Account...';
+        }
+
+        try {
+          if (typeof supabase === "undefined") {
+            throw new Error("Supabase client is not available.");
+          }
+
+          // Validate required fields (beyond HTML5)
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value;
+          const full_name = document.getElementById("full_name").value.trim();
+          const phone = document
+            .getElementById("phone")
+            .value.replace(/\s/g, "")
+            .trim();
+
+          if (!email || !password || !full_name || !phone) {
+            throw new Error("Please fill in all required fields.");
+          }
+
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name, role: "customer" } },
+          });
+
+          if (error) throw error;
+
+          if (data?.user?.id) {
+            await supabase
+              .from("profiles")
+              .update({ phone })
+              .eq("id", data.user.id);
+          }
+
+          clearFormDraft(REGISTER_DRAFT_KEY);
+
+          // Customer should land on customer STEP 5 success panel
+          showCustomerSuccess();
+          document.getElementById("step-5-customer")?.classList.add("active");
+          document
+            .getElementById("step-5-rider-success")
+            ?.classList.remove("active");
+          document.getElementById("step-5-rider")?.classList.remove("active");
+
+          const customerTitle = document.querySelector(
+            "#step-5-customer .success-title",
+          );
+          const customerMsg = document.querySelector(
+            "#step-5-customer .success-message",
+          );
+          if (customerTitle)
+            customerTitle.textContent = "Account created successfully";
+          if (customerMsg) customerMsg.textContent = "Please log in.";
+
+          setTimeout(() => {
+            window.location.href = "login.html";
+          }, 700);
+        } catch (err) {
+          const msg = err?.message || String(err);
+          if (typeof toast === "function") toast(msg, "error");
+          else alert(msg);
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML =
+              originalBtnHtml ||
+              'Continue <i class="fa-solid fa-arrow-right"></i>';
+          }
+          __customerSubmitting = false;
+        }
+      }
+
+      let __riderSubmitting = false;
+      async function submitRiderRegistration() {
+        if (__riderSubmitting) return;
+        __riderSubmitting = true;
+
+        const btn = document.getElementById("btn-submit-rider");
+        const originalBtnHtml = btn ? btn.innerHTML : null;
+
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> Creating Account...';
+        }
+
+        try {
+          if (typeof supabase === "undefined") {
+            throw new Error("Supabase client is not available.");
+          }
+
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value;
+          const full_name = document.getElementById("full_name").value.trim();
+          const phone = document
+            .getElementById("phone")
+            .value.replace(/\s/g, "")
+            .trim();
+
+          if (!email || !password || !full_name || !phone) {
+            throw new Error("Please fill in all required fields.");
+          }
+
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name, role: "rider" } },
+          });
+          if (error) throw error;
+
+          const userId = data?.user?.id;
+
+          if (userId) {
+            await supabase.from("profiles").update({ phone }).eq("id", userId);
+
+            const licenseFile =
+              document.getElementById("license_file").files[0];
+            const orcrFile = document.getElementById("orcr_file").files[0];
+            const selfieFile = document.getElementById("selfie_file").files[0];
+            const vehicleFile =
+              document.getElementById("vehicle_file").files[0];
+            const nbiFile = document.getElementById("nbi_file").files[0];
+
+            let license_url = null,
+              or_cr_url = null,
+              selfie_url = null,
+              vehicle_url = null,
+              nbi_url = null;
+
+            // Upload docs; if any fail, still submit rider_application (pending)
+            try {
+              if (licenseFile)
+                license_url = await uploadRiderDoc(
+                  userId,
+                  licenseFile,
+                  "license",
+                );
+              if (orcrFile)
+                or_cr_url = await uploadRiderDoc(userId, orcrFile, "orcr");
+              if (selfieFile)
+                selfie_url = await uploadRiderDoc(userId, selfieFile, "selfie");
+              if (vehicleFile)
+                vehicle_url = await uploadRiderDoc(
+                  userId,
+                  vehicleFile,
+                  "vehicle",
+                );
+              if (nbiFile)
+                nbi_url = await uploadRiderDoc(userId, nbiFile, "nbi");
+            } catch (_) {}
+
+            await supabase.from("rider_applications").insert({
+              rider_id: userId,
+              vehicle_type: selectedVehicle,
+              license_url,
+              or_cr_url,
+              selfie_url,
+              vehicle_url,
+              nbi_url,
+              status: "pending",
+            });
+          }
+
+          clearFormDraft(REGISTER_DRAFT_KEY);
+
+          // Ensure rider SUCCESS panel is the only visible Step 5 panel
+          showRiderSuccess();
+          document
+            .getElementById("step-5-rider-success")
+            ?.classList.add("active");
+          document
+            .getElementById("step-5-customer")
+            ?.classList.remove("active");
+          document.getElementById("step-5-rider")?.classList.remove("active");
+
+          const riderTitle = document.querySelector(
+            "#step-5-rider-success .success-title",
+          );
+          const riderMsg = document.querySelector(
+            "#step-5-rider-success .success-message",
+          );
+          if (riderTitle)
+            riderTitle.textContent = "Account created successfully";
+          if (riderMsg) riderMsg.textContent = "Please log in.";
+
+          // Riders should remain visible on the Step 5 pending-approval screen
+          // so they clearly know their account isn't approved yet.
+        } catch (err) {
+          const msg = err?.message || String(err);
+          if (typeof toast === "function") toast(msg, "error");
+          else alert(msg);
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML =
+              originalBtnHtml ||
+              'Submit Application <i class="fa-solid fa-paper-plane"></i>';
+          }
+          __riderSubmitting = false;
+        }
+      }
+
+      // ── Vehicle Selection ──────────────────────────────────────
+      function updateVehicleModelOptions() {
+        const modelSelect = document.getElementById("vehicle_model");
+        if (!modelSelect) return;
+
+        const availableModels = vehicleModelsByType[selectedVehicle] || [];
+        const preservedValue = modelSelect.value;
+
+        modelSelect.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select vehicle model";
+        modelSelect.appendChild(placeholder);
+
+        availableModels.forEach((model) => {
+          const option = document.createElement("option");
+          option.value = model;
+          option.textContent = model;
+          modelSelect.appendChild(option);
+        });
+
+        if (availableModels.includes(preservedValue)) {
+          modelSelect.value = preservedValue;
+        } else if (availableModels.length) {
+          modelSelect.value = availableModels[0];
+        } else {
+          modelSelect.value = "";
+        }
+      }
+
+      function syncVehicleSelectionUI() {
+        document.querySelectorAll(".vehicle-card").forEach((card) => {
+          card.classList.toggle(
+            "selected",
+            card.dataset.vehicle === selectedVehicle,
+          );
+        });
+        updateVehicleModelOptions();
+      }
+
+      function selectVehicle(el, name) {
+        selectedVehicle = name;
+        syncVehicleSelectionUI();
+        saveRegistrationDraft();
+      }
+
+      // ── Password Strength ──────────────────────────────────────
+      function updateStrength(pw) {
+        const bar = document.getElementById("pw-strength");
+        if (!bar) return;
+        bar.style.display = pw.length ? "block" : "none";
+        const segs = [1, 2, 3, 4].map((i) =>
+          document.getElementById("ps-" + i),
+        );
+        const label = document.getElementById("ps-label");
+        let score = 0;
+        if (pw.length >= 6) score++;
+        if (pw.length >= 10) score++;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+
+        const levels = ["", "weak", "fair", "good", "strong"];
+        const labels = ["", "Weak", "Fair", "Good", "Strong"];
+        segs.forEach((s, i) => {
+          s.className =
+            "pw-strength-seg" + (i < score ? " " + levels[score] : "");
+        });
+        if (label) {
+          label.className = "pw-strength-label " + (levels[score] || "");
+          label.textContent = labels[score] || "";
+        }
+      }
+
+      // ── Password Toggle ────────────────────────────────────────
+      function togglePw(id, btn) {
+        const input = document.getElementById(id);
+        const icon = btn.querySelector("i");
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        icon.className = show ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      }
+
+      // ── File Upload Handling ───────────────────────────────────
+      function triggerFileInput(inputId) {
+        const input = document.getElementById(inputId);
+        if (input) {
+          input.value = "";
+          input.click();
+        }
+      }
+
+      function handleFileSelect(input, zoneId, previewId) {
+        const file = input.files[0];
+        if (!file) return;
+        const zone = document.getElementById(zoneId);
+        const prev = document.getElementById(previewId);
+        zone.classList.add("has-file");
+        const icon = zone.querySelector(".upload-icon i");
+        if (file.type.startsWith("image/") && prev) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            prev.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+          if (icon) icon.className = "fa-solid fa-image";
+        } else {
+          if (icon) icon.className = "fa-solid fa-file-pdf";
+        }
+        const label = zone.querySelector(".upload-hint");
+        if (label)
+          label.textContent =
+            file.name.length > 24 ? `${file.name.slice(0, 21)}…` : file.name;
+      }
+
+      function handleDragOver(e, zone) {
+        e.preventDefault();
+        zone.classList.add("dragging");
+      }
+      function handleDragLeave(zone) {
+        zone.classList.remove("dragging");
+      }
+      function handleDrop(e, zone, inputId) {
+        e.preventDefault();
+        zone.classList.remove("dragging");
+        const input = document.getElementById(inputId);
+        const file = e.dataTransfer.files[0];
+        if (!file || !input) return;
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event("change"));
+      }
+
+      function saveRegistrationDraft() {
+        const form = document.querySelector(".form-panel");
+        saveFormDraft(REGISTER_DRAFT_KEY, form, {
+          currentStep,
+          selectedRole,
+          selectedVehicle,
+        });
+      }
+
+      function restoreRegistrationDraft() {
+        const form = document.querySelector(".form-panel");
+        const draft = restoreFormDraft(REGISTER_DRAFT_KEY, form, {
+          currentStep: 0,
+          selectedRole: "customer",
+          selectedVehicle: "Motorcycle",
+        });
+        if (!draft) return;
+
+        if (draft.currentStep !== undefined)
+          currentStep = Number(draft.currentStep) || 0;
+        if (currentStep === 3) currentStep = 4;
+        if (draft.selectedRole) selectedRole = draft.selectedRole;
+        if (draft.selectedVehicle) selectedVehicle = draft.selectedVehicle;
+
+        syncVehicleSelectionUI();
+
+        const roleInput = document.querySelector(
+          `input[name="role"][value="${selectedRole}"]`,
+        );
+        if (roleInput) roleInput.checked = true;
+
+        if (draft.currentStep >= 99) {
+          showRiderSuccess();
+          return;
+        }
+
+        selectRole(selectedRole);
+        if (currentStep > 0) {
+          goToStep(currentStep);
+        } else {
+          goToStep(0);
+        }
+      }
+
+      // ── Init ───────────────────────────────────────────────────
+      (function init() {
+        // Phone mask
+        const phoneInput = document.getElementById("phone");
+        if (phoneInput && typeof IMask !== "undefined") {
+          IMask(phoneInput, { mask: "0000 000 0000".replace(/ /g, "") });
+        }
+
+        // Full name mask
+        const nameInput = document.getElementById("full_name");
+        if (nameInput && typeof IMask !== "undefined") {
+          IMask(nameInput, { mask: /^[a-zA-ZÀ-ÖØ-öø-ÿ .'"-]{0,60}$/ });
+        }
+
+        document.addEventListener("input", saveRegistrationDraft, true);
+        document.addEventListener("change", saveRegistrationDraft, true);
+
+        // Fresh start: when arriving at register.html (no query params),
+        // clear any persisted wizard state so users never land on the last step/pending UI.
+        const hasExplicitRole = new URLSearchParams(window.location.search).has(
+          "role",
+        );
+        if (!hasExplicitRole) {
+          try {
+            localStorage.removeItem(REGISTER_DRAFT_KEY);
+          } catch (_) {}
+        }
+
+        const urlRole = new URLSearchParams(window.location.search).get("role");
+        if (urlRole === "rider") {
+          selectedRole = "rider";
+        }
+
+        restoreRegistrationDraft();
+      })();
+    </script>
+  </body>
+</html>

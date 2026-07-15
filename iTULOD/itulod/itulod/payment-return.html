@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment status — iTULOD</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:440px;text-align:center;padding:40px 32px">
+    <div id="return-icon" style="font-size:2.5rem;margin-bottom:16px;color:var(--blue)"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+    <h2 id="return-title" style="margin-bottom:8px">Checking your payment…</h2>
+    <p id="return-sub" style="color:var(--slate-500);margin-bottom:24px">This only takes a moment.</p>
+    <a href="customer/dashboard.html" class="btn btn-primary btn-block">Back to dashboard</a>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/utils.js"></script>
+<script>
+(async function () {
+  const params = new URLSearchParams(location.search);
+  const type = params.get('type');
+  const id = params.get('id');
+  const result = params.get('result'); // success | failed | 3ds
+  const table = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' }[type];
+
+  const iconEl = document.getElementById('return-icon');
+  const titleEl = document.getElementById('return-title');
+  const subEl = document.getElementById('return-sub');
+
+  function show(icon, color, title, sub) {
+    iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+    iconEl.style.color = color;
+    titleEl.textContent = title;
+    subEl.textContent = sub;
+  }
+
+  if (!table || !id) {
+    show('fa-triangle-exclamation', 'var(--orange)', 'Something looks off', 'This payment link is missing some details.');
+    return;
+  }
+  if (result === 'failed') {
+    show('fa-circle-xmark', '#EF4444', 'Payment did not go through', 'You can retry from Booking history in your dashboard.');
+    return;
+  }
+
+  // The webhook function is the source of truth, and it can take a few
+  // seconds to arrive after PayMongo redirects the shopper back here — so
+  // poll briefly before giving up and asking them to check history instead.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) { show('fa-triangle-exclamation', 'var(--orange)', 'Please log in', 'Log in, then check Booking history for your payment status.'); return; }
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { data } = await supabase.from(table).select('payment_status').eq('id', id).single();
+    if (data?.payment_status === 'paid') {
+      show('fa-circle-check', 'var(--green)', 'Payment successful!', 'Your booking is confirmed. See you soon!');
+      return;
+    }
+    if (data?.payment_status === 'failed') {
+      show('fa-circle-xmark', '#EF4444', 'Payment did not go through', 'You can retry from Booking history in your dashboard.');
+      return;
+    }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  show('fa-clock', 'var(--slate-500)', 'Still confirming…', "This can take a minute. Check Booking history shortly — we'll update it as soon as PayMongo confirms.");
+})();
+</script>
+</body>
+</html>

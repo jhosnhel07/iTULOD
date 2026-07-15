@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Dashboard — iTULOD</title>
+    <meta
+      name="description"
+      content="Book rides, food delivery, and parcel delivery with iTULOD."
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.css"
+    />
+    <style>
+      #tracking-map,
+      #food-map,
+      #parcel-map {
+        width: 100%;
+        height: 420px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- =================== SIDEBAR =================== -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <a href="../index.html" class="brand"
+            >iTULOD<span class="dot">.</span></a
+          >
+        </div>
+
+        <nav class="side-nav">
+          <button class="side-link active" data-tab="book-ride">
+            <i class="fa-solid fa-car"></i> Book a ride
+          </button>
+          <button class="side-link" data-tab="book-food">
+            <i class="fa-solid fa-utensils"></i> Food delivery
+          </button>
+          <button class="side-link" data-tab="book-parcel">
+            <i class="fa-solid fa-box"></i> Parcel delivery
+          </button>
+          <button class="side-link" data-tab="history">
+            <i class="fa-solid fa-clock-rotate-left"></i> Booking history
+          </button>
+          <button class="side-link" data-tab="notifications">
+            <i class="fa-solid fa-bell"></i> Notifications
+            <span
+              id="notif-count"
+              class="badge badge--danger"
+              style="display: none; margin-left: auto"
+            ></span>
+          </button>
+          <button class="side-link" data-tab="profile">
+            <i class="fa-solid fa-user"></i> Profile
+          </button>
+        </nav>
+
+        <div class="side-foot">
+          <div class="user-chip">
+            <div
+              class="avatar"
+              id="side-avatar"
+              style="background: var(--orange)"
+            >
+              ?
+            </div>
+            <div class="chip-text">
+              <strong id="side-name">Loading…</strong>
+              <span id="side-role">customer</span>
+            </div>
+            <span class="badge badge--role-customer" style="margin-left: auto"
+              >Customer</span
+            >
+          </div>
+          <button class="side-link logout-btn" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Log out
+          </button>
+        </div>
+      </aside>
+
+      <!-- =================== MAIN =================== -->
+      <main class="main">
+        <div class="mobile-topbar">
+          <button
+            onclick="
+              document.getElementById('sidebar').classList.toggle('open')
+            "
+          >
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <span class="brand" style="font-size: 1.1rem; color: var(--blue)">
+            iTULOD<span class="dot">.</span>
+          </span>
+          <span></span>
+        </div>
+
+        <div class="page-head">
+          <div>
+            <h1 id="page-title">Book a ride</h1>
+            <p id="page-sub">Choose your pickup, destination, and vehicle.</p>
+          </div>
+        </div>
+
+        <!-- ===================== BOOK RIDE ===================== -->
+        <section class="tab-panel active" id="tab-book-ride">
+          <div class="grid-2">
+            <!-- Form -->
+            <div class="card">
+              <div class="card-head"><h3>Trip details</h3></div>
+              <form id="ride-form">
+                <div class="field">
+                  <label>Pickup location</label>
+                  <input
+                    type="text"
+                    id="ride-pickup"
+                    placeholder="e.g. Laoag City Hall, Laoag"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label>Destination</label>
+                  <input
+                    type="text"
+                    id="ride-destination"
+                    placeholder="e.g. Batac Public Market, Batac"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label>Vehicle type</label>
+                  <select id="ride-vehicle" required></select>
+                </div>
+
+                <!-- Fare estimate card with blue left-border accent -->
+                <div class="fare-estimate-card">
+                  <div class="fare-row">
+                    <span>Estimated distance</span>
+                    <span id="ride-distance">—</span>
+                  </div>
+                  <div class="fare-row">
+                    <span>Estimated fare</span>
+                    <strong id="ride-fare">₱0.00</strong>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Payment method</label>
+                  <select id="ride-payment">
+                    <option value="cash">Cash</option>
+                    <option value="gcash">GCash</option>
+                    <option value="card">Credit/Debit Card</option>
+                  </select>
+                </div>
+                <button
+                  class="btn btn-primary btn-block"
+                  id="ride-submit"
+                  type="submit"
+                >
+                  <i class="fa-solid fa-check"></i> Confirm booking
+                </button>
+              </form>
+            </div>
+
+            <!-- Map + step indicator -->
+            <div class="card">
+              <div class="card-head"><h3>Live status</h3></div>
+
+              <!-- Step indicator -->
+              <div class="map-step-indicator">
+                <button
+                  type="button"
+                  class="map-step active"
+                  id="map-mode-pickup"
+                  onclick="setMapMode('pickup')"
+                >
+                  <span class="step-num">1</span>
+                  <span
+                    ><i class="fa-solid fa-location-dot"></i> Set Pickup</span
+                  >
+                </button>
+                <button
+                  type="button"
+                  class="map-step"
+                  id="map-mode-dropoff"
+                  onclick="setMapMode('dropoff')"
+                >
+                  <span class="step-num">2</span>
+                  <span
+                    ><i class="fa-solid fa-flag-checkered"></i> Set
+                    Drop-off</span
+                  >
+                </button>
+              </div>
+
+              <p
+                id="map-mode-hint"
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-bottom: 10px;
+                "
+              >
+                <i class="fa-solid fa-circle-info"></i> Click on the map to set
+                your pickup location.
+              </p>
+              <div id="tracking-map"></div>
+              <div id="ride-active-status" style="margin-top: 16px"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== FOOD DELIVERY ===================== -->
+        <section class="tab-panel" id="tab-book-food">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Food delivery request</h3></div>
+              <form id="food-form">
+                <div class="field">
+                  <label>Restaurant / store name</label>
+                  <input
+                    type="text"
+                    id="food-restaurant"
+                    required
+                    placeholder="e.g. Herencia Cafe, Laoag"
+                  />
+                </div>
+                <div class="field">
+                  <label>Pickup location</label>
+                  <input
+                    type="text"
+                    id="food-pickup"
+                    required
+                    placeholder="e.g. Rizal St., Laoag City"
+                  />
+                </div>
+                <div class="field">
+                  <label>Delivery address</label>
+                  <input
+                    type="text"
+                    id="food-address"
+                    required
+                    placeholder="e.g. Brgy. 1, Sarrat, Ilocos Norte"
+                  />
+                </div>
+                <div class="field">
+                  <label>Delivery instructions</label>
+                  <textarea
+                    id="food-instructions"
+                    rows="3"
+                    placeholder="e.g. Leave at the gate, call upon arrival"
+                  ></textarea>
+                </div>
+                <div class="field">
+                  <label>Vehicle type</label>
+                  <select id="food-vehicle" required></select>
+                </div>
+
+                <div class="fare-estimate-card">
+                  <div class="fare-row">
+                    <span>Estimated distance</span>
+                    <span id="food-distance">—</span>
+                  </div>
+                  <div class="fare-row">
+                    <span>Estimated fare</span>
+                    <strong id="food-fare">₱0.00</strong>
+                  </div>
+                </div>
+
+                <button
+                  class="btn btn-primary btn-block"
+                  id="food-submit"
+                  type="submit"
+                >
+                  <i class="fa-solid fa-check"></i> Request delivery
+                </button>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h3>Live status</h3></div>
+              <div class="map-step-indicator">
+                <button
+                  type="button"
+                  class="map-step active"
+                  id="food-map-mode-pickup"
+                  onclick="setMapMode('pickup', 'food')"
+                >
+                  <span class="step-num">1</span>
+                  <span
+                    ><i class="fa-solid fa-location-dot"></i> Set Pickup</span
+                  >
+                </button>
+                <button
+                  type="button"
+                  class="map-step"
+                  id="food-map-mode-dropoff"
+                  onclick="setMapMode('dropoff', 'food')"
+                >
+                  <span class="step-num">2</span>
+                  <span
+                    ><i class="fa-solid fa-flag-checkered"></i> Set
+                    Drop-off</span
+                  >
+                </button>
+              </div>
+              <p
+                id="food-map-mode-hint"
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-bottom: 10px;
+                "
+              >
+                <i class="fa-solid fa-circle-info"></i> Click on the map to set
+                pickup location.
+              </p>
+              <div id="food-map"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== PARCEL DELIVERY ===================== -->
+        <section class="tab-panel" id="tab-book-parcel">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Parcel delivery request</h3></div>
+              <form id="parcel-form">
+                <div class="field-row">
+                  <div class="field">
+                    <label>Sender name</label>
+                    <input type="text" id="parcel-sender-name" required />
+                  </div>
+                  <div class="field">
+                    <label>Sender phone</label>
+                    <input type="tel" id="parcel-sender-phone" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Sender address (pickup)</label>
+                  <input
+                    type="text"
+                    id="parcel-sender-address"
+                    required
+                    placeholder="e.g. Brgy. San Lorenzo, Laoag City"
+                  />
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label>Receiver name</label>
+                    <input type="text" id="parcel-receiver-name" required />
+                  </div>
+                  <div class="field">
+                    <label>Receiver phone</label>
+                    <input type="tel" id="parcel-receiver-phone" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Receiver address (drop-off)</label>
+                  <input
+                    type="text"
+                    id="parcel-receiver-address"
+                    required
+                    placeholder="e.g. Brgy. Poblacion, Pagudpud, Ilocos Norte"
+                  />
+                </div>
+
+                <!-- Parcel size radio cards -->
+                <div class="field">
+                  <label>Parcel size</label>
+                  <div class="size-chip-row">
+                    <div class="size-chip">
+                      <input
+                        type="radio"
+                        name="parcel-size"
+                        id="size-small"
+                        value="Small (fits a shoebox)"
+                        checked
+                      />
+                      <label for="size-small">
+                        <i class="fa-solid fa-cube"></i>
+                        Small
+                        <small>Fits a shoebox</small>
+                      </label>
+                    </div>
+                    <div class="size-chip">
+                      <input
+                        type="radio"
+                        name="parcel-size"
+                        id="size-medium"
+                        value="Medium (fits a backpack)"
+                      />
+                      <label for="size-medium">
+                        <i class="fa-solid fa-box"></i>
+                        Medium
+                        <small>Fits a backpack</small>
+                      </label>
+                    </div>
+                    <div class="size-chip">
+                      <input
+                        type="radio"
+                        name="parcel-size"
+                        id="size-large"
+                        value="Large (needs two hands)"
+                      />
+                      <label for="size-large">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        Large
+                        <small>Needs two hands</small>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Parcel weight (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    id="parcel-weight"
+                    placeholder="e.g. 2.5"
+                  />
+                </div>
+                <div class="field">
+                  <label>Parcel description</label>
+                  <input
+                    type="text"
+                    id="parcel-description"
+                    placeholder="e.g. Documents, clothes, electronics"
+                  />
+                </div>
+                <div class="field">
+                  <label>Delivery instructions</label>
+                  <textarea id="parcel-instructions" rows="2"></textarea>
+                </div>
+                <div class="field">
+                  <label>Vehicle type</label>
+                  <select id="parcel-vehicle" required></select>
+                </div>
+
+                <div class="fare-estimate-card">
+                  <div class="fare-row">
+                    <span>Estimated distance</span>
+                    <span id="parcel-distance">—</span>
+                  </div>
+                  <div class="fare-row">
+                    <span>Estimated fare</span>
+                    <strong id="parcel-fare">₱0.00</strong>
+                  </div>
+                </div>
+
+                <button
+                  class="btn btn-primary btn-block"
+                  id="parcel-submit"
+                  type="submit"
+                >
+                  <i class="fa-solid fa-check"></i> Send parcel
+                </button>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h3>Live status</h3></div>
+              <div class="map-step-indicator">
+                <button
+                  type="button"
+                  class="map-step active"
+                  id="parcel-map-mode-pickup"
+                  onclick="setMapMode('pickup', 'parcel')"
+                >
+                  <span class="step-num">1</span>
+                  <span
+                    ><i class="fa-solid fa-location-dot"></i> Set Pickup</span
+                  >
+                </button>
+                <button
+                  type="button"
+                  class="map-step"
+                  id="parcel-map-mode-dropoff"
+                  onclick="setMapMode('dropoff', 'parcel')"
+                >
+                  <span class="step-num">2</span>
+                  <span
+                    ><i class="fa-solid fa-flag-checkered"></i> Set
+                    Drop-off</span
+                  >
+                </button>
+              </div>
+              <p
+                id="parcel-map-mode-hint"
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  margin-bottom: 10px;
+                "
+              >
+                <i class="fa-solid fa-circle-info"></i> Click on the map to set
+                pickup location.
+              </p>
+              <div id="parcel-map"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== HISTORY ===================== -->
+        <section class="tab-panel" id="tab-history">
+          <div class="card" style="margin-bottom: 0">
+            <div class="tab-row" style="margin-bottom: 20px">
+              <button class="tab-btn active" data-history="transport">
+                <i class="fa-solid fa-car" style="margin-right: 6px"></i>Rides
+              </button>
+              <button class="tab-btn" data-history="food">
+                <i class="fa-solid fa-utensils" style="margin-right: 6px"></i
+                >Food
+              </button>
+              <button class="tab-btn" data-history="parcel">
+                <i class="fa-solid fa-box" style="margin-right: 6px"></i>Parcels
+              </button>
+            </div>
+            <div id="history-list"></div>
+            <div class="pagination" id="history-pagination"></div>
+          </div>
+
+          <!-- Booking details modal (for history card click) -->
+          <div
+            class="modal-overlay"
+            id="booking-details-modal-overlay"
+            aria-hidden="true"
+            onclick="closeBookingDetails()"
+            style="display: none"
+          >
+            <div
+              class="modal modal--wide"
+              id="booking-details-modal"
+              onclick="event.stopPropagation()"
+            >
+              <div class="modal-head">
+                <h3>Booking details</h3>
+                <button class="modal-close" onclick="closeBookingDetails()">
+                  &times;
+                </button>
+              </div>
+              <div class="modal-body" id="booking-details-body"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== NOTIFICATIONS ===================== -->
+        <section class="tab-panel" id="tab-notifications">
+          <div class="card">
+            <div class="card-head">
+              <h3>Notifications</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted)"
+                >Most recent first</span
+              >
+            </div>
+            <div id="notif-list">
+              <div class="empty-state">
+                <i class="fa-regular fa-bell"></i>
+                <h4>No notifications yet</h4>
+                <p>You'll see booking updates and announcements here.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== PROFILE ===================== -->
+        <section class="tab-panel" id="tab-profile">
+          <div class="card" style="max-width: 560px">
+            <div class="card-head"><h3>Edit profile</h3></div>
+            <div class="avatar-upload">
+              <div class="preview" id="profile-avatar-preview">
+                ?
+                <div class="overlay"><i class="fa-solid fa-camera"></i></div>
+              </div>
+              <div class="upload-info">
+                <input
+                  type="file"
+                  id="profile-avatar-file"
+                  accept="image/*"
+                  style="font-size: 0.82rem"
+                />
+                <small>JPG or PNG. Square images look best.</small>
+              </div>
+            </div>
+
+            <form id="profile-form">
+              <div class="field">
+                <label>Full name</label>
+                <input type="text" id="profile-name" required />
+              </div>
+              <div class="field">
+                <label>Phone number</label>
+                <input type="tel" id="profile-phone" />
+              </div>
+              <div class="field" style="margin-bottom: 24px">
+                <label>Email</label>
+                <input type="email" id="profile-email" disabled />
+              </div>
+              <button
+                class="btn btn-primary"
+                id="profile-submit"
+                type="submit"
+                style="width: 100%"
+              >
+                <i class="fa-solid fa-floppy-disk"></i> Save changes
+              </button>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- rating modal -->
+    <div class="modal-overlay" id="rate-modal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Rate your rider</h3>
+          <button class="modal-close" onclick="closeRateModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p
+            style="
+              font-size: 0.85rem;
+              color: var(--text-muted);
+              margin-bottom: 14px;
+            "
+          >
+            How was your experience?
+          </p>
+          <div class="star-input" id="star-input">
+            <i class="fa-solid fa-star" data-val="1"></i>
+            <i class="fa-solid fa-star" data-val="2"></i>
+            <i class="fa-solid fa-star" data-val="3"></i>
+            <i class="fa-solid fa-star" data-val="4"></i>
+            <i class="fa-solid fa-star" data-val="5"></i>
+          </div>
+          <div class="field">
+            <label>Comment (optional)</label>
+            <textarea
+              id="rate-comment"
+              rows="3"
+              placeholder="Share your experience…"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button
+            class="btn btn-outline-gray btn-sm"
+            onclick="closeRateModal()"
+          >
+            Cancel
+          </button>
+          <button class="btn btn-primary btn-sm" id="submit-rating">
+            <i class="fa-solid fa-paper-plane"></i> Submit rating
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- card payment modal -->
+    <div class="modal-overlay" id="card-modal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Pay by card</h3>
+          <button class="modal-close" id="card-modal-cancel">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+              margin-bottom: 16px;
+            "
+          >
+            Card details are sent straight to PayMongo — iTULOD never stores or
+            sees your card number.
+          </p>
+          <form id="card-form">
+            <div class="field">
+              <label>Name on card</label>
+              <input
+                type="text"
+                id="card-name"
+                autocomplete="cc-name"
+                required
+              />
+            </div>
+            <div class="field">
+              <label>Card number</label>
+              <input
+                type="text"
+                id="card-number"
+                inputmode="numeric"
+                placeholder="4343 4343 4343 4345"
+                autocomplete="cc-number"
+                required
+              />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Exp. month</label>
+                <input
+                  type="text"
+                  id="card-exp-month"
+                  inputmode="numeric"
+                  placeholder="MM"
+                  maxlength="2"
+                  autocomplete="cc-exp-month"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label>Exp. year</label>
+                <input
+                  type="text"
+                  id="card-exp-year"
+                  inputmode="numeric"
+                  placeholder="YYYY"
+                  maxlength="4"
+                  autocomplete="cc-exp-year"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label>CVC</label>
+                <input
+                  type="text"
+                  id="card-cvc"
+                  inputmode="numeric"
+                  maxlength="4"
+                  autocomplete="cc-csc"
+                  required
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-foot">
+          <button
+            class="btn btn-outline-gray btn-sm"
+            id="card-modal-cancel-2"
+            onclick="document.getElementById('card-modal-cancel').click()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary btn-sm"
+            id="card-submit"
+            type="submit"
+            form="card-form"
+          >
+            <i class="fa-solid fa-lock"></i> Pay now
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabaseClient.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/payment.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js"></script>
+    <script src="../js/map.js"></script>
+    <script>
+      // Read parcel size from radio cards
+      function getParcelSize() {
+        const checked = document.querySelector(
+          'input[name="parcel-size"]:checked',
+        );
+        return checked ? checked.value : "Small (fits a shoebox)";
+      }
+    </script>
+    <script src="../js/bookingDetails.js"></script>
+    <script src="../js/customer.js"></script>
+  </body>
+</html>

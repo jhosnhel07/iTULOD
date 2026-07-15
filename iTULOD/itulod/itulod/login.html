@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log In — iTULOD | Ilocos Transport, Delivery & Logistics</title>
+    <meta
+      name="description"
+      content="Sign in to iTULOD the Ilocos region's all-in-one platform for ride booking, food delivery, parcel sending, and logistics."
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/main.css" />
+    <style>
+      /* ============================================================
+         LOGIN PAGE — Premium Redesign
+         ============================================================ */
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+        background: #f8fafc;
+        color: #0f172a;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── Layout ─────────────────────────────────────────────────── */
+      .auth-page {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 45% 55%;
+      }
+
+      /* ── Left Branding Panel ─────────────────────────────────────── */
+      .brand-panel {
+        background: linear-gradient(
+          145deg,
+          #1e40af 0%,
+          #2563eb 40%,
+          #3b82f6 75%,
+          #60a5fa 100%
+        );
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 44px 48px 44px;
+        overflow: hidden;
+        min-height: 100vh;
+      }
+
+      /* Background decorative blobs */
+      .brand-panel::before {
+        content: "";
+        position: absolute;
+        top: -120px;
+        right: -120px;
+        width: 400px;
+        height: 400px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        pointer-events: none;
+      }
+      .brand-panel::after {
+        content: "";
+        position: absolute;
+        bottom: -80px;
+        left: -80px;
+        width: 350px;
+        height: 350px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        pointer-events: none;
+      }
+
+      /* Floating orbs */
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        animation: floatOrb 8s ease-in-out infinite;
+        pointer-events: none;
+      }
+      .orb-1 {
+        width: 180px;
+        height: 180px;
+        top: 30%;
+        left: -40px;
+        animation-delay: 0s;
+      }
+      .orb-2 {
+        width: 100px;
+        height: 100px;
+        top: 55%;
+        right: 20px;
+        animation-delay: 2s;
+      }
+      .orb-3 {
+        width: 60px;
+        height: 60px;
+        top: 15%;
+        right: 60px;
+        animation-delay: 4s;
+      }
+
+      @keyframes floatOrb {
+        0%,
+        100% {
+          transform: translateY(0px) scale(1);
+        }
+        50% {
+          transform: translateY(-20px) scale(1.05);
+        }
+      }
+
+      /* Logo */
+      .bp-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        z-index: 2;
+        position: relative;
+      }
+      .bp-logo img {
+        width: 52px;
+        height: 52px;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+      }
+      .bp-logo-text {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: #fff;
+        letter-spacing: -0.5px;
+      }
+      .bp-logo-text span {
+        color: #f97316;
+      }
+
+      /* Body of branding panel */
+      .bp-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 2;
+        position: relative;
+        margin: 32px 0;
+      }
+
+      .bp-tagline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 6px 14px;
+        border-radius: 999px;
+        margin-bottom: 22px;
+        width: fit-content;
+      }
+      .bp-tagline i {
+        color: #f97316;
+      }
+
+      .bp-headline {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+        color: #fff;
+        line-height: 1.2;
+        margin-bottom: 16px;
+        max-width: 22ch;
+      }
+
+      .bp-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        max-width: 36ch;
+        margin-bottom: 36px;
+      }
+
+      /* Service pill badges */
+      .bp-services {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 36px;
+      }
+      .bp-service-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 7px 14px;
+        border-radius: 999px;
+        transition:
+          background 0.2s,
+          transform 0.2s;
+        animation: floatOrb 7s ease-in-out infinite;
+      }
+      .bp-service-pill:nth-child(2) {
+        animation-delay: 1s;
+      }
+      .bp-service-pill:nth-child(3) {
+        animation-delay: 2s;
+      }
+      .bp-service-pill:nth-child(4) {
+        animation-delay: 3s;
+      }
+      .bp-service-pill i {
+        color: #f97316;
+        font-size: 0.85rem;
+      }
+
+      /* Stats grid */
+      .bp-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        z-index: 2;
+        position: relative;
+      }
+      .bp-stat-card {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 18px;
+        padding: 18px 20px;
+        transition:
+          transform 0.25s ease,
+          background 0.25s;
+      }
+      .bp-stat-card:hover {
+        transform: translateY(-3px);
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .bp-stat-icon {
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .bp-stat-value {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: #fff;
+        display: block;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .bp-stat-label {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.78rem;
+        font-weight: 500;
+      }
+
+      /* ── Right Form Panel ─────────────────────────────────────────── */
+      .form-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 48px;
+        background: #f8fafc;
+        position: relative;
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 460px;
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow:
+          0 4px 6px rgba(15, 23, 42, 0.04),
+          0 20px 60px rgba(15, 23, 42, 0.1),
+          0 0 0 1px rgba(15, 23, 42, 0.04);
+        padding: 48px 44px;
+        animation: cardEntry 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+
+      @keyframes cardEntry {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Card logo at top (mobile or desktop) */
+      .card-logo-row {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 28px;
+        text-decoration: none;
+      }
+      .card-logo-row img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+      }
+      .card-logo-row span {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: #0f172a;
+      }
+      .card-logo-row span em {
+        color: #f97316;
+        font-style: normal;
+      }
+
+      .card-title {
+        font-family: "Poppins", sans-serif;
+        font-weight: 800;
+        font-size: 1.75rem;
+        color: #0f172a;
+        margin: 0 0 6px;
+      }
+      .card-sub {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin: 0 0 32px;
+      }
+
+      /* Input groups */
+      .input-group {
+        margin-bottom: 20px;
+      }
+      .input-group label {
+        display: block;
+        font-size: 0.83rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        letter-spacing: 0.01em;
+      }
+      .input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .input-icon {
+        position: absolute;
+        left: 14px;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        pointer-events: none;
+        transition: color 0.2s;
+        z-index: 1;
+      }
+      .input-wrap input {
+        width: 100%;
+        padding: 13px 14px 13px 42px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 12px;
+        font-family: "Inter", sans-serif;
+        font-size: 0.95rem;
+        color: #0f172a;
+        background: #f8fafc;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+        outline: none;
+      }
+      .input-wrap input:focus {
+        border-color: #2563eb;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .input-wrap input:focus + .input-icon,
+      .input-wrap:focus-within .input-icon {
+        color: #2563eb;
+      }
+      .input-wrap input::placeholder {
+        color: #cbd5e1;
+      }
+      .pw-toggle-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        padding: 4px;
+        border-radius: 6px;
+        transition:
+          color 0.2s,
+          background 0.2s;
+        z-index: 1;
+      }
+      .pw-toggle-btn:hover {
+        color: #2563eb;
+        background: #eff4ff;
+      }
+
+      /* Remember / Forgot row */
+      .remember-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        gap: 12px;
+      }
+      .remember-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: #64748b;
+        cursor: pointer;
+        user-select: none;
+      }
+      .remember-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #2563eb;
+        cursor: pointer;
+      }
+      .forgot-link {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #2563eb;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .forgot-link:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+      }
+
+      /* Login button */
+      .login-btn {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        border: none;
+        border-radius: 14px;
+        font-family: "Poppins", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .login-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.15) 0%,
+          transparent 100%
+        );
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+      }
+      .login-btn:hover::before {
+        opacity: 1;
+      }
+      .login-btn:active {
+        transform: translateY(0);
+      }
+      .login-btn:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* Divider */
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 24px 0;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        font-weight: 500;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #e5e7eb;
+      }
+
+      /* Register link */
+      .register-link {
+        text-align: center;
+        font-size: 0.88rem;
+        color: #64748b;
+        margin-top: 8px;
+      }
+      .register-link a {
+        color: #2563eb;
+        font-weight: 700;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .register-link a:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+      }
+
+      /* Back to home */
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition:
+          color 0.2s,
+          gap 0.2s;
+        z-index: 2;
+        position: relative;
+      }
+      .back-link:hover {
+        color: #fff;
+        gap: 10px;
+      }
+
+      /* ── Responsive ────────────────────────────────────────────── */
+      @media (max-width: 900px) {
+        .auth-page {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr;
+        }
+        .brand-panel {
+          min-height: auto;
+          padding: 32px 28px;
+        }
+        .bp-body {
+          margin: 24px 0;
+        }
+        .bp-headline {
+          font-size: 1.3rem;
+        }
+        .bp-stats {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+        .bp-stat-card {
+          padding: 14px 12px;
+        }
+        .bp-stat-value {
+          font-size: 1.1rem;
+        }
+        .form-panel {
+          padding: 32px 20px;
+        }
+        .login-card {
+          padding: 36px 28px;
+          border-radius: 20px;
+        }
+        .card-logo-row {
+          display: flex;
+        }
+      }
+      @media (max-width: 600px) {
+        .brand-panel {
+          padding: 24px 20px;
+        }
+        .bp-stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        .form-panel {
+          padding: 24px 16px;
+        }
+        .login-card {
+          padding: 28px 20px;
+          border-radius: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-page">
+      <!-- ═══════════════ LEFT BRANDING PANEL ═══════════════ -->
+      <aside class="brand-panel">
+        <!-- Floating decorative orbs -->
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+
+        <!-- Logo -->
+        <a href="index.html" class="bp-logo">
+          <img
+            src="assets/logo.png"
+            alt="iTULOD logo"
+            onerror="this.style.display = 'none'"
+          />
+          <span class="bp-logo-text">iTULOD<span>.</span></span>
+        </a>
+
+        <!-- Main content -->
+        <div class="bp-body">
+          <div class="bp-tagline">
+            <i class="fa-solid fa-location-dot"></i>
+            Ilocos Region's #1 Platform
+          </div>
+
+          <h1 class="bp-headline">
+            Ilocos Transport Utility and Logistics Operation for Delivery
+          </h1>
+
+          <p class="bp-subtitle">
+            Book rides, order food, send parcels, and track everything in real
+            time all in one trusted platform.
+          </p>
+
+          <div class="bp-services">
+            <div class="bp-service-pill">
+              <i class="fa-solid fa-car"></i> Ride Booking
+            </div>
+            <div class="bp-service-pill">
+              <i class="fa-solid fa-utensils"></i> Food Delivery
+            </div>
+            <div class="bp-service-pill">
+              <i class="fa-solid fa-box"></i> Parcel Delivery
+            </div>
+            <div class="bp-service-pill">
+              <i class="fa-solid fa-truck"></i> Logistics
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats cards -->
+        <div class="bp-stats">
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">⭐</span>
+            <span class="bp-stat-value">4.9</span>
+            <span class="bp-stat-label">Customer Rating</span>
+          </div>
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">🛵</span>
+            <span class="bp-stat-value">800+</span>
+            <span class="bp-stat-label">Active Riders</span>
+          </div>
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">📦</span>
+            <span class="bp-stat-value">15K+</span>
+            <span class="bp-stat-label">Deliveries</span>
+          </div>
+          <div class="bp-stat-card">
+            <span class="bp-stat-icon">🚗</span>
+            <span class="bp-stat-value">2,500+</span>
+            <span class="bp-stat-label">Daily Bookings</span>
+          </div>
+        </div>
+
+        <!-- Back to home (bottom) -->
+        <a href="index.html" class="back-link" style="margin-top: 32px">
+          <i class="fa-solid fa-house"></i> Back to home
+        </a>
+      </aside>
+
+      <!-- ═══════════════ RIGHT FORM PANEL ═══════════════ -->
+      <main class="form-panel">
+        <div class="login-card">
+          <!-- Logo row (only shown on mobile when branding panel is hidden) -->
+          <a href="index.html" class="card-logo-row">
+            <img
+              src="assets/logo.png"
+              alt="iTULOD"
+              onerror="this.style.display = 'none'"
+            />
+            <span>iTULOD<em>.</em></span>
+          </a>
+
+          <h1 class="card-title">Welcome Back</h1>
+          <p class="card-sub">Log in to continue using iTULOD.</p>
+
+          <form id="login-form" novalidate>
+            <!-- Email -->
+            <div class="input-group">
+              <label for="username">Email or Username</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-envelope input-icon"></i>
+                <input
+                  type="text"
+                  id="username"
+                  required
+                  placeholder="you@email.com"
+                  autocomplete="username"
+                />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="input-group">
+              <label for="password">Password</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock input-icon"></i>
+                <input
+                  type="password"
+                  id="password"
+                  required
+                  placeholder="Enter your password"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="pw-toggle-btn"
+                  id="pw-toggle"
+                  aria-label="Toggle password visibility"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember / Forgot -->
+            <div class="remember-row">
+              <label class="remember-label">
+                <input type="checkbox" id="remember" />
+                Remember me
+              </label>
+              <a href="#" id="forgot-link" class="forgot-link"
+                >Forgot password?</a
+              >
+            </div>
+
+            <!-- Login button -->
+            <button type="submit" class="login-btn" id="login-btn">
+              <i class="fa-solid fa-right-to-bracket"></i>
+              Log In
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="divider">or continue with</div>
+
+          <!-- Register link -->
+          <p class="register-link">
+            Don't have an account? <a href="register.html">Create one</a>
+          </p>
+        </div>
+      </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabaseClient.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      // Password toggle
+      const pwToggle = document.getElementById("pw-toggle");
+      pwToggle?.addEventListener("click", () => {
+        const input = document.getElementById("password");
+        const icon = pwToggle.querySelector("i");
+        const isHidden = input.type === "password";
+        input.type = isHidden ? "text" : "password";
+        icon.className = isHidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      });
+    </script>
+  </body>
+</html>
