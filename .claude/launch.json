@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "itulod-static",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve@14", "itulod/itulod", "-l", "4173", "--no-clipboard"],
+      "port": 4173
+    }
+  ]
+}

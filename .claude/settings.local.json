@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check js/payment.js)",
+      "WebFetch(domain:supabase.com)",
+      "WebSearch",
+      "Bash(npx --yes supabase@latest init)",
+      "Bash(npx --yes supabase@latest projects list)",
+      "Bash(npx --yes supabase@latest functions list --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(npx --yes esbuild@0.24.0 supabase/functions/_shared/helpers.ts --loader=ts --outfile=/dev/null)",
+      "Bash(npx --yes esbuild@0.24.0 supabase/functions/create-payment/index.ts --outfile=/tmp/eb2.js)",
+      "Bash(sed -n '/Deno.serve/,$p' supabase/functions/create-payment/index.ts)",
+      "Bash(sed -n '/Deno.serve/,$p' supabase/dashboard-deploy/create-payment.ts)",
+      "Read(//tmp/**)",
+      "Bash(npx --yes supabase@latest functions deploy create-payment --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(npx --yes supabase@latest functions deploy paymongo-webhook --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(npx --yes supabase@latest secrets set PAYMONGO_SECRET_KEY=sk_test_aLaZX3jFpngxP6bBW47rkbpd SITE_URL=http://localhost:3000 --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(npx --yes supabase@latest secrets list --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(curl -s -o /dev/null -D - -X OPTIONS \"https://ajzlvrvqpggnnwerahhq.supabase.co/functions/v1/create-payment\" -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: authorization,content-type\" --max-time 25)",
+      "Bash(curl -s -X POST \"https://ajzlvrvqpggnnwerahhq.supabase.co/functions/v1/create-payment\" -H \"Content-Type: application/json\" -d '{}' --max-time 25)",
+      "Bash(curl -s -X POST \"https://ajzlvrvqpggnnwerahhq.supabase.co/functions/v1/paymongo-webhook\" -H \"Content-Type: application/json\" -d '{}' --max-time 25)",
+      "Bash(npx --yes supabase@latest secrets set PAYMONGO_SECRET_KEY=sk_test_aLaZX3JFpngxP6bBW47rkbpd --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);a=d.get\\('data',{}\\).get\\('attributes',{}\\);print\\('source id:',d.get\\('data',{}\\).get\\('id'\\)\\);print\\('status  :',a.get\\('status'\\)\\);print\\('amount  :',a.get\\('amount'\\)\\);print\\('checkout:',\\(a.get\\('redirect'\\) or {}\\).get\\('checkout_url'\\)\\);print\\('ERRORS  :',d.get\\('errors'\\)\\)\")",
+      "Bash(base64 -w0)",
+      "Bash(curl -s -X POST \"https://api.paymongo.com/v1/sources\" -H \"Content-Type: application/json\" -H \"Authorization: Basic $\\(cat .authtmp\\)\" -d '{\"data\":{\"attributes\":{\"amount\":10000,\"currency\":\"PHP\",\"type\":\"gcash\",\"redirect\":{\"success\":\"http://localhost:3000/payment-return.html?type=transport&id=test&result=success\",\"failed\":\"http://localhost:3000/payment-return.html?type=transport&id=test&result=failed\"},\"billing\":{\"name\":\"iTULOD preflight check\"}}}}' --max-time 30 -w \"\\\\nhttp=%{http_code}\\\\n\")",
+      "Bash(curl -s -X POST \"https://ajzlvrvqpggnnwerahhq.functions.supabase.co/create-payment\" -H \"Content-Type: application/json\" -d '{}' --max-time 20 -w \"\\\\nhttp=%{http_code}\\\\n\")",
+      "Bash(netstat -ano -p tcp)",
+      "Bash(npx --yes supabase@latest secrets set SITE_URL=http://localhost:5500/itulod/itulod --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(grep -nA6 \"^\\\\.modal-overlay\" css/dashboard.css)",
+      "Bash(rm -rf \"C:/Users/acer/Documents/iTULOD/itulod/itulod/.claude\" && echo removed stray launch.json dir)",
+      "Bash(curl -s -o /dev/null -w \"4173/payment-return.html -> %{http_code}\\\\n\" --max-time 8 \"http://localhost:4173/payment-return.html\")",
+      "Bash(curl -s -o /dev/null -w \"4173/ -> %{http_code}\\\\n\" --max-time 8 \"http://localhost:4173/\")",
+      "Bash(npx --yes supabase@latest secrets set \"PAYMONGO_WEBHOOK_SECRET=$\\(cat .whsecret\\)\" --project-ref ajzlvrvqpggnnwerahhq)",
+      "Bash(node -e ' *)",
+      "Bash(node --check js/bookingDetails.js)"
+    ]
+  }
+}

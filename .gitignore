@@ -1,0 +1,10 @@
+.env
+.env.*
+secrets.env
+**/secrets.env
+config.secrets.js
+**/config.secrets.js
+
+# Supabase CLI local state (created by `supabase init` / `supabase link`)
+**/supabase/.temp/
+**/supabase/.branches/

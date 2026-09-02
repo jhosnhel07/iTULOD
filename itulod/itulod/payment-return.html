@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment receipt — iTULOD</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:440px;width:100%;text-align:center;padding:40px 32px">
+    <div id="return-icon" style="font-size:2.5rem;margin-bottom:16px;color:var(--blue)"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+    <h2 id="return-title" style="margin-bottom:8px">Checking your payment…</h2>
+    <p id="return-sub" style="color:var(--slate-500);margin-bottom:24px">This only takes a moment.</p>
+
+    <!-- Receipt, filled in by the script below once the booking is loaded. -->
+    <dl class="receipt" id="receipt" style="display:none;margin-bottom:24px"></dl>
+
+    <a href="customer/dashboard.html" class="btn btn-primary btn-block">
+      <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+    </a>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/utils.js"></script>
+<script>
+(async function () {
+  const params = new URLSearchParams(location.search);
+  const type = params.get('type');
+  const id = params.get('id');
+  const result = params.get('result'); // success | failed
+  const table = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' }[type];
+
+  const iconEl = document.getElementById('return-icon');
+  const titleEl = document.getElementById('return-title');
+  const subEl = document.getElementById('return-sub');
+  const receiptEl = document.getElementById('receipt');
+
+  function show(icon, color, title, sub) {
+    iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+    iconEl.style.color = color;
+    titleEl.textContent = title;
+    subEl.textContent = sub;
+  }
+
+  // Only transport bookings are charged up front, so only they have a route
+  // worth printing on the receipt.
+  const COLUMNS = 'payment_status, payment_method, paymongo_reference, estimated_fare, created_at'
+    + (type === 'transport' ? ', pickup_address, destination_address' : '');
+
+  async function fetchBooking() {
+    const { data, error } = await supabase.from(table).select(COLUMNS).eq('id', id).single();
+    if (error || !data) return null;
+    return data;
+  }
+
+  const STATUS_LABEL = { paid: 'Paid', failed: 'Failed', pending: 'Awaiting confirmation' };
+  const STATUS_CLASS = { paid: 'badge--completed', failed: 'badge--cancelled', pending: 'badge--pending' };
+
+  function statusCell(status) {
+    return `<span class="badge ${STATUS_CLASS[status] || 'badge--pending'}">${STATUS_LABEL[status] || status}</span>`;
+  }
+
+  function renderReceipt(b) {
+    const rows = [];
+    if (b.paymongo_reference) rows.push(['Reference', escapeHtml(b.paymongo_reference)]);
+    rows.push(['Booking', escapeHtml('#' + id.slice(0, 8))]);
+    if (type === 'transport' && b.pickup_address) {
+      rows.push(['Route', escapeHtml(`${b.pickup_address} → ${b.destination_address}`)]);
+    }
+    rows.push(['Booked', escapeHtml(formatDate(b.created_at))]);
+    rows.push(['Method', b.payment_method === 'gcash' ? 'GCash' : escapeHtml(b.payment_method || '—')]);
+    rows.push(['Status', statusCell(b.payment_status)]);
+
+    receiptEl.innerHTML = rows
+      .map(([label, value]) => `<div class="receipt-row"><dt>${label}</dt><dd>${value}</dd></div>`)
+      .join('')
+      + `<div class="receipt-row receipt-row--total"><dt>Amount</dt><dd>${escapeHtml(peso(b.estimated_fare))}</dd></div>`;
+    receiptEl.style.display = '';
+  }
+
+  function setHeading(status) {
+    if (status === 'paid') {
+      show('fa-circle-check', 'var(--green)', 'Payment successful!', 'Your booking is confirmed. See you soon!');
+    } else if (status === 'failed') {
+      show('fa-circle-xmark', 'var(--red)', 'Payment did not go through', 'You can retry from Booking history in your dashboard.');
+    } else {
+      show('fa-clock', 'var(--slate-500)', 'Still confirming…', "This can take a minute — we'll update your booking history as soon as PayMongo confirms.");
+    }
+  }
+
+  if (!table || !id) {
+    show('fa-triangle-exclamation', 'var(--orange)', 'Something looks off', 'This payment link is missing some details.');
+    return;
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    show('fa-triangle-exclamation', 'var(--orange)', 'Please log in', 'Log in, then check Booking history for your payment status.');
+    return;
+  }
+
+  const booking = await fetchBooking();
+  if (!booking) {
+    show('fa-triangle-exclamation', 'var(--orange)', 'Booking not found', "We couldn't find that booking on your account.");
+    return;
+  }
+
+  // Show the receipt straight away — the customer shouldn't stare at a spinner
+  // while we wait on the webhook to settle the status.
+  renderReceipt(booking);
+
+  // PayMongo bounced them through the "failed" URL, so there is nothing to
+  // wait for; the recorded status may still read pending until the webhook
+  // catches up, which is why the Status row and the heading can differ here.
+  if (result === 'failed') {
+    setHeading('failed');
+    return;
+  }
+
+  // The webhook function is the source of truth, and it can take a few seconds
+  // to arrive after PayMongo redirects the shopper back — so poll briefly
+  // before settling on whatever status we have.
+  let status = booking.payment_status;
+  for (let attempt = 0; status === 'pending' && attempt < 8; attempt++) {
+    await new Promise(r => setTimeout(r, 1500));
+    const next = await fetchBooking();
+    if (!next) break;
+    status = next.payment_status;
+    renderReceipt(next);
+  }
+  setHeading(status);
+})();
+</script>
+</body>
+</html>

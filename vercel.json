@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/((?!itulod/).*)",
+      "destination": "/itulod/itulod/$1"
+    }
+  ]
+}
