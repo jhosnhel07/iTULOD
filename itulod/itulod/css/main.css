@@ -354,26 +354,39 @@ button {
   gap: 48px;
   align-items: center;
 }
+/* Grid/flex children default to min-width:auto and refuse to shrink below their
+   content — which lets a long line push past the viewport. Let them shrink. */
+.hero .container > * {
+  min-width: 0;
+}
 .eyebrow {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  max-width: 100%;
   background: var(--ink);
   color: var(--white);
   font-weight: 600;
   font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  padding: 6px 14px;
-  border-radius: 999px;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+  padding: 7px 15px;
+  border-radius: 14px;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.eyebrow i {
+  margin-top: 1px;
+  flex-shrink: 0;
 }
 .eyebrow i {
   color: var(--blue-200);
 }
 .hero h1 {
-  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  font-size: clamp(1.9rem, 6vw, 3.4rem);
   font-weight: 800;
   margin: 20px 0 16px;
+  overflow-wrap: break-word;
 }
 .hero h1 .accent {
   color: var(--blue);
@@ -548,6 +561,8 @@ button {
   background: var(--blue-tint);
   color: var(--blue);
   margin-bottom: 14px;
+  border-radius: 999px;
+  align-items: center;
 }
 .section-head .eyebrow i {
   color: var(--blue);
@@ -991,8 +1006,12 @@ button {
 }
 
 @media (max-width: 900px) {
+  .hero {
+    padding: 56px 0 40px;
+  }
   .hero .container {
     grid-template-columns: 1fr;
+    gap: 36px;
   }
   .feature-grid,
   .service-strip,
@@ -1010,6 +1029,39 @@ button {
   }
   .auth-visual {
     display: none;
+  }
+}
+
+/* Small phones (and in-app browsers like Messenger) — keep the hero tidy
+   and edge-safe at any width. */
+@media (max-width: 560px) {
+  .container {
+    padding: 0 18px;
+  }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    padding: 6px 12px;
+  }
+  .hero p.lead {
+    font-size: 1rem;
+  }
+  .hero-cta .btn {
+    flex: 1 1 100%;
+  }
+  .hero-stats {
+    gap: 12px 18px;
+    flex-wrap: wrap;
+  }
+  .hero-stats div {
+    padding-right: 0;
+    flex: 1 0 40%;
+  }
+  .hero-stats div::after {
+    display: none;
+  }
+  .hero-stats div strong {
+    font-size: 1.4rem;
   }
 }
 
