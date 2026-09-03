@@ -20,8 +20,8 @@ const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel:
   if (CURRENT_PROFILE.avatar_url) setAvatarImg(document.getElementById('side-avatar'), CURRENT_PROFILE.avatar_url);
 
   await checkApproval();
+
   wireTabNav();
-  initNavigationMap('nav-map');
   wireHistoryTabs();
   wireProfileForm();
   populateProfileForm();
@@ -33,6 +33,16 @@ const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel:
   await loadVehicleInfo();
   await loadRiderHome();
   subscribeRealtime();
+
+  // Map last and isolated — a Mapbox/CDN failure must not kill the dashboard.
+  if (typeof mapboxgl !== 'undefined') {
+    try {
+      initNavigationMap('nav-map');
+      await loadAccepted(); // redraw the route now that the map exists
+    } catch (err) {
+      console.error('Map init failed:', err);
+    }
+  }
 })();
 
 function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }

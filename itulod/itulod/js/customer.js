@@ -17,22 +17,35 @@ let RATING_TARGET = null; // { kind, id }
   if (CURRENT_PROFILE.avatar_url) setAvatarImg(document.getElementById('side-avatar'), CURRENT_PROFILE.avatar_url);
 
   await loadVehicleOptions();
+
+  // Wire every control up front, so a later failure (a map, a slow query)
+  // can't leave buttons dead.
   wireTabNav();
   wireBookingSwitch();
-  initTrackingMap('tracking-map');
-  initFoodMap('food-map');
-  initParcelMap('parcel-map');
   wireRideForm();
   wireFoodForm();
   wireParcelForm();
   wireHistoryTabs();
   wireProfileForm();
   wireStarInput();
+
   await loadHome();
   await loadHistory();
   await loadNotifications();
   populateProfileForm();
   subscribeRealtime();
+
+  // Maps last and isolated — if Mapbox fails to load (CDN blocked, offline)
+  // the rest of the dashboard must still work.
+  if (typeof mapboxgl !== 'undefined') {
+    try {
+      initTrackingMap('tracking-map');
+      initFoodMap('food-map');
+      initParcelMap('parcel-map');
+    } catch (err) {
+      console.error('Map init failed:', err);
+    }
+  }
 })();
 
 function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
@@ -383,7 +396,7 @@ function renderHomeActive(b, rider) {
           <i class="fa-solid fa-eye"></i> View details
         </button>
         ${['pending', 'accepted'].includes(b.status)
-          ? `<button type="button" class="btn btn-outline btn-sm" onclick="cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>`
+          ? `<button type="button" class="btn btn-outline btn-sm btn-danger-ghost" onclick="cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>`
           : ''}
       </div>
     </div>`;
@@ -462,8 +475,8 @@ function renderHistoryCard(b, kind) {
         ${kind === 'transport' ? paymentBadge(b) : ''}
         <div class="row-actions" style="margin-top:8px;justify-content:flex-end">
           ${needsPaymentRetry ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); retryPayment('${b.id}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay with GCash</button>` : ''}
-          ${canCancel ? `<button class="icon-btn danger" title="Cancel" onclick="event.stopPropagation(); cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
-          ${canRate ? `<button class="icon-btn" title="Rate" onclick="event.stopPropagation(); openRateModal('${kind}','${b.id}')"><i class="fa-solid fa-star"></i></button>` : ''}
+          ${canCancel ? `<button class="btn btn-outline btn-sm btn-danger-ghost" onclick="event.stopPropagation(); cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ''}
+          ${canRate ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openRateModal('${kind}','${b.id}')"><i class="fa-solid fa-star"></i> Rate rider</button>` : ''}
         </div>
       </div>
     </div>`;

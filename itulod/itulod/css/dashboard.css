@@ -2863,3 +2863,15 @@ table.data-table tbody tr:nth-child(even):hover td {
     width: 100%;
   }
 }
+
+/* Outline button that turns red on hover — used for Cancel actions so the
+   destructive intent reads without shouting on the page. */
+.btn.btn-danger-ghost {
+  color: var(--red-dark);
+  border-color: var(--red);
+}
+.btn.btn-danger-ghost:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}
