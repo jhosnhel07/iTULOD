@@ -716,29 +716,6 @@
             <div id="history-list"></div>
             <div class="pagination" id="history-pagination"></div>
           </div>
-
-          <!-- Booking details modal (for history card click) -->
-          <div
-            class="modal-overlay"
-            id="booking-details-modal-overlay"
-            aria-hidden="true"
-            onclick="closeBookingDetails()"
-            style="display: none"
-          >
-            <div
-              class="modal modal--wide"
-              id="booking-details-modal"
-              onclick="event.stopPropagation()"
-            >
-              <div class="modal-head">
-                <h3>Booking details</h3>
-                <button class="modal-close" onclick="closeBookingDetails()">
-                  &times;
-                </button>
-              </div>
-              <div class="modal-body" id="booking-details-body"></div>
-            </div>
-          </div>
         </section>
 
         <!-- ===================== NOTIFICATIONS ===================== -->
@@ -814,6 +791,30 @@
         <button data-tab="notifications"><i class="fa-solid fa-bell"></i><span class="bn-badge badge badge--danger js-notif-count" style="display:none"></span><span>Alerts</span></button>
         <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
       </nav>
+    </div>
+
+    <!-- Booking details modal — opened from any tab (history rows and the
+         Home active-booking card), so it lives outside the tab panels. -->
+    <div
+      class="modal-overlay"
+      id="booking-details-modal-overlay"
+      aria-hidden="true"
+      onclick="closeBookingDetails()"
+      style="display: none"
+    >
+      <div
+        class="modal modal--wide"
+        id="booking-details-modal"
+        onclick="event.stopPropagation()"
+      >
+        <div class="modal-head">
+          <h3>Booking details</h3>
+          <button class="modal-close" onclick="closeBookingDetails()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body" id="booking-details-body"></div>
+      </div>
     </div>
 
     <!-- GCash confirmation: shows the exact amount PayMongo is about to

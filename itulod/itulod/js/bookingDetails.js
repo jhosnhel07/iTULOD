@@ -41,9 +41,10 @@
     const modal   = document.getElementById('booking-details-modal');
     if (!overlay || !modal) { toast('Booking details modal not found.', 'error'); return; }
 
-    overlay.style.display = 'block';
+    overlay.style.display = 'flex'; // matches .modal-overlay.open — centres the modal
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
 
     const body = document.getElementById('booking-details-body');
     body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading details…</div>`;
@@ -308,6 +309,7 @@
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
     overlay.style.display = 'none';
+    document.body.style.overflow = '';
     if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
     const body = document.getElementById('booking-details-body');
     if (body) body.innerHTML = '';
