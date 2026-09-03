@@ -24,7 +24,7 @@
     />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell app-shell--tabbed">
       <!-- =================== SIDEBAR =================== -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -88,7 +88,7 @@
       <!-- =================== MAIN =================== -->
       <main class="main">
         <div class="mobile-topbar">
-          <button onclick="toggleSidebar()" aria-label="Menu">
+          <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
             <i class="fa-solid fa-bars"></i>
           </button>
           <span class="brand" style="font-size: 1.1rem; color: var(--blue)">
@@ -779,6 +779,13 @@
                 <i class="fa-solid fa-floppy-disk"></i> Save changes
               </button>
             </form>
+          </div>
+
+          <!-- Shown only on phones, where the sidebar (and its log-out) is hidden -->
+          <div class="card card--narrow mobile-account">
+            <button class="btn btn-danger-ghost btn-block" onclick="logout()">
+              <i class="fa-solid fa-right-from-bracket"></i> Log out
+            </button>
           </div>
         </section>
       </main>

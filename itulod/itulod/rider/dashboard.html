@@ -13,7 +13,7 @@
 </head>
 <body>
 
-<div class="app-shell">
+<div class="app-shell app-shell--tabbed">
   <!-- =================== SIDEBAR =================== -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -68,7 +68,7 @@
   <!-- =================== MAIN =================== -->
   <main class="main">
     <div class="mobile-topbar">
-      <button onclick="toggleSidebar()">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
         <i class="fa-solid fa-bars"></i>
       </button>
       <span class="brand" style="font-size:1.1rem;color:var(--blue)">
@@ -298,6 +298,25 @@
             <i class="fa-solid fa-floppy-disk"></i> Save changes
           </button>
         </form>
+      </div>
+
+      <!-- Shown only on phones, where the sidebar is hidden: the tabs that
+           aren't in the bottom nav, plus log out. -->
+      <div class="card card--narrow mobile-account">
+        <div class="card-head"><h3>More</h3></div>
+        <nav class="mobile-account__links">
+          <button type="button" onclick="activateTab('history')">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <button type="button" onclick="activateTab('vehicle')">
+            <i class="fa-solid fa-car"></i> Vehicle info
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </nav>
+        <button class="btn btn-danger-ghost btn-block" onclick="logout()" style="margin-top:12px">
+          <i class="fa-solid fa-right-from-bracket"></i> Log out
+        </button>
       </div>
     </section>
 

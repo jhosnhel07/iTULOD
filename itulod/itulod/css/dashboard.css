@@ -2875,3 +2875,110 @@ table.data-table tbody tr:nth-child(even):hover td {
   border-color: var(--red);
   color: var(--white);
 }
+
+/* =====================================================================
+   TABBED DASHBOARDS ON MOBILE  (customer + rider)
+   The bottom nav fully replaces the sidebar on phones; log out and the
+   tabs that don't fit the bottom nav move onto the Profile screen.
+   ===================================================================== */
+.mobile-account {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .app-shell--tabbed .sidebar {
+    display: none;
+  }
+  .app-shell--tabbed .mobile-topbar .menu-btn {
+    display: none;
+  }
+  .app-shell--tabbed .mobile-topbar {
+    justify-content: center;
+    position: relative;
+  }
+  .app-shell--tabbed .mobile-topbar .topbar-action {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .app-shell--tabbed .mobile-account {
+    display: block;
+  }
+}
+
+.mobile-account__links {
+  display: flex;
+  flex-direction: column;
+}
+.mobile-account__links button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 4px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-body);
+  text-align: left;
+  cursor: pointer;
+}
+.mobile-account__links button:last-child {
+  border-bottom: 0;
+}
+.mobile-account__links button > i:first-child {
+  width: 18px;
+  text-align: center;
+  color: var(--blue);
+}
+.mobile-account__links button > i:last-child {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* =====================================================================
+   NO SIDEWAYS SCROLL — only up/down
+   `clip` (not `hidden`) so it doesn't turn the page into a scroll
+   container and break the desktop sticky map.
+   ===================================================================== */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+.app-shell,
+.main,
+.tab-panel {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+.card,
+.booking-card,
+.home-active,
+.grid-2,
+.stat-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  body {
+    overflow-x: hidden;
+  }
+}
+/* long addresses / route titles wrap instead of widening the page */
+.booking-card .info h4,
+.home-active h3,
+.home-active__meta,
+.bd-header h2,
+.card-head h3,
+.notif-item h4,
+.notif-item p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
