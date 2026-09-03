@@ -34,8 +34,12 @@
         </div>
 
         <nav class="side-nav">
+          <button class="side-link active" data-tab="home">
+            <i class="fa-solid fa-house"></i> Home
+          </button>
+
           <span class="side-nav-label">Book</span>
-          <button class="side-link active" data-tab="book">
+          <button class="side-link" data-tab="book">
             <i class="fa-solid fa-plus"></i> New booking
           </button>
 
@@ -105,13 +109,46 @@
 
         <div class="page-head">
           <div>
-            <h1 id="page-title">New booking</h1>
-            <p id="page-sub">Choose your pickup, destination, and vehicle.</p>
+            <h1 id="page-title">Home</h1>
+            <p id="page-sub">Your bookings at a glance.</p>
           </div>
         </div>
 
+        <!-- ===================== HOME ===================== -->
+        <section class="tab-panel active" id="tab-home">
+          <div id="home-active" class="home-active-slot"></div>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="top"><div class="icon icon--blue"><i class="fa-solid fa-route"></i></div></div>
+              <strong id="home-stat-trips">—</strong>
+              <span class="label">Completed trips</span>
+            </div>
+            <div class="stat-card">
+              <div class="top"><div class="icon icon--green"><i class="fa-solid fa-peso-sign"></i></div></div>
+              <strong id="home-stat-spent">₱0.00</strong>
+              <span class="label">Total spent</span>
+            </div>
+            <div class="stat-card">
+              <div class="top"><div class="icon icon--orange"><i class="fa-solid fa-calendar-day"></i></div></div>
+              <strong id="home-stat-month">—</strong>
+              <span class="label">Trips this month</span>
+            </div>
+          </div>
+
+          <div class="card card--flush">
+            <div class="card-head">
+              <h3>Recent activity</h3>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="activateTab('history')">
+                View all
+              </button>
+            </div>
+            <div id="home-recent"></div>
+          </div>
+        </section>
+
         <!-- ===================== NEW BOOKING ===================== -->
-        <section class="tab-panel active" id="tab-book">
+        <section class="tab-panel" id="tab-book">
           <div class="segmented" id="booking-switch" role="tablist">
             <button type="button" class="seg-btn active" data-service="ride">
               <i class="fa-solid fa-car"></i> Ride
@@ -771,7 +808,8 @@
 
       <!-- Mobile bottom nav — primary tabs; the hamburger keeps everything -->
       <nav class="bottom-nav" aria-label="Primary">
-        <button data-tab="book" class="active"><i class="fa-solid fa-plus"></i><span>Book</span></button>
+        <button data-tab="home" class="active"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button data-tab="book"><i class="fa-solid fa-plus"></i><span>Book</span></button>
         <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
         <button data-tab="notifications"><i class="fa-solid fa-bell"></i><span class="bn-badge badge badge--danger js-notif-count" style="display:none"></span><span>Alerts</span></button>
         <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>

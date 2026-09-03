@@ -21,8 +21,12 @@
     </div>
 
     <nav class="side-nav">
+      <button class="side-link active" data-tab="home">
+        <i class="fa-solid fa-house"></i> Home
+      </button>
+
       <span class="side-nav-label">Work</span>
-      <button class="side-link active" data-tab="requests">
+      <button class="side-link" data-tab="requests">
         <i class="fa-solid fa-inbox"></i> Booking requests
       </button>
       <button class="side-link" data-tab="accepted">
@@ -75,8 +79,8 @@
 
     <div class="page-head">
       <div>
-        <h1 id="page-title">Booking requests</h1>
-        <p id="page-sub">New bookings waiting for a rider.</p>
+        <h1 id="page-title">Home</h1>
+        <p id="page-sub">Your day at a glance.</p>
       </div>
     </div>
 
@@ -84,8 +88,36 @@
          as wide as what's left over, which is too narrow for a sentence. -->
     <div id="approval-banner"></div>
 
+    <!-- ===================== HOME ===================== -->
+    <section class="tab-panel active" id="tab-home">
+      <div id="home-active" class="home-active-slot"></div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="top"><div class="icon icon--green"><i class="fa-solid fa-sack-dollar"></i></div></div>
+          <strong id="home-earn-today">₱0.00</strong>
+          <span class="label">Earned today</span>
+        </div>
+        <div class="stat-card">
+          <div class="top"><div class="icon icon--blue"><i class="fa-solid fa-flag-checkered"></i></div></div>
+          <strong id="home-trips-today">0</strong>
+          <span class="label">Trips today</span>
+        </div>
+        <div class="stat-card">
+          <div class="top"><div class="icon icon--yellow"><i class="fa-solid fa-star"></i></div></div>
+          <strong id="home-rating">—</strong>
+          <span class="label">Average rating</span>
+        </div>
+        <div class="stat-card">
+          <div class="top"><div class="icon icon--orange"><i class="fa-solid fa-inbox"></i></div></div>
+          <strong id="home-open-requests">0</strong>
+          <span class="label">Open requests</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== REQUESTS ===================== -->
-    <section class="tab-panel active" id="tab-requests">
+    <section class="tab-panel" id="tab-requests">
       <div id="requests-list">
         <!-- Default empty state (JS replaces when requests load) -->
         <div class="card">
@@ -295,10 +327,10 @@
 
   <!-- Mobile bottom nav — primary tabs; the hamburger keeps everything -->
   <nav class="bottom-nav" aria-label="Primary">
-    <button data-tab="requests" class="active"><i class="fa-solid fa-inbox"></i><span>Requests</span></button>
+    <button data-tab="home" class="active"><i class="fa-solid fa-house"></i><span>Home</span></button>
+    <button data-tab="requests"><i class="fa-solid fa-inbox"></i><span>Requests</span></button>
     <button data-tab="accepted"><i class="fa-solid fa-route"></i><span>Active</span></button>
     <button data-tab="earnings"><i class="fa-solid fa-sack-dollar"></i><span>Earnings</span></button>
-    <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
     <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
   </nav>
 </div>

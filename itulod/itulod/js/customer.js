@@ -28,6 +28,7 @@ let RATING_TARGET = null; // { kind, id }
   wireHistoryTabs();
   wireProfileForm();
   wireStarInput();
+  await loadHome();
   await loadHistory();
   await loadNotifications();
   populateProfileForm();
@@ -47,6 +48,7 @@ function setAvatarImg(el, url) { el.innerHTML = `<img src="${url}" style="width:
 
 // ---- sidebar tab switching ---------------------------------------------
 const TAB_TITLES = {
+  'home': ['Home', 'Your bookings at a glance.'],
   'book': ['New booking', 'Choose your pickup, destination, and vehicle.'],
   'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
   'notifications': ['Notifications', 'Updates about your bookings.'],
@@ -301,6 +303,92 @@ function wireParcelForm() {
   });
 }
 
+// ---- home / overview ---------------------------------------------------
+const HOME_KIND_LABEL = { transport: 'Ride', food: 'Food delivery', parcel: 'Parcel delivery' };
+
+async function loadHome() {
+  const kinds = Object.keys(TABLE_BY_KIND);
+  const perKind = await Promise.all(kinds.map(k =>
+    supabase.from(TABLE_BY_KIND[k]).select('*').eq('customer_id', CURRENT_PROFILE.id)
+      .order('created_at', { ascending: false })
+      .then(r => (r.data || []).map(row => ({ ...row, _kind: k })))
+  ));
+  const rows = perKind.flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // Lifetime stats
+  const completed = rows.filter(r => r.status === 'completed');
+  const spent = completed.reduce((a, r) => a + Number(r.final_fare ?? r.estimated_fare ?? 0), 0);
+  const monthStart = new Date();
+  monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  document.getElementById('home-stat-trips').textContent = completed.length;
+  document.getElementById('home-stat-spent').textContent = peso(spent);
+  document.getElementById('home-stat-month').textContent =
+    completed.filter(r => new Date(r.created_at) >= monthStart).length;
+
+  // Active booking (pending / accepted / ongoing)
+  const active = rows.find(r => ['pending', 'accepted', 'ongoing'].includes(r.status));
+  let rider = null;
+  if (active && active.rider_id) {
+    const { data } = await supabase.from('profiles').select('full_name, phone').eq('id', active.rider_id).single();
+    rider = data || null;
+  }
+  renderHomeActive(active, rider);
+
+  // Recent activity
+  const recent = document.getElementById('home-recent');
+  recent.innerHTML = rows.length
+    ? rows.slice(0, 4).map(r => renderHistoryCard(r, r._kind)).join('')
+    : emptyState({ icon: 'fa-inbox', title: 'No bookings yet', body: 'Your rides and deliveries will show up here.' });
+}
+
+function renderHomeActive(b, rider) {
+  const el = document.getElementById('home-active');
+  if (!b) {
+    el.innerHTML = `
+      <div class="home-hero">
+        <div>
+          <h3>Ready when you are</h3>
+          <p>Book a ride, order food, or send a parcel across Ilocos Norte.</p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="activateTab('book')">
+          <i class="fa-solid fa-plus"></i> New booking
+        </button>
+      </div>`;
+    return;
+  }
+  const kind = b._kind;
+  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
+    : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
+    : `${b.sender_address} → ${b.receiver_address}`;
+  const stage = b.status === 'pending' ? 'Finding you a rider…'
+    : b.status === 'accepted' ? 'Rider is on the way to pickup'
+    : 'Trip in progress';
+  const riderLine = b.rider_id
+    ? `<span><i class="fa-solid fa-motorcycle"></i> ${escapeHtml(rider?.full_name || 'Rider assigned')}${rider?.phone ? ' · ' + escapeHtml(rider.phone) : ''}</span>`
+    : `<span><i class="fa-solid fa-user-clock"></i> No rider yet</span>`;
+  el.innerHTML = `
+    <div class="home-active card">
+      <div class="home-active__head">
+        <span class="home-active__tag"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i> ${HOME_KIND_LABEL[kind]}</span>
+        ${statusBadge(b.status)}
+      </div>
+      <h3>${escapeHtml(title)}</h3>
+      <p class="home-active__stage">${stage}</p>
+      <div class="home-active__meta">
+        ${riderLine}
+        <span><i class="fa-solid fa-peso-sign"></i> ${peso(b.final_fare ?? b.estimated_fare)}</span>
+      </div>
+      <div class="home-active__actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openBookingDetails({ kind: '${kind}', id: '${b.id}' })">
+          <i class="fa-solid fa-eye"></i> View details
+        </button>
+        ${['pending', 'accepted'].includes(b.status)
+          ? `<button type="button" class="btn btn-outline btn-sm" onclick="cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>`
+          : ''}
+      </div>
+    </div>`;
+}
+
 // ---- history -------------------------------------------------------------
 function wireHistoryTabs() {
   document.querySelectorAll('.tab-btn[data-history]').forEach(btn => {
@@ -430,6 +518,7 @@ async function cancelBooking(kind, id) {
   const { error } = await supabase.from(table).update({ status: 'cancelled', cancelled_reason: 'Cancelled by customer' }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast('Booking cancelled.', 'success');
+  loadHome();
   loadHistory();
 }
 
@@ -546,9 +635,9 @@ function wireProfileForm() {
 // ---- realtime: refresh history/notifications when rows change --------------
 function subscribeRealtime() {
   supabase.channel('customer-updates')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { if (HISTORY_KIND === 'transport') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { if (HISTORY_KIND === 'food') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { if (HISTORY_KIND === 'parcel') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'transport') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'food') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'parcel') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => loadNotifications())
     .subscribe();
 }

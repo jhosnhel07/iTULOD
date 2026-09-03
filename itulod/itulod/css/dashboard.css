@@ -347,7 +347,7 @@
    ===================================================================== */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -2725,6 +2725,108 @@ table.data-table tbody tr:nth-child(even):hover td {
   display: block;
 }
 
+/* =====================================================================
+   HOME / OVERVIEW  (Phase 3)
+   ===================================================================== */
+.home-active-slot {
+  margin-bottom: 20px;
+}
+.home-active-slot:empty {
+  display: none;
+}
+
+/* "nothing active" hero */
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 24px 26px;
+  border-radius: var(--radius-lg);
+  color: var(--white);
+  background: var(--grad-blue);
+  box-shadow: var(--shadow-blue);
+}
+.home-hero h3 {
+  color: var(--white);
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+.home-hero p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+}
+.home-hero .btn-primary {
+  background: var(--white);
+  color: var(--blue-dark);
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.home-hero .btn-primary:hover {
+  filter: none;
+  background: var(--blue-50);
+}
+
+/* live booking card */
+.home-active {
+  border-left: 4px solid var(--blue);
+}
+.home-active__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.home-active__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--blue-dark);
+}
+.home-active h3 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.home-active__stage {
+  color: var(--blue-dark);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+.home-active__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-body);
+  font-size: 0.86rem;
+}
+.home-active__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-active__meta i {
+  color: var(--text-muted);
+}
+.home-active__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+#home-recent .booking-card:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 560px) {
   .segmented {
     display: flex;
@@ -2734,5 +2836,30 @@ table.data-table tbody tr:nth-child(even):hover td {
     flex: 1 1 0;
     min-width: 0;
     padding: 9px 6px;
+  }
+}
+
+/* Compact KPI grid on phones — override lands after the polish layer so it
+   wins the cascade on .stat-card strong. */
+@media (max-width: 560px) {
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 16px;
+  }
+  .stat-card strong {
+    font-size: 1.4rem;
+  }
+  .stat-card .icon {
+    width: 36px;
+    height: 36px;
+  }
+  .home-hero {
+    padding: 20px;
+  }
+  .home-hero .btn-primary {
+    width: 100%;
   }
 }

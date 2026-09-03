@@ -31,6 +31,7 @@ const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel:
   await loadEarnings();
   await loadHistory();
   await loadVehicleInfo();
+  await loadRiderHome();
   subscribeRealtime();
 })();
 
@@ -60,6 +61,7 @@ async function checkApproval() {
 
 // ---- tab nav ---------------------------------------------------------
 const TAB_TITLES = {
+  home: ['Home', 'Your day at a glance.'],
   requests: ['Booking requests', 'New bookings waiting for a rider.'],
   accepted: ['Accepted bookings', 'Your current rides and deliveries.'],
   earnings: ['Earnings', 'Track your daily, weekly, and monthly income.'],
@@ -92,6 +94,81 @@ function wireTabNav() {
   document.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+}
+
+// ---- home / overview -------------------------------------------------
+async function loadRiderHome() {
+  const [payRes, revRes, acc0, acc1, acc2] = await Promise.all([
+    supabase.from('payments').select('rider_payout, created_at').eq('rider_id', CURRENT_PROFILE.id),
+    supabase.from('reviews').select('rating').eq('rider_id', CURRENT_PROFILE.id),
+    ...Object.keys(TABLE_BY_KIND).map(k =>
+      supabase.from(TABLE_BY_KIND[k]).select('*').eq('rider_id', CURRENT_PROFILE.id)
+        .in('status', ['accepted', 'ongoing']).then(r => ({ k, rows: r.data || [] }))
+    ),
+  ]);
+  const pendCounts = await Promise.all(Object.keys(TABLE_BY_KIND).map(k =>
+    supabase.from(TABLE_BY_KIND[k]).select('id', { count: 'exact', head: true }).is('rider_id', null).eq('status', 'pending')
+  ));
+  const openCount = pendCounts.reduce((a, r) => a + (r.count || 0), 0);
+
+  const payments = payRes.data || [];
+  const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+  const todayPays = payments.filter(p => new Date(p.created_at) >= startOfDay);
+  document.getElementById('home-earn-today').textContent = peso(todayPays.reduce((a, p) => a + Number(p.rider_payout), 0));
+  document.getElementById('home-trips-today').textContent = todayPays.length;
+
+  const reviews = revRes.data || [];
+  document.getElementById('home-rating').textContent = reviews.length
+    ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) + ' ★'
+    : '—';
+  document.getElementById('home-open-requests').textContent = openCount;
+
+  const active = [acc0, acc1, acc2].flatMap(r => r.rows.map(row => ({ ...row, _kind: r.k })));
+  renderRiderHomeActive(active, openCount);
+}
+
+function renderRiderHomeActive(list, openCount) {
+  const el = document.getElementById('home-active');
+  if (!list.length) {
+    const waiting = openCount > 0;
+    el.innerHTML = `
+      <div class="home-hero">
+        <div>
+          <h3>${waiting ? `${openCount} request${openCount > 1 ? 's' : ''} waiting` : 'No active booking'}</h3>
+          <p>${waiting ? 'Grab one before another rider does.' : 'New requests will appear here as customers book.'}</p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="activateTab('requests')">
+          <i class="fa-solid fa-inbox"></i> View requests
+        </button>
+      </div>`;
+    return;
+  }
+  const b = list.find(x => x.status === 'ongoing') || list[0];
+  const kind = b._kind;
+  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
+    : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
+    : `${b.sender_address} → ${b.receiver_address}`;
+  const next = b.status === 'accepted'
+    ? `<button type="button" class="btn btn-outline btn-sm" onclick="updateStatus('${kind}','${b.id}','ongoing')">Start trip</button>`
+    : `<button type="button" class="btn btn-primary btn-sm" onclick="updateStatus('${kind}','${b.id}','completed')">Mark complete</button>`;
+  el.innerHTML = `
+    <div class="home-active card">
+      <div class="home-active__head">
+        <span class="home-active__tag"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i> ${kind === 'transport' ? 'Ride' : kind === 'food' ? 'Food' : 'Parcel'}</span>
+        ${statusBadge(b.status)}
+      </div>
+      <h3>${escapeHtml(title)}</h3>
+      <p class="home-active__stage">${b.status === 'accepted' ? 'Navigate to the pickup point' : 'Trip in progress'}</p>
+      <div class="home-active__meta">
+        <span><i class="fa-solid fa-peso-sign"></i> ${peso(b.estimated_fare)}</span>
+      </div>
+      <div class="home-active__actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="activateTab('accepted')">
+          <i class="fa-solid fa-location-arrow"></i> Open navigation
+        </button>
+        ${next}
+      </div>
+    </div>`;
 }
 
 // ---- booking requests (unassigned, pending) ---------------------------
@@ -159,6 +236,7 @@ async function acceptBooking(kind, id) {
   toast('Booking accepted!', 'success');
   await loadAccepted(); // sets RIDER_HAS_ACTIVE_BOOKING + (re)draws the route on the nav map
   await loadRequests();
+  await loadRiderHome();
 }
 
 // ---- accepted bookings (mine, accepted/ongoing) ------------------------
@@ -271,6 +349,7 @@ async function updateStatus(kind, id, status) {
   await loadRequests(); // re-enable Accept buttons now that the rider is free again
   await loadEarnings();
   await loadHistory();
+  await loadRiderHome();
 }
 
 // ---- earnings ----------------------------------------------------------
@@ -418,9 +497,10 @@ function wireProfileForm() {
 
 // ---- realtime ------------------------------------------------------------
 function subscribeRealtime() {
+  const refresh = () => loadAccepted().then(loadRequests).then(loadRiderHome);
   supabase.channel('rider-updates')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings' }, () => { loadAccepted().then(loadRequests); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, () => { loadAccepted().then(loadRequests); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, () => { loadAccepted().then(loadRequests); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings' }, refresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, refresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, refresh)
     .subscribe();
 }
