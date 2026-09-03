@@ -128,13 +128,11 @@ function wireRideForm() {
 
     if (paymentMethod === 'cash') {
       toast('Ride booked! Waiting for a rider to accept.', 'success');
-      // Show route on map
-      const geocode = async (addr) => {
-        const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&limit=1`);
-        const d = await r.json();
-        return d.features?.[0]?.center || null;
-      };
-      const [pLngLat, dLngLat] = await Promise.all([geocode(pickup.value), geocode(dest.value)]);
+      // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
+      const [pLngLat, dLngLat] = await Promise.all([
+        _geocodeAddress(pickup.value),
+        _geocodeAddress(dest.value),
+      ]);
       if (pLngLat) setTrackingMarker('pickup', pLngLat, '#22c55e', 'Pickup');
       if (dLngLat) setTrackingMarker('dropoff', dLngLat, '#ef4444', 'Drop-off');
       if (pLngLat && dLngLat) drawRoute(pLngLat, dLngLat);

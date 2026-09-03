@@ -488,6 +488,75 @@
   }
 }
 
+/* --- Mobile map picker sheet -----------------------------------------------
+   On phones the booking map is taken out of the page flow entirely. It stays
+   hidden until the "set on map" button in an address field opens it as a
+   full-screen sheet; Done / ✕ / Escape close it. Desktop is unchanged — the
+   map still sits beside the form. Scoped to .map-card--picker so the rider
+   navigation map is not affected. */
+.map-card--picker .map-sheet-close,
+.map-card--picker .map-sheet-done {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .map-card--picker {
+    display: none;
+  }
+  .map-card--picker.map-sheet-open {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    max-height: none;
+    overflow-y: auto;
+    animation: modalIn 0.2s ease;
+  }
+  .map-card--picker.map-sheet-open .card-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--white);
+    margin: 0 0 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .map-card--picker.map-sheet-open .map-canvas {
+    height: 56vh;
+    flex: 1 0 auto;
+  }
+  .map-card--picker .map-sheet-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .map-card--picker .map-sheet-close:active {
+    background: var(--bg);
+  }
+  .map-card--picker .map-sheet-done {
+    display: inline-flex;
+    position: sticky;
+    bottom: 0;
+    margin-top: 14px;
+  }
+  body.map-sheet-lock {
+    overflow: hidden;
+  }
+}
+
 /* Mapbox GL canvas host. Was duplicated as an inline <style> block on both the
    customer and rider dashboards. */
 .map-canvas {
@@ -568,6 +637,51 @@
   font-size: 0.9rem;
   font-weight: 600;
   pointer-events: none;
+}
+
+/* Address field with a "set on map" button. The button switches the map to the
+   matching pickup/drop-off mode and scrolls it into view (it stacks below the
+   form on narrow screens). */
+.input-map {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.input-map input {
+  flex: 1;
+  padding-right: 46px !important;
+}
+.map-pin-btn {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  bottom: 5px;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-blue);
+  border-radius: 8px;
+  background: var(--blue-50);
+  color: var(--blue);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.map-pin-btn:hover {
+  background: var(--blue-200);
+  color: var(--blue-dark);
+}
+.map-pin-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.map-card--flash {
+  animation: mapCardFlash 1.2s ease;
+}
+@keyframes mapCardFlash {
+  0%, 100% { box-shadow: var(--shadow-sm); }
+  25% { box-shadow: 0 0 0 3px var(--blue-200), var(--shadow-md); }
 }
 
 /* =====================================================================

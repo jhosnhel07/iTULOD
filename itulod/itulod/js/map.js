@@ -20,10 +20,60 @@ function _initMap(containerId) {
   });
 }
 
+/* ── Geocoding ────────────────────────────────────────────────────────────
+   Mapbox's place/POI coverage in the Philippines is thin (it often returns
+   roads in the wrong province for a business name), so search is backed by
+   Photon — the OpenStreetMap geocoder, same data source as the OSRM routing.
+   Photon is queried first and Mapbox is only a fallback. */
+const PHOTON_URL = 'https://photon.komoot.io';
+
+function _photonLabel(p) {
+  const locality = p.city || p.locality || p.district || p.county;
+  return [p.name, p.street, locality, p.state, 'Philippines']
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .join(', ');
+}
+
+// Photon results shaped as Carmen GeoJSON so the Mapbox geocoder control can
+// list them. Filtered to the Philippines and biased toward Laoag.
+async function _photonSearch(query) {
+  if (!query || query.trim().length < 2) return [];
+  try {
+    const url = `${PHOTON_URL}/api/?q=${encodeURIComponent(query)}&lang=en&limit=8`
+      + `&lat=${DEFAULT_CENTER[1]}&lon=${DEFAULT_CENTER[0]}`;
+    const d = await (await fetch(url)).json();
+    return (d.features || [])
+      .filter(f => f.geometry && (f.properties || {}).countrycode === 'PH')
+      .map(f => {
+        const c = f.geometry.coordinates;
+        const label = _photonLabel(f.properties);
+        return {
+          id: 'photon.' + (f.properties.osm_type || 'X') + (f.properties.osm_id || c.join('')),
+          type: 'Feature',
+          place_type: ['place'],
+          text: f.properties.name || label,
+          place_name: label,
+          center: c,
+          geometry: { type: 'Point', coordinates: c },
+          properties: { source: 'photon' },
+        };
+      });
+  } catch (_) {
+    return [];
+  }
+}
+
 async function _reverseGeocode(lngLat) {
-  const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`);
-  const d = await r.json();
-  return d.features?.[0]?.place_name || `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`;
+  try {
+    const d = await (await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`)).json();
+    if (d.features?.[0]?.place_name) return d.features[0].place_name;
+  } catch (_) { /* fall through */ }
+  try {
+    const d = await (await fetch(`${PHOTON_URL}/reverse?lon=${lngLat.lng}&lat=${lngLat.lat}&lang=en`)).json();
+    if (d.features?.[0]) return _photonLabel(d.features[0].properties);
+  } catch (_) { /* fall through */ }
+  return `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`;
 }
 
 async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, dropoffLngLat) {
@@ -153,9 +203,13 @@ function _makeGeocoder(onResult) {
     mapboxgl: mapboxgl,
     marker: !onResult,
     collapsed: true,
-    placeholder: 'Search for a place…',
+    limit: 8,
+    language: 'en',
+    placeholder: 'Search any place or address…',
     countries: 'ph',
     proximity: { longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] },
+    // OpenStreetMap results (rich PH coverage) are prepended to Mapbox's.
+    externalGeocoder: (query) => _photonSearch(query),
   });
   if (onResult) {
     geocoder.on('result', (e) => {
@@ -214,6 +268,55 @@ function resizeBookingMap(tab) {
   if (cfg && cfg.map) cfg.map.resize();
 }
 
+// Below this width the booking map is pulled out of the page flow and only
+// shown as a full-screen sheet when the user asks for it.
+const MOBILE_MAP_MQ = '(max-width: 960px)';
+
+// Called by the "set on map" button inside an address field: point the map at
+// the right pickup/drop-off mode, then either open it as a sheet (phones, where
+// the map card is hidden) or scroll it into view (desktop, map beside the form).
+function pinOnMap(tab, mode) {
+  setMapMode(mode, tab);
+  const cfg = _maps[tab];
+  const container = cfg && cfg.map && cfg.map.getContainer();
+  if (!container) return;
+  const card = container.closest('.map-card') || container;
+
+  if (window.matchMedia(MOBILE_MAP_MQ).matches && card.classList.contains('map-card--picker')) {
+    card.classList.add('map-sheet-open');
+    document.body.classList.add('map-sheet-lock');
+    card.scrollTop = 0;
+    // the card was display:none, so Mapbox sized its canvas to 0×0 — resize it
+    // now that it's on screen (twice: once next frame, once after the transition)
+    requestAnimationFrame(() => cfg.map.resize());
+    setTimeout(() => cfg.map.resize(), 260);
+  } else {
+    cfg.map.resize();
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('map-card--flash');
+    setTimeout(() => card.classList.remove('map-card--flash'), 1200);
+  }
+}
+
+// Close the mobile map sheet (the Done / ✕ buttons, and Escape).
+function closeMapSheet(tab) {
+  const cfg = tab && _maps[tab];
+  const container = cfg && cfg.map && cfg.map.getContainer();
+  const card = container && container.closest('.map-card');
+  if (card) card.classList.remove('map-sheet-open');
+  else document.querySelectorAll('.map-card--picker.map-sheet-open')
+    .forEach(c => c.classList.remove('map-sheet-open'));
+  if (!document.querySelector('.map-card--picker.map-sheet-open')) {
+    document.body.classList.remove('map-sheet-lock');
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.querySelector('.map-card--picker.map-sheet-open')) {
+    closeMapSheet();
+  }
+});
+
 /* ── Kept for backward-compat (ride form submit geocodes & draws route) ── */
 function setTrackingMarker(id, lngLat, color, label) {
   const cfg = _maps.ride;
@@ -264,9 +367,15 @@ function _whenMapReady(map) {
 }
 
 async function _geocodeAddress(addr) {
-  const r = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&limit=1`);
-  const d = await r.json();
-  return d.features?.[0]?.center || null;
+  // Photon (OpenStreetMap) first — far better local coverage — Mapbox as backup.
+  const ph = await _photonSearch(addr);
+  if (ph[0]) return ph[0].center;
+  try {
+    const d = await (await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&country=ph&limit=1`)).json();
+    return d.features?.[0]?.center || null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function showRiderRoute(pickupAddr, dropoffAddr) {

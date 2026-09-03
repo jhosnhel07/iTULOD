@@ -110,21 +110,43 @@
               <form id="ride-form">
                 <div class="field">
                   <label>Pickup location</label>
-                  <input
-                    type="text"
-                    id="ride-pickup"
-                    placeholder="e.g. Laoag City Hall, Laoag"
-                    required
-                  />
+                  <div class="input-map">
+                    <input
+                      type="text"
+                      id="ride-pickup"
+                      placeholder="e.g. Laoag City Hall, Laoag"
+                      required
+                    />
+                    <button
+                      type="button"
+                      class="map-pin-btn"
+                      onclick="pinOnMap('ride', 'pickup')"
+                      aria-label="Set pickup on map"
+                      title="Set on map"
+                    >
+                      <i class="fa-solid fa-map-location-dot"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="field">
                   <label>Destination</label>
-                  <input
-                    type="text"
-                    id="ride-destination"
-                    placeholder="e.g. Batac Public Market, Batac"
-                    required
-                  />
+                  <div class="input-map">
+                    <input
+                      type="text"
+                      id="ride-destination"
+                      placeholder="e.g. Batac Public Market, Batac"
+                      required
+                    />
+                    <button
+                      type="button"
+                      class="map-pin-btn"
+                      onclick="pinOnMap('ride', 'dropoff')"
+                      aria-label="Set destination on map"
+                      title="Set on map"
+                    >
+                      <i class="fa-solid fa-map-location-dot"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="field">
                   <label>Vehicle type</label>
@@ -171,8 +193,18 @@
             </div>
 
             <!-- Map + step indicator -->
-            <div class="card map-card">
-              <div class="card-head"><h3>Live status</h3></div>
+            <div class="card map-card map-card--picker" id="ride-map-card">
+              <div class="card-head">
+                <h3>Set location on map</h3>
+                <button
+                  type="button"
+                  class="map-sheet-close"
+                  onclick="closeMapSheet('ride')"
+                  aria-label="Close map"
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
 
               <!-- Step indicator -->
               <div class="map-step-indicator">
@@ -214,6 +246,13 @@
               </p>
               <div id="tracking-map" class="map-canvas"></div>
               <div id="ride-active-status" style="margin-top: 16px"></div>
+              <button
+                type="button"
+                class="btn btn-primary btn-block map-sheet-done"
+                onclick="closeMapSheet('ride')"
+              >
+                <i class="fa-solid fa-check"></i> Done
+              </button>
             </div>
           </div>
         </section>
@@ -235,21 +274,43 @@
                 </div>
                 <div class="field">
                   <label>Pickup location</label>
-                  <input
-                    type="text"
-                    id="food-pickup"
-                    required
-                    placeholder="e.g. Rizal St., Laoag City"
-                  />
+                  <div class="input-map">
+                    <input
+                      type="text"
+                      id="food-pickup"
+                      required
+                      placeholder="e.g. Rizal St., Laoag City"
+                    />
+                    <button
+                      type="button"
+                      class="map-pin-btn"
+                      onclick="pinOnMap('food', 'pickup')"
+                      aria-label="Set pickup on map"
+                      title="Set on map"
+                    >
+                      <i class="fa-solid fa-map-location-dot"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="field">
                   <label>Delivery address</label>
-                  <input
-                    type="text"
-                    id="food-address"
-                    required
-                    placeholder="e.g. Brgy. 1, Sarrat, Ilocos Norte"
-                  />
+                  <div class="input-map">
+                    <input
+                      type="text"
+                      id="food-address"
+                      required
+                      placeholder="e.g. Brgy. 1, Sarrat, Ilocos Norte"
+                    />
+                    <button
+                      type="button"
+                      class="map-pin-btn"
+                      onclick="pinOnMap('food', 'dropoff')"
+                      aria-label="Set delivery address on map"
+                      title="Set on map"
+                    >
+                      <i class="fa-solid fa-map-location-dot"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="field">
                   <label>Delivery instructions</label>
@@ -285,8 +346,18 @@
               </form>
             </div>
 
-            <div class="card map-card">
-              <div class="card-head"><h3>Live status</h3></div>
+            <div class="card map-card map-card--picker" id="food-map-card">
+              <div class="card-head">
+                <h3>Set location on map</h3>
+                <button
+                  type="button"
+                  class="map-sheet-close"
+                  onclick="closeMapSheet('food')"
+                  aria-label="Close map"
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
               <div class="map-step-indicator">
                 <button
                   type="button"
@@ -324,6 +395,13 @@
                 pickup location.
               </p>
               <div id="food-map" class="map-canvas"></div>
+              <button
+                type="button"
+                class="btn btn-primary btn-block map-sheet-done"
+                onclick="closeMapSheet('food')"
+              >
+                <i class="fa-solid fa-check"></i> Done
+              </button>
             </div>
           </div>
         </section>
@@ -346,12 +424,23 @@
                 </div>
                 <div class="field">
                   <label>Sender address (pickup)</label>
-                  <input
-                    type="text"
-                    id="parcel-sender-address"
-                    required
-                    placeholder="e.g. Brgy. San Lorenzo, Laoag City"
-                  />
+                  <div class="input-map">
+                    <input
+                      type="text"
+                      id="parcel-sender-address"
+                      required
+                      placeholder="e.g. Brgy. San Lorenzo, Laoag City"
+                    />
+                    <button
+                      type="button"
+                      class="map-pin-btn"
+                      onclick="pinOnMap('parcel', 'pickup')"
+                      aria-label="Set sender address on map"
+                      title="Set on map"
+                    >
+                      <i class="fa-solid fa-map-location-dot"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="field-row">
                   <div class="field">
@@ -365,12 +454,23 @@
                 </div>
                 <div class="field">
                   <label>Receiver address (drop-off)</label>
-                  <input
-                    type="text"
-                    id="parcel-receiver-address"
-                    required
-                    placeholder="e.g. Brgy. Poblacion, Pagudpud, Ilocos Norte"
-                  />
+                  <div class="input-map">
+                    <input
+                      type="text"
+                      id="parcel-receiver-address"
+                      required
+                      placeholder="e.g. Brgy. Poblacion, Pagudpud, Ilocos Norte"
+                    />
+                    <button
+                      type="button"
+                      class="map-pin-btn"
+                      onclick="pinOnMap('parcel', 'dropoff')"
+                      aria-label="Set receiver address on map"
+                      title="Set on map"
+                    >
+                      <i class="fa-solid fa-map-location-dot"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Parcel size radio cards -->
@@ -467,8 +567,18 @@
               </form>
             </div>
 
-            <div class="card map-card">
-              <div class="card-head"><h3>Live status</h3></div>
+            <div class="card map-card map-card--picker" id="parcel-map-card">
+              <div class="card-head">
+                <h3>Set location on map</h3>
+                <button
+                  type="button"
+                  class="map-sheet-close"
+                  onclick="closeMapSheet('parcel')"
+                  aria-label="Close map"
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
               <div class="map-step-indicator">
                 <button
                   type="button"
@@ -506,6 +616,13 @@
                 pickup location.
               </p>
               <div id="parcel-map" class="map-canvas"></div>
+              <button
+                type="button"
+                class="btn btn-primary btn-block map-sheet-done"
+                onclick="closeMapSheet('parcel')"
+              >
+                <i class="fa-solid fa-check"></i> Done
+              </button>
             </div>
           </div>
         </section>
