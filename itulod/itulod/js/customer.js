@@ -18,6 +18,7 @@ let RATING_TARGET = null; // { kind, id }
 
   await loadVehicleOptions();
   wireTabNav();
+  wireBookingSwitch();
   initTrackingMap('tracking-map');
   initFoodMap('food-map');
   initParcelMap('parcel-map');
@@ -46,13 +47,34 @@ function setAvatarImg(el, url) { el.innerHTML = `<img src="${url}" style="width:
 
 // ---- sidebar tab switching ---------------------------------------------
 const TAB_TITLES = {
-  'book-ride': ['Book a ride', 'Choose your pickup, destination, and vehicle.'],
-  'book-food': ['Food delivery', 'Order from any restaurant or store.'],
-  'book-parcel': ['Parcel delivery', 'Send a parcel across Ilocos Norte.'],
+  'book': ['New booking', 'Choose your pickup, destination, and vehicle.'],
   'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
   'notifications': ['Notifications', 'Updates about your bookings.'],
   'profile': ['Profile', 'Manage your account details.'],
 };
+
+// Ride / Food / Parcel are one screen now — this switches between them and
+// keeps the page subtitle + that service's map in sync.
+const BOOKING_SUBTITLES = {
+  ride: 'Choose your pickup, destination, and vehicle.',
+  food: 'Order from any restaurant or store.',
+  parcel: 'Send a parcel across Ilocos Norte.',
+};
+function currentBookingService() {
+  return document.querySelector('#booking-switch .seg-btn.active')?.dataset.service || 'ride';
+}
+function setBookingService(svc) {
+  document.querySelectorAll('#booking-switch .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.service === svc));
+  document.querySelectorAll('.booking-view').forEach(v => v.classList.toggle('active', v.id === 'view-' + svc));
+  const sub = document.getElementById('page-sub');
+  if (sub && document.getElementById('tab-book').classList.contains('active')) sub.textContent = BOOKING_SUBTITLES[svc];
+  if (typeof resizeBookingMap === 'function') requestAnimationFrame(() => resizeBookingMap(svc));
+}
+function wireBookingSwitch() {
+  document.querySelectorAll('#booking-switch .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => setBookingService(btn.dataset.service));
+  });
+}
 
 // Single source of truth for switching tabs — driven by both the sidebar and
 // the mobile bottom nav (any element carrying a data-tab).
@@ -61,16 +83,13 @@ function activateTab(name) {
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
 
-  // The food / parcel maps were sized while their tab was hidden — fix them up.
-  const mapTab = { 'book-food': 'food', 'book-parcel': 'parcel', 'book-ride': 'ride' }[name];
-  if (mapTab && typeof resizeBookingMap === 'function') {
-    requestAnimationFrame(() => resizeBookingMap(mapTab));
-  }
   const titles = TAB_TITLES[name];
   if (titles) {
     document.getElementById('page-title').textContent = titles[0];
     document.getElementById('page-sub').textContent = titles[1];
   }
+  // Re-fit the visible booking map (it was sized while hidden).
+  if (name === 'book') setBookingService(currentBookingService());
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }

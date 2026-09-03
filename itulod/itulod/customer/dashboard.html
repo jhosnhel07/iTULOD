@@ -35,14 +35,8 @@
 
         <nav class="side-nav">
           <span class="side-nav-label">Book</span>
-          <button class="side-link active" data-tab="book-ride">
-            <i class="fa-solid fa-car"></i> Book a ride
-          </button>
-          <button class="side-link" data-tab="book-food">
-            <i class="fa-solid fa-utensils"></i> Food delivery
-          </button>
-          <button class="side-link" data-tab="book-parcel">
-            <i class="fa-solid fa-box"></i> Parcel delivery
+          <button class="side-link active" data-tab="book">
+            <i class="fa-solid fa-plus"></i> New booking
           </button>
 
           <span class="side-nav-label">Activity</span>
@@ -111,13 +105,26 @@
 
         <div class="page-head">
           <div>
-            <h1 id="page-title">Book a ride</h1>
+            <h1 id="page-title">New booking</h1>
             <p id="page-sub">Choose your pickup, destination, and vehicle.</p>
           </div>
         </div>
 
-        <!-- ===================== BOOK RIDE ===================== -->
-        <section class="tab-panel active" id="tab-book-ride">
+        <!-- ===================== NEW BOOKING ===================== -->
+        <section class="tab-panel active" id="tab-book">
+          <div class="segmented" id="booking-switch" role="tablist">
+            <button type="button" class="seg-btn active" data-service="ride">
+              <i class="fa-solid fa-car"></i> Ride
+            </button>
+            <button type="button" class="seg-btn" data-service="food">
+              <i class="fa-solid fa-utensils"></i> Food
+            </button>
+            <button type="button" class="seg-btn" data-service="parcel">
+              <i class="fa-solid fa-box"></i> Parcel
+            </button>
+          </div>
+
+          <div class="booking-view active" id="view-ride">
           <div class="grid-2 grid-2--aside">
             <!-- Form -->
             <div class="card">
@@ -270,10 +277,10 @@
               </button>
             </div>
           </div>
-        </section>
+          </div><!-- /#view-ride -->
 
-        <!-- ===================== FOOD DELIVERY ===================== -->
-        <section class="tab-panel" id="tab-book-food">
+          <!-- ===================== FOOD DELIVERY ===================== -->
+          <div class="booking-view" id="view-food">
           <div class="grid-2 grid-2--aside">
             <div class="card">
               <div class="card-head"><h3>Food delivery request</h3></div>
@@ -419,10 +426,10 @@
               </button>
             </div>
           </div>
-        </section>
+          </div><!-- /#view-food -->
 
-        <!-- ===================== PARCEL DELIVERY ===================== -->
-        <section class="tab-panel" id="tab-book-parcel">
+          <!-- ===================== PARCEL DELIVERY ===================== -->
+          <div class="booking-view" id="view-parcel">
           <div class="grid-2 grid-2--aside">
             <div class="card">
               <div class="card-head"><h3>Parcel delivery request</h3></div>
@@ -651,6 +658,7 @@
               </button>
             </div>
           </div>
+          </div><!-- /#view-parcel -->
         </section>
 
         <!-- ===================== HISTORY ===================== -->
@@ -763,10 +771,9 @@
 
       <!-- Mobile bottom nav — primary tabs; the hamburger keeps everything -->
       <nav class="bottom-nav" aria-label="Primary">
-        <button data-tab="book-ride" class="active"><i class="fa-solid fa-car"></i><span>Ride</span></button>
-        <button data-tab="book-food"><i class="fa-solid fa-utensils"></i><span>Food</span></button>
-        <button data-tab="book-parcel"><i class="fa-solid fa-box"></i><span>Parcel</span></button>
+        <button data-tab="book" class="active"><i class="fa-solid fa-plus"></i><span>Book</span></button>
         <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+        <button data-tab="notifications"><i class="fa-solid fa-bell"></i><span class="bn-badge badge badge--danger js-notif-count" style="display:none"></span><span>Alerts</span></button>
         <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
       </nav>
     </div>
