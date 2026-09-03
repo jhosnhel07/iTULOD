@@ -110,7 +110,12 @@
         : booking.receiver_address;
 
       const mapSection = (routePickup && routeDropoff) ? `
-        <div class="bd-map" id="bd-map"><div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div></div>
+        <button type="button" class="btn btn-outline btn-block bd-map-toggle" id="bd-map-toggle">
+          <i class="fa-solid fa-map-location-dot"></i> View route on map
+        </button>
+        <div class="bd-map" id="bd-map" hidden>
+          <div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>
+        </div>
       ` : '';
 
       let routeSection = '';
@@ -255,13 +260,30 @@
         ${docsSection}
       `;
 
-      /* ---- 10. Draw the route on the embedded mini-map ---- */
+      /* ---- 10. Route map — built on demand from the "View route on map" button.
+         Shows the pickup and drop-off markers with the driving route between
+         them. Kept out of the initial render so the details modal stays light. */
       if (routePickup && routeDropoff && typeof initBookingDetailsMap === 'function' && typeof mapboxgl !== 'undefined') {
-        requestAnimationFrame(() => {
-          try {
-            initBookingDetailsMap('bd-map');
-            showBookingDetailsRoute(routePickup, routeDropoff);
-          } catch (_) {}
+        const toggle = document.getElementById('bd-map-toggle');
+        const mapEl = document.getElementById('bd-map');
+        toggle?.addEventListener('click', () => {
+          const opening = mapEl.hidden;
+          mapEl.hidden = !opening;
+          toggle.innerHTML = opening
+            ? '<i class="fa-solid fa-chevron-up"></i> Hide map'
+            : '<i class="fa-solid fa-map-location-dot"></i> View route on map';
+          if (opening) {
+            requestAnimationFrame(() => {
+              try {
+                initBookingDetailsMap('bd-map');
+                showBookingDetailsRoute(routePickup, routeDropoff);
+                mapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              } catch (_) {}
+            });
+          } else if (typeof destroyBookingDetailsMap === 'function') {
+            destroyBookingDetailsMap();
+            mapEl.innerHTML = '<div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>';
+          }
         });
       }
 

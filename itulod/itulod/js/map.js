@@ -426,12 +426,16 @@ function initBookingDetailsMap(containerId) {
 
 async function showBookingDetailsRoute(pickupAddr, dropoffAddr) {
   if (!bdMap) return;
+  await _whenMapReady(bdMap);
   const [pickup, dropoff] = await Promise.all([_geocodeAddress(pickupAddr), _geocodeAddress(dropoffAddr)]);
-  if (!pickup || !dropoff) return;
+  if (!pickup || !dropoff || !bdMap) return;
   [['pickup', pickup, '#22c55e', 'Pickup'], ['dropoff', dropoff, '#ef4444', 'Drop-off']].forEach(([id, lngLat, color, label]) => {
     if (bdMarkers[id]) bdMarkers[id].remove();
     bdMarkers[id] = _makeMarker(bdMap, lngLat, color, label);
   });
+  // Frame both points first, then _drawRouteOnMap refines the fit to the path
+  // (and this stays put if the routing service is unavailable).
+  bdMap.fitBounds(new mapboxgl.LngLatBounds(pickup, dropoff), { padding: 56, maxZoom: 15, duration: 0 });
   await _drawRouteOnMap(bdMap, 'bd-route', 'bd-route-line', '#2196f3', pickup, dropoff);
 }
 
