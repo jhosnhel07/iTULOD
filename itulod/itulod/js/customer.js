@@ -34,34 +34,50 @@ let RATING_TARGET = null; // { kind, id }
 })();
 
 function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
+
+// Unread badge — mirrored on the sidebar link and the mobile top-bar bell.
+function setNotifCount(unread) {
+  document.querySelectorAll('.js-notif-count').forEach(el => {
+    el.textContent = unread;
+    el.style.display = unread > 0 ? 'inline-block' : 'none';
+  });
+}
 function setAvatarImg(el, url) { el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
 
 // ---- sidebar tab switching ---------------------------------------------
+const TAB_TITLES = {
+  'book-ride': ['Book a ride', 'Choose your pickup, destination, and vehicle.'],
+  'book-food': ['Food delivery', 'Order from any restaurant or store.'],
+  'book-parcel': ['Parcel delivery', 'Send a parcel across Ilocos Norte.'],
+  'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
+  'notifications': ['Notifications', 'Updates about your bookings.'],
+  'profile': ['Profile', 'Manage your account details.'],
+};
+
+// Single source of truth for switching tabs — driven by both the sidebar and
+// the mobile bottom nav (any element carrying a data-tab).
+function activateTab(name) {
+  if (!document.getElementById('tab-' + name)) return;
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+
+  // The food / parcel maps were sized while their tab was hidden — fix them up.
+  const mapTab = { 'book-food': 'food', 'book-parcel': 'parcel', 'book-ride': 'ride' }[name];
+  if (mapTab && typeof resizeBookingMap === 'function') {
+    requestAnimationFrame(() => resizeBookingMap(mapTab));
+  }
+  const titles = TAB_TITLES[name];
+  if (titles) {
+    document.getElementById('page-title').textContent = titles[0];
+    document.getElementById('page-sub').textContent = titles[1];
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  closeSidebar();
+}
+
 function wireTabNav() {
-  document.querySelectorAll('.side-link[data-tab]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.side-link[data-tab]').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      // The food / parcel maps were sized while their tab was hidden — fix them
-      // up now that the tab is visible so they match the Book a ride map.
-      const mapTab = { 'book-food': 'food', 'book-parcel': 'parcel', 'book-ride': 'ride' }[btn.dataset.tab];
-      if (mapTab && typeof resizeBookingMap === 'function') {
-        requestAnimationFrame(() => resizeBookingMap(mapTab));
-      }
-      const titles = {
-        'book-ride': ['Book a ride', 'Choose your pickup, destination, and vehicle.'],
-        'book-food': ['Food delivery', 'Order from any restaurant or store.'],
-        'book-parcel': ['Parcel delivery', 'Send a parcel across Ilocos Norte.'],
-        'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
-        'notifications': ['Notifications', 'Updates about your bookings.'],
-        'profile': ['Profile', 'Manage your account details.']
-      }[btn.dataset.tab];
-      document.getElementById('page-title').textContent = titles[0];
-      document.getElementById('page-sub').textContent = titles[1];
-      closeSidebar();
-    });
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
 }
 
@@ -453,12 +469,11 @@ async function loadNotifications() {
           title: 'No notifications yet',
           body: "We'll let you know here when there's an update on a booking."
         });
-    document.getElementById('notif-count').style.display = 'none';
+    setNotifCount(0);
     return;
   }
   const unread = data.filter(n => !n.is_read).length;
-  const countEl = document.getElementById('notif-count');
-  if (unread > 0) { countEl.style.display = 'inline-block'; countEl.textContent = unread; } else { countEl.style.display = 'none'; }
+  setNotifCount(unread);
 
   list.innerHTML = data.map(n => `
     <div class="notif-item ${n.is_read ? 'read' : ''}">

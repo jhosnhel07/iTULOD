@@ -21,18 +21,23 @@
     </div>
 
     <nav class="side-nav">
+      <span class="side-nav-label">Work</span>
       <button class="side-link active" data-tab="requests">
         <i class="fa-solid fa-inbox"></i> Booking requests
       </button>
       <button class="side-link" data-tab="accepted">
         <i class="fa-solid fa-route"></i> Accepted bookings
       </button>
+
+      <span class="side-nav-label">Money</span>
       <button class="side-link" data-tab="earnings">
         <i class="fa-solid fa-sack-dollar"></i> Earnings
       </button>
       <button class="side-link" data-tab="history">
         <i class="fa-solid fa-clock-rotate-left"></i> History
       </button>
+
+      <span class="side-nav-label">Account</span>
       <button class="side-link" data-tab="vehicle">
         <i class="fa-solid fa-car"></i> Vehicle info
       </button>
@@ -192,7 +197,7 @@
 
     <!-- ===================== HISTORY ===================== -->
     <section class="tab-panel" id="tab-history">
-      <div class="card" style="margin-bottom:0">
+      <div class="card card--flush">
         <div class="tab-row" style="margin-bottom:20px">
           <button class="tab-btn active" data-history="transport">
             <i class="fa-solid fa-car" style="margin-right:6px"></i>Rides
@@ -211,7 +216,7 @@
 
     <!-- ===================== VEHICLE INFO ===================== -->
     <section class="tab-panel" id="tab-vehicle">
-      <div class="card" style="max-width:580px">
+      <div class="card card--narrow">
         <div class="card-head">
           <h3>Your application &amp; vehicle</h3>
           <!-- Status badge populated by JS -->
@@ -231,7 +236,7 @@
 
     <!-- ===================== PROFILE ===================== -->
     <section class="tab-panel" id="tab-profile">
-      <div class="card" style="max-width:560px">
+      <div class="card card--narrow">
         <div class="card-head"><h3>Edit profile</h3></div>
         <div class="avatar-upload">
           <div class="preview" id="profile-avatar-preview">
@@ -287,6 +292,15 @@
       </div>
     </div>
   </main>
+
+  <!-- Mobile bottom nav — primary tabs; the hamburger keeps everything -->
+  <nav class="bottom-nav" aria-label="Primary">
+    <button data-tab="requests" class="active"><i class="fa-solid fa-inbox"></i><span>Requests</span></button>
+    <button data-tab="accepted"><i class="fa-solid fa-route"></i><span>Active</span></button>
+    <button data-tab="earnings"><i class="fa-solid fa-sack-dollar"></i><span>Earnings</span></button>
+    <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+    <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
+  </nav>
 </div>
 
 <script src="../js/config.js"></script>

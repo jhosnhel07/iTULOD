@@ -59,29 +59,38 @@ async function checkApproval() {
 }
 
 // ---- tab nav ---------------------------------------------------------
+const TAB_TITLES = {
+  requests: ['Booking requests', 'New bookings waiting for a rider.'],
+  accepted: ['Accepted bookings', 'Your current rides and deliveries.'],
+  earnings: ['Earnings', 'Track your daily, weekly, and monthly income.'],
+  history: ['History', 'Completed and cancelled bookings.'],
+  vehicle: ['Vehicle info', 'Your application and vehicle details.'],
+  profile: ['Profile', 'Manage your account details.'],
+};
+
+// Single source of truth for switching tabs — driven by both the sidebar and
+// the mobile bottom nav (any element carrying a data-tab).
+function activateTab(name) {
+  if (!document.getElementById('tab-' + name)) return;
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+
+  // The nav map lives inside this tab and was sized while hidden — fix it up.
+  if (name === 'accepted' && typeof resizeNavigationMap === 'function') {
+    requestAnimationFrame(() => resizeNavigationMap());
+  }
+  const titles = TAB_TITLES[name];
+  if (titles) {
+    document.getElementById('page-title').textContent = titles[0];
+    document.getElementById('page-sub').textContent = titles[1];
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  closeSidebar();
+}
+
 function wireTabNav() {
-  document.querySelectorAll('.side-link[data-tab]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.side-link[data-tab]').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      // The nav map lives inside this tab and was sized while hidden — fix it up now that it's visible.
-      if (btn.dataset.tab === 'accepted' && typeof resizeNavigationMap === 'function') {
-        requestAnimationFrame(() => resizeNavigationMap());
-      }
-      const titles = {
-        requests: ['Booking requests', 'New bookings waiting for a rider.'],
-        accepted: ['Accepted bookings', 'Your current rides and deliveries.'],
-        earnings: ['Earnings', 'Track your daily, weekly, and monthly income.'],
-        history: ['History', 'Completed and cancelled bookings.'],
-        vehicle: ['Vehicle info', 'Your application and vehicle details.'],
-        profile: ['Profile', 'Manage your account details.']
-      }[btn.dataset.tab];
-      document.getElementById('page-title').textContent = titles[0];
-      document.getElementById('page-sub').textContent = titles[1];
-      closeSidebar();
-    });
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
 }
 

@@ -34,6 +34,7 @@
         </div>
 
         <nav class="side-nav">
+          <span class="side-nav-label">Book</span>
           <button class="side-link active" data-tab="book-ride">
             <i class="fa-solid fa-car"></i> Book a ride
           </button>
@@ -43,6 +44,8 @@
           <button class="side-link" data-tab="book-parcel">
             <i class="fa-solid fa-box"></i> Parcel delivery
           </button>
+
+          <span class="side-nav-label">Activity</span>
           <button class="side-link" data-tab="history">
             <i class="fa-solid fa-clock-rotate-left"></i> Booking history
           </button>
@@ -50,10 +53,12 @@
             <i class="fa-solid fa-bell"></i> Notifications
             <span
               id="notif-count"
-              class="badge badge--danger"
+              class="badge badge--danger js-notif-count"
               style="display: none; margin-left: auto"
             ></span>
           </button>
+
+          <span class="side-nav-label">Account</span>
           <button class="side-link" data-tab="profile">
             <i class="fa-solid fa-user"></i> Profile
           </button>
@@ -85,13 +90,23 @@
       <!-- =================== MAIN =================== -->
       <main class="main">
         <div class="mobile-topbar">
-          <button onclick="toggleSidebar()">
+          <button onclick="toggleSidebar()" aria-label="Menu">
             <i class="fa-solid fa-bars"></i>
           </button>
           <span class="brand" style="font-size: 1.1rem; color: var(--blue)">
             iTULOD<span class="dot">.</span>
           </span>
-          <span></span>
+          <button
+            class="topbar-action"
+            onclick="activateTab('notifications')"
+            aria-label="Notifications"
+          >
+            <i class="fa-solid fa-bell"></i>
+            <span
+              class="badge badge--danger js-notif-count"
+              style="display: none"
+            ></span>
+          </button>
         </div>
 
         <div class="page-head">
@@ -412,67 +427,76 @@
             <div class="card">
               <div class="card-head"><h3>Parcel delivery request</h3></div>
               <form id="parcel-form">
-                <div class="field-row">
-                  <div class="field">
-                    <label>Sender name</label>
-                    <input type="text" id="parcel-sender-name" required />
+                <div class="field-group">
+                  <div class="field-group__title"><i class="fa-solid fa-user"></i> Sender</div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Sender name</label>
+                      <input type="text" id="parcel-sender-name" required />
+                    </div>
+                    <div class="field">
+                      <label>Sender phone</label>
+                      <input type="tel" id="parcel-sender-phone" />
+                    </div>
                   </div>
                   <div class="field">
-                    <label>Sender phone</label>
-                    <input type="tel" id="parcel-sender-phone" />
-                  </div>
-                </div>
-                <div class="field">
-                  <label>Sender address (pickup)</label>
-                  <div class="input-map">
-                    <input
-                      type="text"
-                      id="parcel-sender-address"
-                      required
-                      placeholder="e.g. Brgy. San Lorenzo, Laoag City"
-                    />
-                    <button
-                      type="button"
-                      class="map-pin-btn"
-                      onclick="pinOnMap('parcel', 'pickup')"
-                      aria-label="Set sender address on map"
-                      title="Set on map"
-                    >
-                      <i class="fa-solid fa-map-location-dot"></i>
-                    </button>
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field">
-                    <label>Receiver name</label>
-                    <input type="text" id="parcel-receiver-name" required />
-                  </div>
-                  <div class="field">
-                    <label>Receiver phone</label>
-                    <input type="tel" id="parcel-receiver-phone" />
-                  </div>
-                </div>
-                <div class="field">
-                  <label>Receiver address (drop-off)</label>
-                  <div class="input-map">
-                    <input
-                      type="text"
-                      id="parcel-receiver-address"
-                      required
-                      placeholder="e.g. Brgy. Poblacion, Pagudpud, Ilocos Norte"
-                    />
-                    <button
-                      type="button"
-                      class="map-pin-btn"
-                      onclick="pinOnMap('parcel', 'dropoff')"
-                      aria-label="Set receiver address on map"
-                      title="Set on map"
-                    >
-                      <i class="fa-solid fa-map-location-dot"></i>
-                    </button>
+                    <label>Sender address (pickup)</label>
+                    <div class="input-map">
+                      <input
+                        type="text"
+                        id="parcel-sender-address"
+                        required
+                        placeholder="e.g. Brgy. San Lorenzo, Laoag City"
+                      />
+                      <button
+                        type="button"
+                        class="map-pin-btn"
+                        onclick="pinOnMap('parcel', 'pickup')"
+                        aria-label="Set sender address on map"
+                        title="Set on map"
+                      >
+                        <i class="fa-solid fa-map-location-dot"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+                <div class="field-group">
+                  <div class="field-group__title"><i class="fa-solid fa-user-check"></i> Receiver</div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Receiver name</label>
+                      <input type="text" id="parcel-receiver-name" required />
+                    </div>
+                    <div class="field">
+                      <label>Receiver phone</label>
+                      <input type="tel" id="parcel-receiver-phone" />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Receiver address (drop-off)</label>
+                    <div class="input-map">
+                      <input
+                        type="text"
+                        id="parcel-receiver-address"
+                        required
+                        placeholder="e.g. Brgy. Poblacion, Pagudpud, Ilocos Norte"
+                      />
+                      <button
+                        type="button"
+                        class="map-pin-btn"
+                        onclick="pinOnMap('parcel', 'dropoff')"
+                        aria-label="Set receiver address on map"
+                        title="Set on map"
+                      >
+                        <i class="fa-solid fa-map-location-dot"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <div class="field-group__title"><i class="fa-solid fa-box-open"></i> Parcel</div>
                 <!-- Parcel size radio cards -->
                 <div class="field">
                   <label>Parcel size</label>
@@ -541,6 +565,8 @@
                   <label>Delivery instructions</label>
                   <textarea id="parcel-instructions" rows="2"></textarea>
                 </div>
+                </div>
+
                 <div class="field">
                   <label>Vehicle type</label>
                   <select id="parcel-vehicle" required></select>
@@ -629,7 +655,7 @@
 
         <!-- ===================== HISTORY ===================== -->
         <section class="tab-panel" id="tab-history">
-          <div class="card" style="margin-bottom: 0">
+          <div class="card card--flush">
             <div class="tab-row" style="margin-bottom: 20px">
               <button class="tab-btn active" data-history="transport">
                 <i class="fa-solid fa-car" style="margin-right: 6px"></i>Rides
@@ -691,7 +717,7 @@
 
         <!-- ===================== PROFILE ===================== -->
         <section class="tab-panel" id="tab-profile">
-          <div class="card" style="max-width: 560px">
+          <div class="card card--narrow">
             <div class="card-head"><h3>Edit profile</h3></div>
             <div class="avatar-upload">
               <div class="preview" id="profile-avatar-preview">
@@ -734,6 +760,15 @@
           </div>
         </section>
       </main>
+
+      <!-- Mobile bottom nav — primary tabs; the hamburger keeps everything -->
+      <nav class="bottom-nav" aria-label="Primary">
+        <button data-tab="book-ride" class="active"><i class="fa-solid fa-car"></i><span>Ride</span></button>
+        <button data-tab="book-food"><i class="fa-solid fa-utensils"></i><span>Food</span></button>
+        <button data-tab="book-parcel"><i class="fa-solid fa-box"></i><span>Parcel</span></button>
+        <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+        <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
+      </nav>
     </div>
 
     <!-- GCash confirmation: shows the exact amount PayMongo is about to

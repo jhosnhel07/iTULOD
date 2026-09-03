@@ -23,24 +23,31 @@
         </div>
 
         <nav class="side-nav">
+          <span class="side-nav-label">Overview</span>
           <button class="side-link active" data-tab="analytics">
             <i class="fa-solid fa-chart-pie"></i> Analytics
           </button>
+
+          <span class="side-nav-label">People</span>
           <button class="side-link" data-tab="customers">
             <i class="fa-solid fa-users"></i> Customers
           </button>
           <button class="side-link" data-tab="riders">
             <i class="fa-solid fa-id-card"></i> Riders &amp; applications
           </button>
-          <button class="side-link" data-tab="vehicles">
-            <i class="fa-solid fa-car-side"></i> Vehicle categories
-          </button>
+
+          <span class="side-nav-label">Operations</span>
           <button class="side-link" data-tab="bookings">
             <i class="fa-solid fa-route"></i> Bookings &amp; deliveries
           </button>
           <button class="side-link" data-tab="payments">
             <i class="fa-solid fa-sack-dollar"></i> Payments
           </button>
+          <button class="side-link" data-tab="vehicles">
+            <i class="fa-solid fa-car-side"></i> Vehicle categories
+          </button>
+
+          <span class="side-nav-label">System</span>
           <button class="side-link" data-tab="announcements">
             <i class="fa-solid fa-bullhorn"></i> Announcements
           </button>
@@ -420,7 +427,7 @@
         <section class="tab-panel" id="tab-settings">
           <div class="settings-grid">
             <!-- Left: Platform settings -->
-            <div class="card" style="margin-bottom:0">
+            <div class="card card--flush">
               <div class="card-head"><h3>Platform settings</h3></div>
 
               <div class="field">
@@ -444,7 +451,7 @@
             </div>
 
             <!-- Right: Database backup -->
-            <div class="card" style="margin-bottom:0">
+            <div class="card card--flush">
               <div class="card-head"><h3>Database backup</h3></div>
 
               <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:20px;line-height:1.6">
