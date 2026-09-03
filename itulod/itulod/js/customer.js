@@ -465,21 +465,18 @@ function renderHistoryCard(b, kind) {
   const needsPaymentRetry = kind === 'transport' && b.payment_method === 'gcash'
     && ['pending', 'failed'].includes(b.payment_status) && b.status !== 'cancelled';
 
-  return `
-    <div class="booking-card" role="button" tabindex="0" onclick="openBookingDetails({ kind: '${kind}', id: '${b.id}' })" onkeydown="if(event.key==='Enter'||event.key===' '){ openBookingDetails({ kind: '${kind}', id: '${b.id}' }); }">
-      <div class="kind-icon" style="background:${COLOR_BY_KIND[kind]}"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i></div>
-      <div class="info"><div><h4>${escapeHtml(title)}</h4><p>${escapeHtml(sub)}</p></div></div>
-      <div class="meta">
-        <span class="fare">${peso(fare)}</span>
-        ${statusBadge(b.status)}
-        ${kind === 'transport' ? paymentBadge(b) : ''}
-        <div class="row-actions" style="margin-top:8px;justify-content:flex-end">
-          ${needsPaymentRetry ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); retryPayment('${b.id}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay with GCash</button>` : ''}
-          ${canCancel ? `<button class="btn btn-outline btn-sm btn-danger-ghost" onclick="event.stopPropagation(); cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ''}
-          ${canRate ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openRateModal('${kind}','${b.id}')"><i class="fa-solid fa-star"></i> Rate rider</button>` : ''}
-        </div>
-      </div>
-    </div>`;
+  const actions = [
+    needsPaymentRetry && `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); retryPayment('${b.id}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay with GCash</button>`,
+    canCancel && `<button class="btn btn-outline btn-sm btn-danger-ghost" onclick="event.stopPropagation(); cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>`,
+    canRate && `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openRateModal('${kind}','${b.id}')"><i class="fa-solid fa-star"></i> Rate rider</button>`,
+  ].filter(Boolean).join('');
+
+  return bookingCardHTML({
+    kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
+    title, sub, fare, status: b.status,
+    footLeft: kind === 'transport' ? paymentBadge(b) : '',
+    actions,
+  });
 }
 
 function paymentBadge(b) {

@@ -154,6 +154,32 @@ function statusBadge(status) {
   return `<span class="badge ${map[status] || 'badge--pending'}">${status}</span>`;
 }
 
+// One booking-list row, used on the customer history/home and the rider
+// requests/accepted lists. Fixed layout: fare + status always sit top-right,
+// the payment badge always bottom-left, action buttons always bottom-right —
+// so nothing shifts between cards.
+function bookingCardHTML({ kind, id, iconBg, icon, title, sub, fare, status = '', footLeft = '', actions = '', clickable = true }) {
+  const open = `openBookingDetails({ kind: '${kind}', id: '${id}' })`;
+  const clickAttrs = clickable
+    ? ` role="button" tabindex="0" onclick="${open}" onkeydown="if(event.key==='Enter'||event.key===' '){ ${open} }"`
+    : '';
+  const foot = (footLeft || actions)
+    ? `<div class="booking-card__foot"><div class="booking-card__foot-l">${footLeft}</div><div class="booking-card__foot-r">${actions}</div></div>`
+    : '';
+  return `
+    <div class="booking-card"${clickAttrs}>
+      <div class="booking-card__main">
+        <div class="kind-icon" style="background:${iconBg}"><i class="fa-solid ${icon}"></i></div>
+        <div class="info"><div><h4>${escapeHtml(title)}</h4><p>${escapeHtml(sub)}</p></div></div>
+        <div class="booking-card__end">
+          <span class="fare">${peso(fare)}</span>
+          ${status ? statusBadge(status) : ''}
+        </div>
+      </div>
+      ${foot}
+    </div>`;
+}
+
 // ---- Fare estimation (base fare + per-km rate; distance is simulated
 // from the two typed addresses since no live map/geocoding is wired in) --
 function estimateFare(vehicle, distanceKm) {

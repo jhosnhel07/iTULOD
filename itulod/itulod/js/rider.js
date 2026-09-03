@@ -205,21 +205,17 @@ function renderRequestCard(b, kind) {
   const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
     : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
     : `${b.sender_address} → ${b.receiver_address}`;
-  const fare = b.estimated_fare;
   const disabledReason = !RIDER_APPROVED
     ? 'disabled title="Wait for admin approval"'
     : RIDER_HAS_ACTIVE_BOOKING
       ? 'disabled title="Finish your current booking before accepting another"'
       : '';
-  return `
-    <div class="booking-card" role="button" tabindex="0" onclick="openBookingDetails({ kind: '${kind}', id: '${b.id}' })" onkeydown="if(event.key==='Enter'||event.key===' '){ openBookingDetails({ kind: '${kind}', id: '${b.id}' }); }">
-      <div class="kind-icon" style="background:${COLOR_BY_KIND[kind]}"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i></div>
-      <div class="info"><div><h4>${escapeHtml(title)}</h4><p>${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}</p></div></div>
-      <div class="meta">
-        <span class="fare">${peso(fare)}</span>
-        <button class="btn btn-primary btn-sm" ${disabledReason} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')">Accept</button>
-      </div>
-    </div>`;
+  return bookingCardHTML({
+    kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
+    title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
+    fare: b.estimated_fare,
+    actions: `<button class="btn btn-primary btn-sm" ${disabledReason} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
+  });
 }
 
 async function acceptBooking(kind, id) {
@@ -294,20 +290,18 @@ function renderAcceptedCard(b, kind) {
     : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
     : `${b.sender_address} → ${b.receiver_address}`;
   const nextAction = b.status === 'accepted'
-    ? `<button class="btn btn-outline btn-sm" onclick="updateStatus('${kind}','${b.id}','ongoing')">Start trip</button>`
-    : `<button class="btn btn-primary btn-sm" onclick="updateStatus('${kind}','${b.id}','completed')">Mark complete</button>`;
+    ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
+    : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','completed')"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`;
   const paymentNote = kind === 'transport' && b.payment_method !== 'cash'
     ? `<span class="badge ${b.payment_status === 'paid' ? 'badge--completed' : 'badge--pending'}">${b.payment_method === 'gcash' ? 'GCash' : 'Card'} · ${b.payment_status}</span>`
     : '';
-  return `
-    <div class="booking-card">
-      <div class="kind-icon" style="background:${COLOR_BY_KIND[kind]}"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i></div>
-      <div class="info"><div><h4>${escapeHtml(title)}</h4><p>${statusBadge(b.status)} ${paymentNote}</p></div></div>
-      <div class="meta">
-        <span class="fare">${peso(b.estimated_fare)}</span>
-        ${nextAction}
-      </div>
-    </div>`;
+  return bookingCardHTML({
+    kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
+    title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
+    fare: b.estimated_fare, status: b.status,
+    footLeft: paymentNote,
+    actions: nextAction,
+  });
 }
 
 async function updateStatus(kind, id, status) {

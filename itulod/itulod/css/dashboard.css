@@ -850,13 +850,10 @@ table.data-table tbody tr:nth-child(even):hover td {
 .booking-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 18px 20px;
+  padding: 16px 18px;
   margin-bottom: 12px;
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
   background: var(--white);
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease, transform 0.15s ease;
@@ -867,9 +864,16 @@ table.data-table tbody tr:nth-child(even):hover td {
   transform: translateY(-1px);
 }
 
+/* Row 1: icon · title/sub · (fare + status), always in that order */
+.booking-card__main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .booking-card .kind-icon {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 11px;
   display: flex;
   align-items: center;
@@ -884,7 +888,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   gap: 14px;
   align-items: center;
   flex: 1;
-  min-width: 220px;
+  min-width: 0;
 }
 
 .booking-card .info h4 {
@@ -899,18 +903,55 @@ table.data-table tbody tr:nth-child(even):hover td {
   font-size: 0.81rem;
 }
 
-.booking-card .meta {
-  text-align: right;
+/* fixed top-right block — fare over status, every card */
+.booking-card__end {
+  margin-left: auto;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  text-align: right;
 }
 
 .booking-card .fare {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.05rem;
-  display: block;
-  margin-bottom: 6px;
   color: var(--ink);
+}
+
+/* Row 2: payment badge left, action buttons right — fixed, only rendered
+   when there's something to put in it */
+.booking-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.booking-card__foot-l {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.booking-card__foot-r {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.booking-card__foot-l:empty {
+  display: none;
+}
+
+/* legacy — old .meta layout, kept only so a stale cache renders acceptably */
+.booking-card .meta {
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* Rider request cards */
@@ -2981,4 +3022,45 @@ body {
 .notif-item p {
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* The single wrapping <div> inside .info must be allowed to shrink or its
+   text won't wrap and long addresses get clipped. */
+.booking-card .info > div {
+  min-width: 0;
+}
+
+/* Booking cards on phones: fare + status drop to their own full-width row
+   below the title; action buttons stack full-width. */
+@media (max-width: 560px) {
+  .booking-card__main {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 8px;
+  }
+  .booking-card .info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .booking-card__end {
+    flex-basis: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0 0 0 56px;
+    gap: 10px;
+    text-align: left;
+  }
+  .booking-card__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .booking-card__foot-r {
+    flex-direction: column;
+    margin-left: 0;
+  }
+  .booking-card__foot-r .btn {
+    width: 100%;
+  }
 }
