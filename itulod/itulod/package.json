@@ -1,0 +1,14 @@
+{
+  "name": "itulod",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "iTULOD — rides, food & parcel delivery (static frontend + Supabase). This package.json exists only for the test suite; the app itself has no build step.",
+  "scripts": {
+    "test": "node --test \"test/unit/*.test.mjs\"",
+    "test:integration": "node --test \"test/integration/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}

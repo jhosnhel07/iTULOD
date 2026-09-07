@@ -9,5 +9,9 @@ config.secrets.js
 **/supabase/.temp/
 **/supabase/.branches/
 
+# Node dependencies (tests only — the app ships no build step)
+**/node_modules/
+npm-debug.log*
+
 # Claude Code local machine settings (may contain secrets in allow-list entries)
 .claude/settings.local.json
