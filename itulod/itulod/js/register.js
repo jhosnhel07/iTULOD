@@ -195,6 +195,10 @@
         document
           .getElementById("role-rider")
           .classList.toggle("selected", role === "rider");
+        // Progress circles follow the role: blue for customer, rose for rider
+        document
+          .getElementById("step-indicator")
+          .classList.toggle("role-rider", role === "rider");
         // Next button color
         const btn = document.getElementById("btn-role-next");
         btn.className = "btn-next" + (role === "rider" ? " orange" : "");
@@ -1020,6 +1024,11 @@
         }
 
         restoreRegistrationDraft();
+
+        // Sync every role-dependent bit of UI (role card, Next button, step
+        // colours, licence field) — covers a ?role=rider link with no saved draft,
+        // where restoreRegistrationDraft() returns before calling selectRole().
+        selectRole(selectedRole);
 
         // A restored draft sets values directly (no input event), so re-run the
         // masks once so an in-progress phone / plate / licence shows formatted.
