@@ -35,6 +35,8 @@ let RATING_TARGET = null; // { kind, id }
   populateProfileForm();
   subscribeRealtime();
 
+  if (typeof enablePushNotifications === 'function') enablePushNotifications();
+
   // Maps last and isolated — if Mapbox fails to load (CDN blocked, offline)
   // the rest of the dashboard must still work.
   if (typeof mapboxgl !== 'undefined') {
@@ -115,6 +117,62 @@ function wireTabNav() {
   });
 }
 
+// ---- fare estimator: real OSRM road distance when we can get it, the
+//      deterministic placeholder otherwise --------------------------------
+function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl }) {
+  let route = null;        // { km, pickup:[lng,lat], dropoff:[lng,lat] } once a real route is known
+  let lastKey = '';
+  let timer = null;
+  const vehicle = () => VEHICLES.find(v => v.id === vehicleSel.value);
+  const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase();
+
+  function render(km, isReal) {
+    distanceEl.textContent = km ? km.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
+    fareEl.textContent = km ? peso(estimateFare(vehicle(), km)) : '₱0.00';
+  }
+
+  function recalc() {
+    const a = (pickupEl.value || '').trim();
+    const b = (dropoffEl.value || '').trim();
+    if (!a || !b) { route = null; lastKey = ''; render(null); return; }
+    const key = keyOf();
+    if (route && key === lastKey) { render(route.km, true); return; }
+    render(simulateDistanceKm(a.toLowerCase(), b.toLowerCase()), false);
+    lastKey = key;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      if (typeof routeBetweenAddresses !== 'function') return;
+      const r = await routeBetweenAddresses(a, b);
+      if (r && keyOf() === lastKey) {
+        route = { km: r.km, pickup: r.pickup, dropoff: r.dropoff };
+        render(r.km, true);
+      }
+    }, 700);
+  }
+
+  // Pinning both points on the map hands us coordinates + a real route now.
+  if (typeof onBookingRoute === 'function') {
+    onBookingRoute(tab, ({ km, pickup, dropoff }) => {
+      route = { km, pickup, dropoff };
+      lastKey = keyOf();
+      render(km, true);
+    });
+  }
+
+  [pickupEl, dropoffEl, vehicleSel].forEach(el => el && el.addEventListener('input', recalc));
+
+  return {
+    recalc,
+    current() {
+      const km = route ? route.km : simulateDistanceKm(
+        (pickupEl.value || '').trim().toLowerCase(),
+        (dropoffEl.value || '').trim().toLowerCase(),
+      );
+      return { km, coords: route ? { pickup: route.pickup, dropoff: route.dropoff } : null };
+    },
+  };
+}
+
 // ---- vehicle select + fare estimate -------------------------------------
 async function loadVehicleOptions() {
   const { data, error } = await supabase.from('vehicles').select('*').eq('is_available', true).order('base_fare');
@@ -136,20 +194,13 @@ function wireRideForm() {
   const distanceEl = document.getElementById('ride-distance');
   const fareEl = document.getElementById('ride-fare');
 
-  function recalc() {
-    if (!pickup.value || !dest.value) { distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; return; }
-    const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
-    const km = simulateDistanceKm(pickup.value.toLowerCase(), dest.value.toLowerCase());
-    distanceEl.textContent = km.toFixed(1) + ' km';
-    fareEl.textContent = peso(estimateFare(vehicle, km));
-  }
-  [pickup, dest, vehicleSel].forEach(el => el.addEventListener('input', recalc));
+  const est = createFareEstimator({ tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl });
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-ride', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-ride', form));
   });
   restoreFormDraft('itulod-customer-ride', form);
-  recalc();
+  est.recalc();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -158,7 +209,7 @@ function wireRideForm() {
     if (!requireFields({ 'Pickup location': pickup.value, 'Destination': dest.value, 'Vehicle': vehicle })) return;
 
     const paymentMethod = document.getElementById('ride-payment').value; // cash | gcash
-    const km = simulateDistanceKm(pickup.value.toLowerCase(), dest.value.toLowerCase());
+    const { km, coords } = est.current();
     // One fare value for both the inserted row and the confirmation modal, so
     // the amount shown can never drift from the amount charged.
     const fare = estimateFare(vehicle, km);
@@ -168,8 +219,12 @@ function wireRideForm() {
       vehicle_id: vehicle.id,
       pickup_address: pickup.value.trim(),
       destination_address: dest.value.trim(),
-      distance_km: km,
+      distance_km: Number(km.toFixed(2)),
       estimated_fare: fare,
+      pickup_lng: coords?.pickup?.[0] ?? null,
+      pickup_lat: coords?.pickup?.[1] ?? null,
+      destination_lng: coords?.dropoff?.[0] ?? null,
+      destination_lat: coords?.dropoff?.[1] ?? null,
       status: 'pending',
       payment_method: paymentMethod
     }).select('id').single();
@@ -218,20 +273,13 @@ function wireFoodForm() {
   const distanceEl = document.getElementById('food-distance');
   const fareEl = document.getElementById('food-fare');
 
-  function recalc() {
-    if (!pickup.value || !address.value) { distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; return; }
-    const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
-    const km = simulateDistanceKm(pickup.value.toLowerCase(), address.value.toLowerCase());
-    distanceEl.textContent = km.toFixed(1) + ' km';
-    fareEl.textContent = peso(estimateFare(vehicle, km));
-  }
-  [pickup, address, vehicleSel].forEach(el => el && el.addEventListener('input', recalc));
+  const est = createFareEstimator({ tab: 'food', pickupEl: pickup, dropoffEl: address, vehicleSel, distanceEl, fareEl });
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-food', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-food', form));
   });
   restoreFormDraft('itulod-customer-food', form);
-  recalc();
+  est.recalc();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -240,16 +288,26 @@ function wireFoodForm() {
     const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
     const instructions = document.getElementById('food-instructions').value.trim();
     if (!requireFields({ 'Restaurant/store name': restaurant, 'Pickup location': pickup.value, 'Delivery address': address.value, 'Vehicle': vehicle })) return;
-    const km = simulateDistanceKm(pickup.value.toLowerCase(), address.value.toLowerCase());
+    const { km } = est.current();
+    const fare = estimateFare(vehicle, km);
+    const paymentMethod = document.getElementById('food-payment')?.value || 'cash';
     setLoading(btn, true);
-    const { error } = await supabase.from('food_deliveries').insert({
+    const { data: booking, error } = await supabase.from('food_deliveries').insert({
       customer_id: CURRENT_PROFILE.id, restaurant_name: restaurant,
       pickup_address: pickup.value.trim(), delivery_address: address.value.trim(),
-      instructions, vehicle_id: vehicle.id, estimated_fare: estimateFare(vehicle, km),
-      distance_km: km, status: 'pending'
-    });
+      instructions, vehicle_id: vehicle.id, estimated_fare: fare,
+      distance_km: Number(km.toFixed(2)), status: 'pending', payment_method: paymentMethod
+    }).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
+
+    if (paymentMethod === 'gcash') {
+      openGcashConfirm({
+        bookingType: 'food', bookingId: booking.id, amount: fare,
+        rows: [['Payment method', 'GCash'], ['Restaurant', restaurant], ['Deliver to', address.value.trim()], ['Distance', km.toFixed(1) + ' km']],
+      });
+      return;
+    }
     toast('Food delivery requested!', 'success');
     clearFormDraft('itulod-customer-food');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
@@ -265,40 +323,38 @@ function wireParcelForm() {
   const distanceEl = document.getElementById('parcel-distance');
   const fareEl = document.getElementById('parcel-fare');
 
-  function recalc() {
-    if (!senderAddr.value || !receiverAddr.value) { distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; return; }
-    const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
-    const km = simulateDistanceKm(senderAddr.value.toLowerCase(), receiverAddr.value.toLowerCase());
-    distanceEl.textContent = km.toFixed(1) + ' km';
-    fareEl.textContent = peso(estimateFare(vehicle, km));
-  }
-  [senderAddr, receiverAddr, vehicleSel].forEach(el => el && el.addEventListener('input', recalc));
+  const est = createFareEstimator({ tab: 'parcel', pickupEl: senderAddr, dropoffEl: receiverAddr, vehicleSel, distanceEl, fareEl });
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-parcel', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-parcel', form));
   });
   restoreFormDraft('itulod-customer-parcel', form);
-  recalc();
+  est.recalc();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('parcel-submit');
     const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
+    const { km } = est.current();
+    const fare = vehicle ? estimateFare(vehicle, km) : null;
+    const paymentMethod = document.getElementById('parcel-payment')?.value || 'cash';
     const payload = {
       customer_id: CURRENT_PROFILE.id,
       sender_name: document.getElementById('parcel-sender-name').value.trim(),
-      sender_phone: document.getElementById('parcel-sender-phone').value.trim(),
+      sender_phone: normalizePhoneMobile(document.getElementById('parcel-sender-phone').value),
       sender_address: senderAddr.value.trim(),
       receiver_name: document.getElementById('parcel-receiver-name').value.trim(),
-      receiver_phone: document.getElementById('parcel-receiver-phone').value.trim(),
+      receiver_phone: normalizePhoneMobile(document.getElementById('parcel-receiver-phone').value),
       receiver_address: receiverAddr.value.trim(),
       parcel_size: (document.querySelector('input[name="parcel-size"]:checked')?.value) || 'Small (fits a shoebox)',
       parcel_weight: parseFloat(document.getElementById('parcel-weight').value) || null,
       parcel_description: document.getElementById('parcel-description').value.trim(),
       instructions: document.getElementById('parcel-instructions').value.trim(),
       vehicle_id: vehicle?.id || null,
-      estimated_fare: vehicle ? estimateFare(vehicle, simulateDistanceKm(senderAddr.value.toLowerCase(), receiverAddr.value.toLowerCase())) : null,
-      status: 'pending'
+      estimated_fare: fare,
+      distance_km: Number(km.toFixed(2)),
+      status: 'pending',
+      payment_method: paymentMethod,
     };
     if (!requireFields({
       'Sender name': payload.sender_name, 'Sender address': payload.sender_address,
@@ -306,9 +362,17 @@ function wireParcelForm() {
       'Vehicle': vehicle
     })) return;
     setLoading(btn, true);
-    const { error } = await supabase.from('parcel_deliveries').insert(payload);
+    const { data: booking, error } = await supabase.from('parcel_deliveries').insert(payload).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
+
+    if (paymentMethod === 'gcash' && fare) {
+      openGcashConfirm({
+        bookingType: 'parcel', bookingId: booking.id, amount: fare,
+        rows: [['Payment method', 'GCash'], ['To', payload.receiver_name], ['Drop-off', payload.receiver_address], ['Distance', km.toFixed(1) + ' km']],
+      });
+      return;
+    }
     toast('Parcel delivery requested!', 'success');
     clearFormDraft('itulod-customer-parcel');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
@@ -459,14 +523,16 @@ function renderHistoryCard(b, kind) {
   const fare = b.final_fare ?? b.estimated_fare;
   const canCancel = ['pending', 'accepted'].includes(b.status);
   const canRate = b.status === 'completed' && !b.rating;
-  // Only transport bookings collect payment up front (food/parcel fares are
-  // set by the rider at pickup, so they stay cash-on-completion for now).
-  // GCash is the only online method offered, so it's the only one we can retry.
-  const needsPaymentRetry = kind === 'transport' && b.payment_method === 'gcash'
-    && ['pending', 'failed'].includes(b.payment_status) && b.status !== 'cancelled';
+  // GCash bookings that aren't paid yet. Food/parcel can only be paid once the
+  // rider has confirmed the final fare at pickup.
+  const payable = kind === 'transport' ? b.estimated_fare : b.final_fare;
+  const needsPaymentRetry = b.payment_method === 'gcash'
+    && ['pending', 'failed'].includes(b.payment_status)
+    && b.status !== 'cancelled'
+    && Number(payable) > 0;
 
   const actions = [
-    needsPaymentRetry && `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); retryPayment('${b.id}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay with GCash</button>`,
+    needsPaymentRetry && `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); retryPayment('${b.id}','${kind}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay ${peso(payable)}</button>`,
     canCancel && `<button class="btn btn-outline btn-sm btn-danger-ghost" onclick="event.stopPropagation(); cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>`,
     canRate && `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openRateModal('${kind}','${b.id}')"><i class="fa-solid fa-star"></i> Rate rider</button>`,
   ].filter(Boolean).join('');
@@ -474,7 +540,7 @@ function renderHistoryCard(b, kind) {
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub, fare, status: b.status,
-    footLeft: kind === 'transport' ? paymentBadge(b) : '',
+    footLeft: paymentBadge(b),
     actions,
   });
 }
@@ -487,29 +553,24 @@ function paymentBadge(b) {
   return `<span class="badge ${cls}">${label} · ${b.payment_status}</span>`;
 }
 
-async function retryPayment(bookingId) {
-  // Re-read the row instead of trusting the rendered card: the fare may have
-  // changed since the list was drawn, and create-payment charges whatever
-  // estimated_fare currently says.
-  const { data: b, error } = await supabase
-    .from('transport_bookings')
-    .select('estimated_fare, pickup_address, destination_address, distance_km')
-    .eq('id', bookingId)
-    .single();
-
+async function retryPayment(bookingId, kind = 'transport') {
+  // Re-read the row: create-payment charges whatever the booking says now
+  // (final_fare for food/parcel once the rider set it, else the estimate).
+  const table = TABLE_BY_KIND[kind];
+  const { data: b, error } = await supabase.from(table).select('*').eq('id', bookingId).single();
   if (error || !b) { toast('Could not load that booking.', 'error'); return; }
 
-  openGcashConfirm({
-    bookingType: 'transport',
-    bookingId,
-    amount: b.estimated_fare,
-    rows: [
-      ['Payment method', 'GCash'],
-      ['Pickup', b.pickup_address],
-      ['Destination', b.destination_address],
-      ['Distance', b.distance_km ? Number(b.distance_km).toFixed(1) + ' km' : '—']
-    ]
-  });
+  const amount = kind === 'transport' ? b.estimated_fare : (b.final_fare ?? b.estimated_fare);
+  if (!amount) { toast('The rider hasn\'t confirmed the fare yet.', 'error'); return; }
+
+  const rows = kind === 'transport'
+    ? [['Payment method', 'GCash'], ['Pickup', b.pickup_address], ['Destination', b.destination_address],
+       ['Distance', b.distance_km ? Number(b.distance_km).toFixed(1) + ' km' : '—']]
+    : kind === 'food'
+      ? [['Payment method', 'GCash'], ['Restaurant', b.restaurant_name], ['Deliver to', b.delivery_address]]
+      : [['Payment method', 'GCash'], ['To', b.receiver_name], ['Drop-off', b.receiver_address]];
+
+  openGcashConfirm({ bookingType: kind, bookingId, amount, rows });
 }
 
 function renderPagination(totalPages) {

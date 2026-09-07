@@ -76,13 +76,16 @@ async function _reverseGeocode(lngLat) {
   return `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`;
 }
 
+// Draws the driving route and returns { km, min } for the real road distance
+// and time (or null if OSRM is unreachable).
 async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, dropoffLngLat) {
   const url = `https://router.project-osrm.org/route/v1/driving/${pickupLngLat[0]},${pickupLngLat[1]};${dropoffLngLat[0]},${dropoffLngLat[1]}?overview=full&geometries=geojson`;
   try {
     const res = await fetch(url);
     const data = await res.json();
-    const geom = data.routes?.[0]?.geometry;
-    if (!geom) return;
+    const route = data.routes?.[0];
+    const geom = route?.geometry;
+    if (!geom) return null;
     if (map.getSource(sourceId)) {
       map.getSource(sourceId).setData(geom);
     } else {
@@ -95,7 +98,31 @@ async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, drop
     const coords = geom.coordinates;
     const bounds = coords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(coords[0], coords[0]));
     map.fitBounds(bounds, { padding: 50 });
-  } catch (_) {}
+    return { km: route.distance / 1000, min: route.duration / 60 };
+  } catch (_) {
+    return null;
+  }
+}
+
+// Geocode two address strings and ask OSRM for the driving distance/time
+// between them. Used to price a booking from the typed addresses before the
+// customer has pinned anything on the map. Returns
+// { km, min, pickup:[lng,lat], dropoff:[lng,lat] } or null.
+async function routeBetweenAddresses(pickupText, dropoffText) {
+  if (!pickupText || !dropoffText) return null;
+  try {
+    const [p, d] = await Promise.all([
+      _geocodeAddress(pickupText),
+      _geocodeAddress(dropoffText),
+    ]);
+    if (!p || !d) return null;
+    const url = `https://router.project-osrm.org/route/v1/driving/${p[0]},${p[1]};${d[0]},${d[1]}?overview=false`;
+    const route = (await (await fetch(url)).json()).routes?.[0];
+    if (!route) return null;
+    return { km: route.distance / 1000, min: route.duration / 60, pickup: p, dropoff: d };
+  } catch (_) {
+    return null;
+  }
 }
 
 function _makeMarker(map, lngLat, color, label) {
@@ -180,11 +207,21 @@ async function _setStop(tab, lngLat, address) {
     cfg.markers.dropoff = _makeMarker(cfg.map, lngLat, '#ef4444', 'Drop-off');
   }
   if (cfg.markers.pickup && cfg.markers.dropoff) {
-    _drawRouteOnMap(cfg.map, cfg.routeSource, cfg.routeLayer, cfg.routeColor,
-      cfg.markers.pickup.getLngLat().toArray(),
-      cfg.markers.dropoff.getLngLat().toArray()
-    );
+    const p = cfg.markers.pickup.getLngLat().toArray();
+    const d = cfg.markers.dropoff.getLngLat().toArray();
+    _drawRouteOnMap(cfg.map, cfg.routeSource, cfg.routeLayer, cfg.routeColor, p, d)
+      .then(route => {
+        if (route && typeof cfg.onRoute === 'function') {
+          cfg.onRoute({ km: route.km, min: route.min, pickup: p, dropoff: d });
+        }
+      });
   }
+}
+
+// The customer form registers a callback here so the fare updates the moment
+// a real route is known (from pinning both points on the map).
+function onBookingRoute(tab, cb) {
+  if (_maps[tab]) _maps[tab].onRoute = cb;
 }
 
 function _wireMapClick(tab) {
@@ -399,6 +436,103 @@ async function showRiderRoute(pickupAddr, dropoffAddr) {
 // so the map actually renders instead of staying blank.
 function resizeNavigationMap() {
   if (navMap) navMap.resize();
+}
+
+/* ── Live rider tracking ────────────────────────────────────────────────────
+   Rider side: push our GPS to rider_locations every ~12s while on a job.
+   Customer side: subscribe to that row and move a marker on the details map. */
+let _locWatchId = null;
+let _locTimer = null;
+let _locLast = 0;
+
+function startLocationBroadcast(bookingType, bookingId) {
+  if (!('geolocation' in navigator) || typeof supabase === 'undefined') return;
+  if (_locWatchId != null) return; // already running
+  const push = (pos) => {
+    const now = Date.now();
+    if (now - _locLast < 10000) return;     // throttle to ~1 write / 10s
+    _locLast = now;
+    supabase.from('rider_locations').upsert({
+      rider_id: (typeof CURRENT_PROFILE !== 'undefined' && CURRENT_PROFILE?.id) || null,
+      booking_type: bookingType || null,
+      booking_id: bookingId || null,
+      lat: Number(pos.coords.latitude.toFixed(6)),
+      lng: Number(pos.coords.longitude.toFixed(6)),
+      heading: pos.coords.heading != null ? Number(pos.coords.heading.toFixed(1)) : null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'rider_id' }).then(() => {});
+  };
+  _locWatchId = navigator.geolocation.watchPosition(push, () => {}, {
+    enableHighAccuracy: true, maximumAge: 8000, timeout: 15000,
+  });
+}
+
+function stopLocationBroadcast() {
+  if (_locWatchId != null) { navigator.geolocation.clearWatch(_locWatchId); _locWatchId = null; }
+  clearTimeout(_locTimer);
+  if (typeof supabase !== 'undefined' && typeof CURRENT_PROFILE !== 'undefined' && CURRENT_PROFILE?.id) {
+    supabase.from('rider_locations').delete().eq('rider_id', CURRENT_PROFILE.id).then(() => {});
+  }
+}
+
+let _trackChannel = null;
+let _trackMarker = null;
+
+async function trackRiderOnBookingMap(riderId, status, pickupAddr, dropoffAddr) {
+  stopTrackingRider();
+  const map = typeof bdMap !== 'undefined' ? bdMap : null;
+  if (!map) return;
+
+  // target = pickup while the rider is en-route, drop-off once the trip started
+  const targetAddr = status === 'ongoing' ? dropoffAddr : pickupAddr;
+  const target = await _geocodeAddress(targetAddr);
+
+  const render = async (loc) => {
+    if (!loc || loc.lat == null) return;
+    const lngLat = [Number(loc.lng), Number(loc.lat)];
+    if (!_trackMarker) {
+      const el = document.createElement('div');
+      el.innerHTML = '<i class="fa-solid fa-motorcycle"></i>';
+      el.style.cssText = 'color:#0d47a1;font-size:20px;background:#fff;border-radius:50%;'
+        + 'width:34px;height:34px;display:flex;align-items:center;justify-content:center;'
+        + 'box-shadow:0 2px 10px rgba(13,71,161,.4)';
+      _trackMarker = new mapboxgl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
+    } else {
+      _trackMarker.setLngLat(lngLat);
+    }
+    if (target) {
+      const eta = await _etaMinutes(lngLat, target);
+      const el = document.getElementById('bd-eta');
+      if (el && eta != null) {
+        el.textContent = `Rider ~${Math.max(1, Math.round(eta))} min away`;
+        el.hidden = false;
+      }
+    }
+  };
+
+  const { data } = await supabase.from('rider_locations').select('*').eq('rider_id', riderId).maybeSingle();
+  if (data) render(data);
+
+  _trackChannel = supabase.channel('track-' + riderId)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'rider_locations', filter: `rider_id=eq.${riderId}` },
+      (payload) => render(payload.new))
+    .subscribe();
+}
+
+function stopTrackingRider() {
+  if (_trackChannel && typeof supabase !== 'undefined') { supabase.removeChannel(_trackChannel); _trackChannel = null; }
+  if (_trackMarker) { _trackMarker.remove(); _trackMarker = null; }
+}
+
+async function _etaMinutes(fromLngLat, toLngLat) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromLngLat[0]},${fromLngLat[1]};${toLngLat[0]},${toLngLat[1]}?overview=false`;
+    const r = (await (await fetch(url)).json()).routes?.[0];
+    return r ? r.duration / 60 : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function clearRiderRoute() {

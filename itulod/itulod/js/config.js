@@ -18,6 +18,12 @@ const CONFIG = {
   PAYMONGO_PUBLIC_KEY: 'pk_test_a8i83QxmgwNNu2tKECvRDMzF',
   PAYMONGO_API_URL: 'https://api.paymongo.com/v1',
 
+  // Web-push VAPID *public* key (safe client-side). Leave empty to disable
+  // push entirely — SMS still works. Generate a pair with:
+  //   npx web-push generate-vapid-keys
+  // put the public key here and the private key in the Edge Function secrets.
+  VAPID_PUBLIC_KEY: '',
+
   // Default admin account (seeded via sql/schema.sql)
   ADMIN_USERNAME: 'admin',
   ADMIN_EMAIL: 'admin@itulod.local'

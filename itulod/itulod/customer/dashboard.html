@@ -395,6 +395,19 @@
                   </div>
                 </div>
 
+                <div class="field">
+                  <label>Payment method</label>
+                  <select id="food-payment">
+                    <option value="cash">Cash on delivery</option>
+                    <option value="gcash">GCash</option>
+                  </select>
+                  <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
+                    <i class="fa-solid fa-lock"></i> The rider may adjust the
+                    final fare at pickup; you'll only be charged the confirmed
+                    amount.
+                  </p>
+                </div>
+
                 <button
                   class="btn btn-primary btn-block"
                   id="food-submit"
@@ -625,6 +638,19 @@
                     <span>Estimated fare</span>
                     <strong id="parcel-fare">₱0.00</strong>
                   </div>
+                </div>
+
+                <div class="field">
+                  <label>Payment method</label>
+                  <select id="parcel-payment">
+                    <option value="cash">Cash on delivery</option>
+                    <option value="gcash">GCash</option>
+                  </select>
+                  <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
+                    <i class="fa-solid fa-lock"></i> The rider may adjust the
+                    final fare at pickup; you'll only be charged the confirmed
+                    amount.
+                  </p>
                 </div>
 
                 <button
@@ -940,6 +966,7 @@
       }
     </script>
     <script src="../js/bookingDetails.js"></script>
+    <script src="../js/push.js"></script>
     <script src="../js/customer.js"></script>
   </body>
 </html>

@@ -2137,6 +2137,34 @@ table.data-table tbody tr:nth-child(even):hover td {
   display: none;
 }
 
+.bd-eta {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-soft, rgba(37, 99, 235, 0.08));
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.bd-eta[hidden] {
+  display: none;
+}
+
+.fare-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.fare-set__input {
+  width: 120px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
 .bd-map-loading {
   position: absolute;
   inset: 0;

@@ -34,6 +34,8 @@ const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel:
   await loadRiderHome();
   subscribeRealtime();
 
+  if (typeof enablePushNotifications === 'function') enablePushNotifications();
+
   // Map last and isolated — a Mapbox/CDN failure must not kill the dashboard.
   if (typeof mapboxgl !== 'undefined') {
     try {
@@ -257,6 +259,14 @@ async function loadAccepted() {
 
   updateNavMapForAccepted(merged);
 
+  // Broadcast live GPS to the customer while there's a job in progress.
+  const active = merged.find(b => b.status === 'ongoing') || merged[0];
+  if (active && typeof startLocationBroadcast === 'function') {
+    startLocationBroadcast(active._kind === 'transport' ? 'transport' : active._kind, active.id);
+  } else if (typeof stopLocationBroadcast === 'function') {
+    stopLocationBroadcast();
+  }
+
   if (merged.length === 0) {
     list.innerHTML = emptyState({
       icon: 'fa-route',
@@ -289,19 +299,48 @@ function renderAcceptedCard(b, kind) {
   const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
     : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
     : `${b.sender_address} → ${b.receiver_address}`;
+
+  // Food / parcel: the rider confirms the real fare at pickup before completing.
+  const needsFinalFare = kind !== 'transport' && b.final_fare == null;
+  const setFareAction = needsFinalFare
+    ? `<span class="fare-set">
+         <input type="number" inputmode="decimal" min="1" step="0.5" id="ff-${b.id}"
+                placeholder="₱ final fare" value="${b.estimated_fare || ''}"
+                onclick="event.stopPropagation()" class="fare-set__input">
+         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); setFinalFare('${kind}','${b.id}')">Set fare</button>
+       </span>`
+    : '';
+
+  const canComplete = b.status === 'ongoing' && !needsFinalFare;
   const nextAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
-    : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','completed')"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`;
-  const paymentNote = kind === 'transport' && b.payment_method !== 'cash'
-    ? `<span class="badge ${b.payment_status === 'paid' ? 'badge--completed' : 'badge--pending'}">${b.payment_method === 'gcash' ? 'GCash' : 'Card'} · ${b.payment_status}</span>`
+    : canComplete
+      ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','completed')"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`
+      : '';
+
+  const paidBadge = b.payment_method === 'gcash'
+    ? `<span class="badge ${b.payment_status === 'paid' ? 'badge--completed' : 'badge--pending'}">GCash · ${b.payment_status}</span>`
     : '';
+
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
-    fare: b.estimated_fare, status: b.status,
-    footLeft: paymentNote,
-    actions: nextAction,
+    fare: b.final_fare ?? b.estimated_fare, status: b.status,
+    footLeft: paidBadge,
+    actions: setFareAction + nextAction,
   });
+}
+
+async function setFinalFare(kind, id) {
+  const input = document.getElementById('ff-' + id);
+  const amount = parseFloat(input?.value);
+  if (!amount || amount <= 0) { toast('Enter the final fare.', 'error'); return; }
+  const { data, error } = await supabase.functions.invoke('finalize-fare', {
+    body: { booking_type: kind, booking_id: id, amount },
+  });
+  if (error || data?.error) { toast(data?.error || error.message, 'error'); return; }
+  toast('Fare confirmed. The customer has been notified.', 'success');
+  await loadAccepted();
 }
 
 async function updateStatus(kind, id, status) {

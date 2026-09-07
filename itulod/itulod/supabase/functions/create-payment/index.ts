@@ -33,19 +33,23 @@ Deno.serve(async (req: Request) => {
     // Load the booking and make sure it belongs to the caller.
     const { data: booking, error: bookingErr } = await admin
       .from(table)
-      .select('id, customer_id, estimated_fare, payment_status')
+      .select('id, customer_id, estimated_fare, final_fare, payment_status')
       .eq('id', booking_id)
       .single();
 
     if (bookingErr || !booking) return json({ error: 'Booking not found.' }, 404);
     if (booking.customer_id !== user.id) return json({ error: 'This booking does not belong to you.' }, 403);
     if (booking.payment_status === 'paid') return json({ error: 'This booking is already paid.' }, 400);
-    if (!booking.estimated_fare || Number(booking.estimated_fare) <= 0) {
+
+    // Charge the confirmed final fare when the rider has set one (food / parcel),
+    // otherwise the up-front estimate (transport).
+    const payable = Number(booking.final_fare ?? booking.estimated_fare ?? 0);
+    if (payable <= 0) {
       return json({ error: 'Booking has no payable amount yet.' }, 400);
     }
 
     const secretKey = Deno.env.get('PAYMONGO_SECRET_KEY')!;
-    const amount = toCentavos(booking.estimated_fare);
+    const amount = toCentavos(payable);
     const siteUrl = Deno.env.get('SITE_URL') || '';
 
     const { data: profile } = await admin.from('profiles').select('full_name').eq('id', user.id).single();

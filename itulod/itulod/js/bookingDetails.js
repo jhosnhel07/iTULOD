@@ -110,10 +110,12 @@
         : kind === 'food' ? booking.delivery_address
         : booking.receiver_address;
 
+      const liveTrackable = booking.rider_id && ['accepted', 'ongoing'].includes(booking.status);
       const mapSection = (routePickup && routeDropoff) ? `
         <button type="button" class="btn btn-outline btn-block bd-map-toggle" id="bd-map-toggle">
-          <i class="fa-solid fa-map-location-dot"></i> View route on map
+          <i class="fa-solid fa-map-location-dot"></i> ${liveTrackable ? 'Track rider on map' : 'View route on map'}
         </button>
+        <p id="bd-eta" class="bd-eta" hidden></p>
         <div class="bd-map" id="bd-map" hidden>
           <div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>
         </div>
@@ -279,10 +281,16 @@
                 initBookingDetailsMap('bd-map');
                 showBookingDetailsRoute(routePickup, routeDropoff);
                 mapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Live rider position while the trip is active
+                if (booking.rider_id && ['accepted', 'ongoing'].includes(booking.status)
+                    && typeof trackRiderOnBookingMap === 'function') {
+                  trackRiderOnBookingMap(booking.rider_id, booking.status, routePickup, routeDropoff);
+                }
               } catch (_) {}
             });
-          } else if (typeof destroyBookingDetailsMap === 'function') {
-            destroyBookingDetailsMap();
+          } else {
+            if (typeof stopTrackingRider === 'function') stopTrackingRider();
+            if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
             mapEl.innerHTML = '<div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>';
           }
         });
@@ -310,6 +318,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.style.display = 'none';
     document.body.style.overflow = '';
+    if (typeof stopTrackingRider === 'function') stopTrackingRider();
     if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
     const body = document.getElementById('booking-details-body');
     if (body) body.innerHTML = '';

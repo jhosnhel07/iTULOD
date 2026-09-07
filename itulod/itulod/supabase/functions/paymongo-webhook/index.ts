@@ -14,6 +14,7 @@
 // PayMongo signature ourselves below instead of a Supabase JWT.)
 // =============================================================================
 import { adminClient, json, paymongoFetch, TABLE_BY_KIND, CORS_HEADERS } from '../_shared/helpers.ts';
+import { notifyUser } from '../_shared/notify.ts';
 
 async function hmacSha256Hex(secret: string, payload: string) {
   const key = await crypto.subtle.importKey(
@@ -38,7 +39,7 @@ async function verifySignature(rawBody: string, header: string | null, secret: s
 // payment_intent id) belongs to.
 async function findBookingByReference(admin: ReturnType<typeof adminClient>, reference: string) {
   for (const [kind, table] of Object.entries(TABLE_BY_KIND)) {
-    const { data } = await admin.from(table).select('id, payment_status').eq('paymongo_reference', reference).maybeSingle();
+    const { data } = await admin.from(table).select('id, customer_id, payment_status').eq('paymongo_reference', reference).maybeSingle();
     if (data) return { kind, table, booking: data };
   }
   return null;
@@ -49,12 +50,20 @@ async function markPaid(admin: ReturnType<typeof adminClient>, reference: string
   if (!hit) return;
   if (hit.booking.payment_status === 'paid') return; // idempotent
   await admin.from(hit.table).update({ payment_status: 'paid' }).eq('id', hit.booking.id);
+  await notifyUser(admin, hit.booking.customer_id, {
+    title: 'Payment received',
+    message: 'Your GCash payment went through. Thanks!',
+  }).catch(() => {});
 }
 
 async function markFailed(admin: ReturnType<typeof adminClient>, reference: string) {
   const hit = await findBookingByReference(admin, reference);
   if (!hit) return;
   await admin.from(hit.table).update({ payment_status: 'failed' }).eq('id', hit.booking.id);
+  await notifyUser(admin, hit.booking.customer_id, {
+    title: 'Payment did not go through',
+    message: 'Your GCash payment failed. You can retry from Booking history.',
+  }).catch(() => {});
 }
 
 Deno.serve(async (req: Request) => {
