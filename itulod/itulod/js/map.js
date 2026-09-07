@@ -93,7 +93,8 @@ async function _photonSearch(query) {
           properties: { source: 'photon' },
         };
       });
-  } catch (_) {
+  } catch (err) {
+    console.warn('Photon geocoder search failed:', err && err.message);
     return [];
   }
 }
@@ -133,7 +134,8 @@ async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, drop
     const bounds = coords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(coords[0], coords[0]));
     map.fitBounds(bounds, { padding: 50 });
     return { km: route.distance / 1000, min: route.duration / 60 };
-  } catch (_) {
+  } catch (err) {
+    console.warn('OSRM route draw failed:', err && err.message);
     return null;
   }
 }
@@ -154,7 +156,8 @@ async function routeBetweenAddresses(pickupText, dropoffText) {
     const route = (await (await fetch(url)).json()).routes?.[0];
     if (!route) return null;
     return { km: route.distance / 1000, min: route.duration / 60, pickup: p, dropoff: d };
-  } catch (_) {
+  } catch (err) {
+    console.warn('routeBetweenAddresses failed — fare falls back to the estimate:', err && err.message);
     return null;
   }
 }
@@ -448,7 +451,7 @@ function initNavigationMap(containerId) {
 function startLiveLocationTracking() {
   if (!navGeolocate || navGeolocateTriggered) return;
   navGeolocateTriggered = true;
-  try { navGeolocate.trigger(); } catch (_) {}
+  try { navGeolocate.trigger(); } catch (err) { console.debug('Geolocate control not ready:', err && err.message); }
 }
 
 function _whenMapReady(map) {
@@ -464,7 +467,8 @@ async function _geocodeAddress(addr) {
   try {
     const d = await (await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&country=ph&limit=1`)).json();
     return d.features?.[0]?.center || null;
-  } catch (_) {
+  } catch (err) {
+    console.warn('Mapbox geocode fallback failed:', err && err.message);
     return null;
   }
 }
@@ -584,7 +588,8 @@ async function _etaMinutes(fromLngLat, toLngLat) {
     const url = `https://router.project-osrm.org/route/v1/driving/${fromLngLat[0]},${fromLngLat[1]};${toLngLat[0]},${toLngLat[1]}?overview=false`;
     const r = (await (await fetch(url)).json()).routes?.[0];
     return r ? r.duration / 60 : null;
-  } catch (_) {
+  } catch (err) {
+    console.warn('ETA lookup failed:', err && err.message);
     return null;
   }
 }
@@ -596,7 +601,7 @@ function clearRiderRoute() {
   try {
     if (navMap && navMap.getLayer('nav-route-line')) navMap.removeLayer('nav-route-line');
     if (navMap && navMap.getSource('nav-route')) navMap.removeSource('nav-route');
-  } catch (_) {}
+  } catch (err) { console.debug('nav route cleanup skipped:', err && err.message); }
 }
 
 /* ── Booking details modal: small read-only route map ──────────────────── */

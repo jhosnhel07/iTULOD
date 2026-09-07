@@ -300,6 +300,7 @@
       }
 
     } catch (err) {
+      console.error('Booking details failed to render:', err);
       const msg = err?.message || String(err);
       body.innerHTML = emptyState({
         icon: 'fa-triangle-exclamation',

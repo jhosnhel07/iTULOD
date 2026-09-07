@@ -53,7 +53,7 @@ async function markPaid(admin: ReturnType<typeof adminClient>, reference: string
   await notifyUser(admin, hit.booking.customer_id, {
     title: 'Payment received',
     message: 'Your GCash payment went through. Thanks!',
-  }).catch(() => {});
+  }).catch((e) => console.error('notifyUser failed:', e));
 }
 
 async function markFailed(admin: ReturnType<typeof adminClient>, reference: string) {
@@ -63,7 +63,7 @@ async function markFailed(admin: ReturnType<typeof adminClient>, reference: stri
   await notifyUser(admin, hit.booking.customer_id, {
     title: 'Payment did not go through',
     message: 'Your GCash payment failed. You can retry from Booking history.',
-  }).catch(() => {});
+  }).catch((e) => console.error('notifyUser failed:', e));
 }
 
 Deno.serve(async (req: Request) => {

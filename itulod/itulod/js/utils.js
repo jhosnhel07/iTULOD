@@ -340,7 +340,9 @@ function restoreFormDraft(storageKey, form, extraKeys = {}) {
     });
 
     return payload;
-  } catch (_) {
+  } catch (err) {
+    console.warn(`Discarding a corrupt saved draft (${storageKey}):`, err && err.message);
+    localStorage.removeItem(storageKey);
     return null;
   }
 }

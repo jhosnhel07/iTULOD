@@ -182,6 +182,7 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
       if (licenseFile) license_url = await uploadRiderDoc(userId, licenseFile, 'license');
       if (orcrFile) or_cr_url = await uploadRiderDoc(userId, orcrFile, 'orcr');
     } catch (uploadErr) {
+      console.error('Rider document upload failed:', uploadErr && (uploadErr.message || uploadErr));
       toast('Account created, but document upload failed — you can upload it later from your profile.', 'info');
     }
 
