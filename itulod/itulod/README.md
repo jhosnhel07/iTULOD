@@ -10,38 +10,47 @@ An all-in-one transportation booking and on-demand delivery platform: ride booki
 ```
 itulod/
 ├── index.html              # Landing page
-├── login.html               # Login (all roles)
-├── register.html            # Registration (customer / rider / admin)
+├── login.html               # Login (all roles) — styles in css/login.css
+├── register.html            # Registration wizard — styles in css/register.css, logic in js/register.js
 ├── payment-return.html      # Receipt page shown after the GCash redirect
+├── offline.html             # PWA offline fallback
+├── manifest.webmanifest     # PWA manifest
+├── sw.js                    # Service worker: offline shell + web-push display
 ├── css/
-│   ├── main.css             # Design tokens + landing + auth pages
+│   ├── main.css             # Design tokens + landing page
+│   ├── login.css / register.css   # Auth page styles (extracted from the HTML)
 │   └── dashboard.css         # Shared dashboard shell (sidebar, tables, cards, modal)
 ├── js/
-│   ├── config.js              # Public config: Supabase project ref, PayMongo public key
+│   ├── config.js              # Public config: Supabase ref, PayMongo + VAPID public keys
 │   ├── supabaseClient.js     # Supabase client init — reads from config.js
-│   ├── utils.js              # Toasts, formatting, session guard, pagination
+│   ├── utils.js              # Toasts, formatting, session guard, pagination, input masks
 │   ├── auth.js               # Login / register / logout / password reset
+│   ├── register.js            # Registration wizard UI logic
+│   ├── pwa.js                 # Service worker registration (every page)
+│   ├── push.js                # Opt-in web-push subscription (needs VAPID key)
 │   ├── payment.js             # GCash confirm modal + PayMongo checkout (browser side)
+│   ├── map.js                 # Mapbox GL (lazy-loaded), geocoding, routing, live tracking
 │   ├── landing.js             # Landing page behaviour
+│   ├── dashboard-common.js    # Shared customer/rider helpers (kind lookups, profile form)
+│   ├── bookingDetails.js      # Booking details modal (shared)
 │   ├── customer.js            # Customer dashboard logic
 │   ├── rider.js               # Rider dashboard logic
 │   └── admin.js               # Admin dashboard logic
-├── customer/
-│   └── dashboard.html
-├── rider/
-│   └── dashboard.html
-├── admin/
+├── customer/ · rider/ · admin/
 │   └── dashboard.html
 ├── sql/
 │   ├── schema.sql             # Full Postgres schema, RLS policies, seed data
-│   └── 002_payment_gateway.sql  # Adds payment_method/payment_status columns — run after schema.sql
-├── supabase/
-│   ├── config.toml           # CLI project config (per-function verify_jwt lives here)
-│   ├── dashboard-deploy/     # Single-file builds for CLI-free paste-deploy (see §5)
-│   └── functions/
-│       ├── create-payment/          # Opens a PayMongo GCash source for a booking
-│       ├── paymongo-webhook/        # Source of truth: marks a booking paid/failed
-│       └── _shared/helpers.ts
+│   ├── 002…004_*.sql           # Payment columns, rider docs, payout fixes
+│   ├── 005_server_side_money_and_hardening.sql   # Money trigger + hardened RLS + rider_locations
+│   ├── 006_push_subscriptions.sql                # Web-push subscription table
+│   └── 007_delivery_distance.sql                 # distance_km on food/parcel
+├── supabase/functions/
+│   ├── create-payment/         # Opens a PayMongo GCash source for a booking
+│   ├── paymongo-webhook/       # Source of truth: marks a booking paid/failed
+│   ├── finalize-fare/          # Rider confirms the food/parcel fare at pickup
+│   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
+│   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out)
+├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)
 └── README.md
 ```
