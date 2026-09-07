@@ -37,17 +37,8 @@ let RATING_TARGET = null; // { kind, id }
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
 
-  // Maps last and isolated — if Mapbox fails to load (CDN blocked, offline)
-  // the rest of the dashboard must still work.
-  if (typeof mapboxgl !== 'undefined') {
-    try {
-      initTrackingMap('tracking-map');
-      initFoodMap('food-map');
-      initParcelMap('parcel-map');
-    } catch (err) {
-      console.error('Map init failed:', err);
-    }
-  }
+  // Mapbox GL is ~200 KB and no map is visible on the Home tab — it loads the
+  // first time the New booking tab is opened (see activateTab / pinOnMap).
 })();
 
 function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
@@ -105,8 +96,14 @@ function activateTab(name) {
     document.getElementById('page-title').textContent = titles[0];
     document.getElementById('page-sub').textContent = titles[1];
   }
-  // Re-fit the visible booking map (it was sized while hidden).
-  if (name === 'book') setBookingService(currentBookingService());
+  // Load Mapbox + create the booking maps the first time this tab is opened,
+  // then re-fit the visible one (it may have been sized while hidden).
+  if (name === 'book') {
+    if (typeof ensureBookingMaps === 'function') {
+      ensureBookingMaps().then(() => setBookingService(currentBookingService()));
+    }
+    setBookingService(currentBookingService());
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }

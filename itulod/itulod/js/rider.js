@@ -36,16 +36,25 @@ const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel:
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
 
-  // Map last and isolated — a Mapbox/CDN failure must not kill the dashboard.
-  if (typeof mapboxgl !== 'undefined') {
-    try {
-      initNavigationMap('nav-map');
-      await loadAccepted(); // redraw the route now that the map exists
-    } catch (err) {
-      console.error('Map init failed:', err);
-    }
-  }
+  // The navigation map (Mapbox GL, ~200 KB) loads the first time the Accepted
+  // bookings tab is opened — see ensureNavMap() / activateTab(). A rider with a
+  // job in progress usually lands there straight away.
 })();
+
+let _navMapPromise = null;
+function ensureNavMap() {
+  if (_navMapPromise) return _navMapPromise;
+  _navMapPromise = loadMapbox()
+    .then(() => {
+      initNavigationMap('nav-map');
+      return loadAccepted(); // redraw the route now that the map exists
+    })
+    .catch((err) => {
+      _navMapPromise = null;
+      console.error('Navigation map failed to load:', err);
+    });
+  return _navMapPromise;
+}
 
 function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
 function setAvatarImg(el, url) { el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
@@ -89,9 +98,15 @@ function activateTab(name) {
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
 
-  // The nav map lives inside this tab and was sized while hidden — fix it up.
-  if (name === 'accepted' && typeof resizeNavigationMap === 'function') {
-    requestAnimationFrame(() => resizeNavigationMap());
+  // The nav map lives inside this tab — load it on first open, then fix its
+  // size (it may have been created while the tab was hidden).
+  if (name === 'accepted') {
+    if (typeof ensureNavMap === 'function') ensureNavMap().then(() => {
+      if (typeof resizeNavigationMap === 'function') resizeNavigationMap();
+    });
+    if (typeof resizeNavigationMap === 'function') {
+      requestAnimationFrame(() => resizeNavigationMap());
+    }
   }
   const titles = TAB_TITLES[name];
   if (titles) {

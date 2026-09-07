@@ -266,32 +266,35 @@
       /* ---- 10. Route map — built on demand from the "View route on map" button.
          Shows the pickup and drop-off markers with the driving route between
          them. Kept out of the initial render so the details modal stays light. */
-      if (routePickup && routeDropoff && typeof initBookingDetailsMap === 'function' && typeof mapboxgl !== 'undefined') {
+      if (routePickup && routeDropoff && typeof initBookingDetailsMap === 'function') {
         const toggle = document.getElementById('bd-map-toggle');
         const mapEl = document.getElementById('bd-map');
-        toggle?.addEventListener('click', () => {
+        const openLabel = `<i class="fa-solid fa-map-location-dot"></i> ${liveTrackable ? 'Track rider on map' : 'View route on map'}`;
+        toggle?.addEventListener('click', async () => {
           const opening = mapEl.hidden;
           mapEl.hidden = !opening;
           toggle.innerHTML = opening
             ? '<i class="fa-solid fa-chevron-up"></i> Hide map'
-            : '<i class="fa-solid fa-map-location-dot"></i> View route on map';
-          if (opening) {
-            requestAnimationFrame(() => {
-              try {
-                initBookingDetailsMap('bd-map');
-                showBookingDetailsRoute(routePickup, routeDropoff);
-                mapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                // Live rider position while the trip is active
-                if (booking.rider_id && ['accepted', 'ongoing'].includes(booking.status)
-                    && typeof trackRiderOnBookingMap === 'function') {
-                  trackRiderOnBookingMap(booking.rider_id, booking.status, routePickup, routeDropoff);
-                }
-              } catch (_) {}
-            });
-          } else {
+            : openLabel;
+          if (!opening) {
             if (typeof stopTrackingRider === 'function') stopTrackingRider();
             if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
             mapEl.innerHTML = '<div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>';
+            return;
+          }
+          try {
+            if (typeof loadMapbox === 'function') await loadMapbox();
+            initBookingDetailsMap('bd-map');
+            showBookingDetailsRoute(routePickup, routeDropoff);
+            mapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Live rider position while the trip is active
+            if (booking.rider_id && ['accepted', 'ongoing'].includes(booking.status)
+                && typeof trackRiderOnBookingMap === 'function') {
+              trackRiderOnBookingMap(booking.rider_id, booking.status, routePickup, routeDropoff);
+            }
+          } catch (err) {
+            console.error('Booking-details map failed:', err);
+            mapEl.innerHTML = '<div class="bd-map-loading">Map unavailable right now.</div>';
           }
         });
       }

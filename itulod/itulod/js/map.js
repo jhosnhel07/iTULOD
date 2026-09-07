@@ -5,12 +5,46 @@ const STYLE = 'mapbox://styles/mapbox/satellite-streets-v12';
 // Kept as an alias so other scripts that still reference MAPTILER_KEY keep working.
 const MAPTILER_KEY = MAPBOX_TOKEN;
 
-mapboxgl.accessToken = MAPBOX_TOKEN;
-
 const DEFAULT_CENTER = [120.5936, 18.1977]; // Laoag City
 const DEFAULT_ZOOM = 13;
 
+// Mapbox GL JS (~200 KB) + the geocoder plugin are loaded on demand — the
+// first time a map is actually needed — not on every dashboard visit. The
+// promise is cached so concurrent callers share one load.
+const _MAPBOX_GL_VER = '3.9.0';
+const _MAPBOX_GC_VER = 'v5.0.3';
+let _mapboxLoad = null;
+function loadMapbox() {
+  if (typeof mapboxgl !== 'undefined') return Promise.resolve();
+  if (_mapboxLoad) return _mapboxLoad;
+  _mapboxLoad = new Promise((resolve, reject) => {
+    const addLink = (href) => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = href;
+      document.head.appendChild(l);
+    };
+    const addScript = (src) => new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = res; s.onerror = () => rej(new Error('failed to load ' + src));
+      document.head.appendChild(s);
+    });
+    addLink(`https://api.mapbox.com/mapbox-gl-js/v${_MAPBOX_GL_VER}/mapbox-gl.css`);
+    addLink(`https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/${_MAPBOX_GC_VER}/mapbox-gl-geocoder.css`);
+    addScript(`https://api.mapbox.com/mapbox-gl-js/v${_MAPBOX_GL_VER}/mapbox-gl.js`)
+      .then(() => {
+        mapboxgl.accessToken = MAPBOX_TOKEN;
+        // The geocoder is optional — search still degrades gracefully without it.
+        return addScript(`https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/${_MAPBOX_GC_VER}/mapbox-gl-geocoder.min.js`).catch(() => {});
+      })
+      .then(resolve)
+      .catch((err) => { _mapboxLoad = null; reject(err); });
+  });
+  return _mapboxLoad;
+}
+
 function _initMap(containerId) {
+  mapboxgl.accessToken = MAPBOX_TOKEN;
   return new mapboxgl.Map({
     container: containerId,
     style: STYLE,
@@ -309,10 +343,30 @@ function resizeBookingMap(tab) {
 // shown as a full-screen sheet when the user asks for it.
 const MOBILE_MAP_MQ = '(max-width: 960px)';
 
+// Creates the three customer booking maps once Mapbox GL has loaded. Called
+// the first time the New booking tab is shown, or when a "set on map" button
+// is tapped. Cached so it only runs once.
+let _bookingMapsPromise = null;
+function ensureBookingMaps() {
+  if (_bookingMapsPromise) return _bookingMapsPromise;
+  _bookingMapsPromise = loadMapbox()
+    .then(() => {
+      if (document.getElementById('tracking-map')) initTrackingMap('tracking-map');
+      if (document.getElementById('food-map')) initFoodMap('food-map');
+      if (document.getElementById('parcel-map')) initParcelMap('parcel-map');
+    })
+    .catch((err) => {
+      _bookingMapsPromise = null; // let a later attempt retry
+      console.error('Booking maps failed to load:', err);
+    });
+  return _bookingMapsPromise;
+}
+
 // Called by the "set on map" button inside an address field: point the map at
 // the right pickup/drop-off mode, then either open it as a sheet (phones, where
 // the map card is hidden) or scroll it into view (desktop, map beside the form).
-function pinOnMap(tab, mode) {
+async function pinOnMap(tab, mode) {
+  await ensureBookingMaps();
   setMapMode(mode, tab);
   const cfg = _maps[tab];
   const container = cfg && cfg.map && cfg.map.getContainer();
