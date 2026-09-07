@@ -155,7 +155,8 @@ function statusBadge(status) {
 }
 
 /* ── Philippine field formatting + validation ─────────────────────────────
-   Shared by registration (register.html) and the profile forms so the input
+   Shared by every form that takes one of these fields — registration, the
+   profile forms, and the parcel sender/receiver details — so the input
    masks and the submit-time checks can never drift apart. Each field has:
      format*  → live display value (e.g. "0917 123 4567")
      normalize* → the value to store in the database
@@ -214,6 +215,20 @@ function normalizeLicenseNumber(v) {
 }
 function isValidLicenseNumber(v) {
   return /^[A-Z]\d{2}-\d{2}-\d{6}$/.test(formatLicenseNumber(v));
+}
+
+// Person name — letters (any script), spaces, and . ' - only; single spaces;
+// capped at 60. Not stored specially, just kept clean.
+function formatName(v) {
+  return String(v == null ? '' : v)
+    .replace(/[^\p{L} .'-]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s+/, '')
+    .slice(0, 60);
+}
+function isValidName(v) {
+  const s = formatName(v).trim();
+  return s.length >= 2 && /\p{L}/u.test(s);
 }
 
 // Wire a formatter onto an <input>: reformats as the user types, keeps the

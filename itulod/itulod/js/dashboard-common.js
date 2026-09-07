@@ -29,6 +29,7 @@ function populateProfileForm() {
 }
 
 function wireProfileForm() {
+  attachInputMask(document.getElementById('profile-name'), formatName);
   attachInputMask(document.getElementById('profile-phone'), formatPhoneMobile);
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -36,6 +37,10 @@ function wireProfileForm() {
     const full_name = document.getElementById('profile-name').value.trim();
     const phone = normalizePhoneMobile(document.getElementById('profile-phone').value);
     if (!requireFields({ 'Full name': full_name })) return;
+    if (!isValidName(full_name)) {
+      toast('Please enter your name using letters only.', 'error');
+      return;
+    }
     if (phone && !isValidPhoneMobile(phone)) {
       toast('Please enter a valid mobile number (09XX XXX XXXX).', 'error');
       return;

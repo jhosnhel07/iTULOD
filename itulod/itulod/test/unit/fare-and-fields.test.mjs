@@ -53,3 +53,22 @@ test('formatPhoneMobile: groups as 09XX XXX XXXX, tolerates pasted 10-digit', ()
   assert.equal(g.formatPhoneMobile('9171234567'), '0917 123 4567');
   assert.equal(g.formatPhoneMobile('0917'), '0917');
 });
+
+test('formatPlateNumber / formatLicenseNumber', () => {
+  assert.equal(g.formatPlateNumber('abc1234'), 'ABC 1234');
+  assert.equal(g.formatPlateNumber('AB 12'), 'AB 12');
+  assert.ok(g.isValidPlateNumber('ABC 1234'));
+  assert.equal(g.formatLicenseNumber('n1234567890'), 'N12-34-567890');
+  assert.ok(g.isValidLicenseNumber('N12-34-567890'));
+  assert.ok(!g.isValidLicenseNumber('123-45-678901'));
+});
+
+test('formatName: strips non-letters, collapses spaces, caps at 60', () => {
+  assert.equal(g.formatName('Juan   Dela Cruz'), 'Juan Dela Cruz');
+  assert.equal(g.formatName('Ana-María O\'Brien'), 'Ana-María O\'Brien');
+  assert.equal(g.formatName('R2-D2 99!!'), 'R-D ');
+  assert.equal(g.formatName('x'.repeat(80)).length, 60);
+  assert.ok(g.isValidName('Jose Rizal'));
+  assert.ok(!g.isValidName('  '));
+  assert.ok(!g.isValidName('7'));
+});

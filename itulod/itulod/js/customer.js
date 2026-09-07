@@ -321,11 +321,18 @@ function wireParcelForm() {
   const fareEl = document.getElementById('parcel-fare');
 
   const est = createFareEstimator({ tab: 'parcel', pickupEl: senderAddr, dropoffEl: receiverAddr, vehicleSel, distanceEl, fareEl });
+  const masks = [
+    attachInputMask(document.getElementById('parcel-sender-name'), formatName),
+    attachInputMask(document.getElementById('parcel-receiver-name'), formatName),
+    attachInputMask(document.getElementById('parcel-sender-phone'), formatPhoneMobile),
+    attachInputMask(document.getElementById('parcel-receiver-phone'), formatPhoneMobile),
+  ];
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-parcel', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-parcel', form));
   });
   restoreFormDraft('itulod-customer-parcel', form);
+  masks.forEach(reformat => reformat && reformat()); // format any restored draft values
   est.recalc();
 
   form.addEventListener('submit', async (e) => {
@@ -358,6 +365,18 @@ function wireParcelForm() {
       'Receiver name': payload.receiver_name, 'Receiver address': payload.receiver_address,
       'Vehicle': vehicle
     })) return;
+    for (const [label, val] of [['Sender name', payload.sender_name], ['Receiver name', payload.receiver_name]]) {
+      if (!isValidName(val)) {
+        toast(`${label} should be letters only.`, 'error');
+        return;
+      }
+    }
+    for (const [label, val] of [['Sender phone', payload.sender_phone], ['Receiver phone', payload.receiver_phone]]) {
+      if (val && !isValidPhoneMobile(val)) {
+        toast(`${label} must be a valid mobile number (09XX XXX XXXX).`, 'error');
+        return;
+      }
+    }
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('parcel_deliveries').insert(payload).select('id').single();
     setLoading(btn, false);
