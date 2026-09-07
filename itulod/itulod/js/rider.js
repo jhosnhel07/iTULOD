@@ -318,36 +318,11 @@ async function updateStatus(kind, id, status) {
     }
   }
 
-  const patch = { status };
-  if (status === 'completed') {
-    const { data: row } = await supabase.from(table).select('estimated_fare').eq('id', id).single();
-    patch.final_fare = row?.estimated_fare;
-  }
-  const { error } = await supabase.from(table).update(patch).eq('id', id);
+  // The booking_before_update() DB trigger owns everything that happens on
+  // completion: it validates + locks final_fare, marks cash bookings paid, and
+  // creates the payout row in `payments`. The client only changes the status.
+  const { error } = await supabase.from(table).update({ status }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
-
-  if (status === 'completed') {
-    const { data: row } = await supabase.from(table).select('*').eq('id', id).single();
-    const fare = Number(row.final_fare ?? row.estimated_fare ?? 0);
-    const commission = Number((fare * 0.15).toFixed(2));
-    const method = row.payment_method || 'cash'; // food/parcel don't have this column set meaningfully yet — defaults to cash
-    const { error: payError } = await supabase.from('payments').insert({
-      customer_id: row.customer_id, rider_id: CURRENT_PROFILE.id, booking_type: kind, booking_id: id,
-      amount: fare, platform_commission: commission, rider_payout: Number((fare - commission).toFixed(2)),
-      method, status: 'paid'
-    });
-    // Never swallow this silently — a failed insert here means the booking
-    // completes but the rider's payout never gets recorded or shown anywhere.
-    if (payError) {
-      console.error('Payment record insert failed:', payError);
-      toast('Booking completed, but recording the payout failed. Please contact support.', 'error');
-    }
-    // Cash is only ever marked paid here, at completion, since the rider
-    // physically collects it. GCash/Card were already marked paid earlier
-    // by the paymongo-webhook function, so this is a no-op for those but
-    // kept here so payment_status always reflects reality if it somehow lagged.
-    if (method === 'cash') await supabase.from(table).update({ payment_status: 'paid' }).eq('id', id);
-  }
   toast('Status updated!', 'success');
   await loadAccepted(); // clears RIDER_HAS_ACTIVE_BOOKING once nothing's left in progress
   await loadRequests(); // re-enable Accept buttons now that the rider is free again
