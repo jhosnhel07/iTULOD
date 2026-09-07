@@ -208,3 +208,24 @@ SMS + push + in-app notifications.
 6. Try to tamper: as the customer, `update transport_bookings set
    estimated_fare = 1 where id = '<yours>'` from the SQL editor **using a
    non-service connection** — it must raise an exception.
+
+Steps 4 and 6 are also the automated `npm run test:integration` check
+(`test/README.md`).
+
+---
+
+## 9. PWA
+
+No deploy steps. `manifest.webmanifest`, `sw.js`, and the icons ship as static
+files; `js/pwa.js` registers the service worker on every page. The worker
+caches an offline shell and serves `offline.html` when a navigation fails.
+Bump `CACHE_VERSION` in `sw.js` if the offline behaviour ever needs to change
+— old caches are dropped automatically on activate.
+
+## 10. Tests
+
+```
+cd itulod/itulod
+npm test                    # unit — fare + field helpers, no network
+npm install && npm run test:integration   # full money path, needs ITULOD_TEST_* env
+```
