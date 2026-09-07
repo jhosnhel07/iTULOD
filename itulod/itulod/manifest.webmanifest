@@ -1,0 +1,22 @@
+{
+  "name": "iTULOD — rides, food & parcel delivery",
+  "short_name": "iTULOD",
+  "description": "Book rides, food delivery, and parcel delivery across Ilocos Norte.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#2196F3",
+  "background_color": "#FFF5F5",
+  "lang": "en-PH",
+  "categories": ["travel", "food", "navigation"],
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Book a ride", "url": "/customer/dashboard.html#book", "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "My bookings", "url": "/customer/dashboard.html#history" }
+  ]
+}
