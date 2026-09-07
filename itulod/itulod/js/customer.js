@@ -41,7 +41,8 @@ let RATING_TARGET = null; // { kind, id }
   // first time the New booking tab is opened (see activateTab / pinOnMap).
 })();
 
-function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
+// initials(), setAvatarImg(), TABLE_BY_KIND/ICON_BY_KIND/COLOR_BY_KIND and the
+// Profile form live in js/dashboard-common.js (shared with the rider dashboard).
 
 // Unread badge — mirrored on the sidebar link and the mobile top-bar bell.
 function setNotifCount(unread) {
@@ -50,7 +51,6 @@ function setNotifCount(unread) {
     el.style.display = unread > 0 ? 'inline-block' : 'none';
   });
 }
-function setAvatarImg(el, url) { el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
 
 // ---- sidebar tab switching ---------------------------------------------
 const TAB_TITLES = {
@@ -476,9 +476,6 @@ function wireHistoryTabs() {
   });
 }
 
-const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' };
-const ICON_BY_KIND = { transport: 'fa-car', food: 'fa-utensils', parcel: 'fa-box' };
-const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel: 'var(--green)' };
 
 async function loadHistory() {
   const table = TABLE_BY_KIND[HISTORY_KIND];
@@ -664,46 +661,8 @@ async function loadNotifications() {
   supabase.from('notifications').update({ is_read: true }).eq('user_id', CURRENT_PROFILE.id).eq('is_read', false).then(() => {});
 }
 
-// ---- profile ---------------------------------------------------------------
-function populateProfileForm() {
-  document.getElementById('profile-name').value = CURRENT_PROFILE.full_name || '';
-  document.getElementById('profile-phone').value = formatPhoneMobile(CURRENT_PROFILE.phone || '');
-  document.getElementById('profile-email').value = CURRENT_PROFILE.email || '';
-  const preview = document.getElementById('profile-avatar-preview');
-  if (CURRENT_PROFILE.avatar_url) setAvatarImg(preview, CURRENT_PROFILE.avatar_url);
-  else preview.textContent = initials(CURRENT_PROFILE.full_name);
-}
-
-function wireProfileForm() {
-  attachInputMask(document.getElementById('profile-phone'), formatPhoneMobile);
-  document.getElementById('profile-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('profile-submit');
-    const full_name = document.getElementById('profile-name').value.trim();
-    const phone = normalizePhoneMobile(document.getElementById('profile-phone').value);
-    if (!requireFields({ 'Full name': full_name })) return;
-    if (phone && !isValidPhoneMobile(phone)) {
-      toast('Please enter a valid mobile number (09XX XXX XXXX).', 'error');
-      return;
-    }
-
-    setLoading(btn, true);
-    let avatar_url = CURRENT_PROFILE.avatar_url;
-    const file = document.getElementById('profile-avatar-file').files[0];
-    if (file) {
-      const path = `${CURRENT_PROFILE.id}/avatar-${Date.now()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-      if (!upErr) avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
-    }
-
-    const { error } = await supabase.from('profiles').update({ full_name, phone, avatar_url }).eq('id', CURRENT_PROFILE.id);
-    setLoading(btn, false);
-    if (error) { toast(error.message, 'error'); return; }
-    CURRENT_PROFILE.full_name = full_name; CURRENT_PROFILE.phone = phone; CURRENT_PROFILE.avatar_url = avatar_url;
-    document.getElementById('side-name').textContent = full_name;
-    toast('Profile updated!', 'success');
-  });
-}
+// ---- profile ----
+// populateProfileForm() and wireProfileForm() are in js/dashboard-common.js.
 
 // ---- realtime: refresh history/notifications when rows change --------------
 function subscribeRealtime() {
