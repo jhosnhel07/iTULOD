@@ -154,6 +154,91 @@ function statusBadge(status) {
   return `<span class="badge ${map[status] || 'badge--pending'}">${status}</span>`;
 }
 
+/* ── Philippine field formatting + validation ─────────────────────────────
+   Shared by registration (register.html) and the profile forms so the input
+   masks and the submit-time checks can never drift apart. Each field has:
+     format*  → live display value (e.g. "0917 123 4567")
+     normalize* → the value to store in the database
+     isValid* → boolean check to run again before submitting
+   ------------------------------------------------------------------------- */
+
+// Mobile number — 09XX XXX XXXX (11 digits, must start with 09). Stored as
+// bare digits: "09171234567".
+function formatPhoneMobile(v) {
+  let d = String(v == null ? '' : v).replace(/\D/g, '');
+  if (d && d[0] !== '0') d = '0' + d;           // tolerate a pasted "9171234567"
+  d = d.slice(0, 11);
+  return [d.slice(0, 4), d.slice(4, 7), d.slice(7, 11)].filter(Boolean).join(' ');
+}
+function normalizePhoneMobile(v) {
+  return String(v == null ? '' : v).replace(/\D/g, '').slice(0, 11);
+}
+function isValidPhoneMobile(v) {
+  return /^09\d{9}$/.test(normalizePhoneMobile(v));
+}
+
+// Vehicle plate — ABC 1234 (3 letters + 4 digits, uppercase). Stored spaced
+// and upper-cased: "ABC 1234".
+function formatPlateNumber(v) {
+  const s = String(v == null ? '' : v).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let letters = '', digits = '';
+  for (const ch of s) {
+    if (ch >= 'A' && ch <= 'Z' && letters.length < 3 && digits.length === 0) letters += ch;
+    else if (ch >= '0' && ch <= '9' && letters.length > 0 && digits.length < 4) digits += ch;
+  }
+  return digits ? letters + ' ' + digits : letters;
+}
+function normalizePlateNumber(v) {
+  return formatPlateNumber(v);
+}
+function isValidPlateNumber(v) {
+  return /^[A-Z]{3} \d{3,4}$/.test(formatPlateNumber(v));
+}
+
+// Driver's licence — N12-34-567890 (1 letter + 2 + 2 + 6 digits, uppercase).
+// Stored with hyphens exactly as shown.
+function formatLicenseNumber(v) {
+  const s = String(v == null ? '' : v).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let sig = '';
+  for (const ch of s) {
+    if (sig.length === 0) { if (ch >= 'A' && ch <= 'Z') sig += ch; }
+    else if (sig.length < 11 && ch >= '0' && ch <= '9') sig += ch;
+  }
+  let r = sig.slice(0, 3);
+  if (sig.length > 3) r += '-' + sig.slice(3, 5);
+  if (sig.length > 5) r += '-' + sig.slice(5);
+  return r;
+}
+function normalizeLicenseNumber(v) {
+  return formatLicenseNumber(v);
+}
+function isValidLicenseNumber(v) {
+  return /^[A-Z]\d{2}-\d{2}-\d{6}$/.test(formatLicenseNumber(v));
+}
+
+// Wire a formatter onto an <input>: reformats as the user types, keeps the
+// caret roughly where it was, and formats any value already in the field
+// (e.g. a restored draft or a loaded profile). Safe to call more than once.
+function attachInputMask(input, formatter) {
+  if (!input || input.dataset.masked === '1') return;
+  input.dataset.masked = '1';
+  const reformat = () => {
+    const before = input.value;
+    const fromEnd = before.length - (input.selectionStart == null ? before.length : input.selectionStart);
+    const after = formatter(before);
+    if (after !== before) {
+      input.value = after;
+      const pos = Math.max(0, after.length - fromEnd);
+      try { input.setSelectionRange(pos, pos); } catch (_) { /* unsupported input type */ }
+    }
+  };
+  input.addEventListener('input', reformat);
+  input.addEventListener('blur', reformat);
+  input.addEventListener('paste', () => setTimeout(reformat, 0));
+  if (input.value) reformat();
+  return reformat;
+}
+
 // One booking-list row, used on the customer history/home and the rider
 // requests/accepted lists. Fixed layout: fare + status always sit top-right,
 // the payment badge always bottom-left, action buttons always bottom-right —

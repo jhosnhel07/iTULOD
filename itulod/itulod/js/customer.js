@@ -609,7 +609,7 @@ async function loadNotifications() {
 // ---- profile ---------------------------------------------------------------
 function populateProfileForm() {
   document.getElementById('profile-name').value = CURRENT_PROFILE.full_name || '';
-  document.getElementById('profile-phone').value = CURRENT_PROFILE.phone || '';
+  document.getElementById('profile-phone').value = formatPhoneMobile(CURRENT_PROFILE.phone || '');
   document.getElementById('profile-email').value = CURRENT_PROFILE.email || '';
   const preview = document.getElementById('profile-avatar-preview');
   if (CURRENT_PROFILE.avatar_url) setAvatarImg(preview, CURRENT_PROFILE.avatar_url);
@@ -617,12 +617,17 @@ function populateProfileForm() {
 }
 
 function wireProfileForm() {
+  attachInputMask(document.getElementById('profile-phone'), formatPhoneMobile);
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('profile-submit');
     const full_name = document.getElementById('profile-name').value.trim();
-    const phone = document.getElementById('profile-phone').value.trim();
+    const phone = normalizePhoneMobile(document.getElementById('profile-phone').value);
     if (!requireFields({ 'Full name': full_name })) return;
+    if (phone && !isValidPhoneMobile(phone)) {
+      toast('Please enter a valid mobile number (09XX XXX XXXX).', 'error');
+      return;
+    }
 
     setLoading(btn, true);
     let avatar_url = CURRENT_PROFILE.avatar_url;

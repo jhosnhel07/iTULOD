@@ -1442,6 +1442,8 @@
                     id="phone"
                     placeholder="09XX XXX XXXX"
                     autocomplete="tel"
+                    inputmode="numeric"
+                    maxlength="13"
                     required
                   />
                 </div>
@@ -1473,8 +1475,10 @@
                 <input
                   type="text"
                   id="license_number"
-                  placeholder="e.g. N01-23-456789"
+                  placeholder="N12-34-567890"
                   autocomplete="off"
+                  autocapitalize="characters"
+                  maxlength="13"
                 />
               </div>
             </div>
@@ -1638,8 +1642,10 @@
                 <input
                   type="text"
                   id="vehicle_plate"
-                  placeholder="e.g. ABC 1234"
+                  placeholder="ABC 1234"
                   autocomplete="off"
+                  autocapitalize="characters"
+                  maxlength="8"
                 />
               </div>
             </div>
@@ -2425,6 +2431,12 @@
           else alert("Please enter your vehicle's plate number.");
           return;
         }
+        if (!isValidPlateNumber(plate)) {
+          if (typeof toast === "function")
+            toast("Please enter a valid plate number (e.g. ABC 1234).", "error");
+          else alert("Please enter a valid plate number (e.g. ABC 1234).");
+          return;
+        }
         goToStep(4);
       }
 
@@ -2446,10 +2458,25 @@
           else alert("Please fill in all required fields.");
           return;
         }
-        if (selectedRole === "rider" && !licenseNumber) {
+        if (!isValidPhoneMobile(phone)) {
           if (typeof toast === "function")
-            toast("Please enter your driver's license number.", "error");
-          else alert("Please enter your driver's license number.");
+            toast(
+              "Please enter a valid mobile number (09XX XXX XXXX).",
+              "error",
+            );
+          else alert("Please enter a valid mobile number (09XX XXX XXXX).");
+          return;
+        }
+        if (selectedRole === "rider" && !isValidLicenseNumber(licenseNumber)) {
+          if (typeof toast === "function")
+            toast(
+              "Please enter a valid driver's license number (e.g. N12-34-567890).",
+              "error",
+            );
+          else
+            alert(
+              "Please enter a valid driver's license number (e.g. N12-34-567890).",
+            );
           return;
         }
         if (pw !== pw2) {
@@ -2496,13 +2523,17 @@
           const email = document.getElementById("email").value.trim();
           const password = document.getElementById("password").value;
           const full_name = document.getElementById("full_name").value.trim();
-          const phone = document
-            .getElementById("phone")
-            .value.replace(/\s/g, "")
-            .trim();
+          const phone = normalizePhoneMobile(
+            document.getElementById("phone").value,
+          );
 
           if (!email || !password || !full_name || !phone) {
             throw new Error("Please fill in all required fields.");
+          }
+          if (!isValidPhoneMobile(phone)) {
+            throw new Error(
+              "Please enter a valid mobile number (09XX XXX XXXX).",
+            );
           }
 
           const { data, error } = await supabase.auth.signUp({
@@ -2580,13 +2611,31 @@
           const email = document.getElementById("email").value.trim();
           const password = document.getElementById("password").value;
           const full_name = document.getElementById("full_name").value.trim();
-          const phone = document
-            .getElementById("phone")
-            .value.replace(/\s/g, "")
-            .trim();
+          const phone = normalizePhoneMobile(
+            document.getElementById("phone").value,
+          );
+          const licenseNumberRaw =
+            document.getElementById("license_number")?.value || "";
+          const vehiclePlateRaw =
+            document.getElementById("vehicle_plate")?.value || "";
 
           if (!email || !password || !full_name || !phone) {
             throw new Error("Please fill in all required fields.");
+          }
+          if (!isValidPhoneMobile(phone)) {
+            throw new Error(
+              "Please enter a valid mobile number (09XX XXX XXXX).",
+            );
+          }
+          if (!isValidLicenseNumber(licenseNumberRaw)) {
+            throw new Error(
+              "Please enter a valid driver's license number (e.g. N12-34-567890).",
+            );
+          }
+          if (!isValidPlateNumber(vehiclePlateRaw)) {
+            throw new Error(
+              "Please enter a valid plate number (e.g. ABC 1234).",
+            );
           }
 
           const { data, error } = await supabase.auth.signUp({
@@ -2639,10 +2688,8 @@
 
             const vehicle_model =
               document.getElementById("vehicle_model")?.value?.trim() || null;
-            const license_number =
-              document.getElementById("license_number")?.value?.trim() || null;
-            const vehicle_plate =
-              document.getElementById("vehicle_plate")?.value?.trim() || null;
+            const license_number = normalizeLicenseNumber(licenseNumberRaw) || null;
+            const vehicle_plate = normalizePlateNumber(vehiclePlateRaw) || null;
 
             const { error: appError } = await supabase
               .from("rider_applications")
@@ -2900,11 +2947,16 @@
 
       // ── Init ───────────────────────────────────────────────────
       (function init() {
-        // Phone mask
-        const phoneInput = document.getElementById("phone");
-        if (phoneInput && typeof IMask !== "undefined") {
-          IMask(phoneInput, { mask: "0000 000 0000".replace(/ /g, "") });
-        }
+        // Philippine field masks (shared helpers from js/utils.js)
+        attachInputMask(document.getElementById("phone"), formatPhoneMobile);
+        attachInputMask(
+          document.getElementById("vehicle_plate"),
+          formatPlateNumber,
+        );
+        attachInputMask(
+          document.getElementById("license_number"),
+          formatLicenseNumber,
+        );
 
         // Full name mask
         const nameInput = document.getElementById("full_name");
@@ -2932,6 +2984,17 @@
         }
 
         restoreRegistrationDraft();
+
+        // A restored draft sets values directly (no input event), so re-run the
+        // masks once so an in-progress phone / plate / licence shows formatted.
+        [
+          ["phone", formatPhoneMobile],
+          ["vehicle_plate", formatPlateNumber],
+          ["license_number", formatLicenseNumber],
+        ].forEach(([id, fmt]) => {
+          const el = document.getElementById(id);
+          if (el && el.value) el.value = fmt(el.value);
+        });
       })();
     </script>
   </body>
