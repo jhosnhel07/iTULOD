@@ -578,11 +578,19 @@
         .brand-panel {
           display: none;
         }
+        /* Top-aligned, natural scroll — don't vertically centre a card that can
+           be taller than the mobile viewport, or the Log In button ends up
+           below the fold with nowhere to scroll. */
         .form-panel {
+          display: block;
+          align-items: initial;
+          justify-content: initial;
           min-height: 100vh;
-          padding: 32px 20px;
+          min-height: 100dvh;
+          padding: 32px 20px calc(40px + env(safe-area-inset-bottom, 0px));
         }
         .login-card {
+          margin: 0 auto;
           padding: 36px 28px;
           border-radius: 20px;
         }
@@ -592,7 +600,7 @@
       }
       @media (max-width: 600px) {
         .form-panel {
-          padding: 24px 16px;
+          padding: 24px 16px calc(36px + env(safe-area-inset-bottom, 0px));
         }
         .login-card {
           padding: 28px 20px;

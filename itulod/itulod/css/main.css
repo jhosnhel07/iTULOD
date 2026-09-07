@@ -301,6 +301,15 @@ button {
     border-bottom: 1px solid var(--slate-100);
     box-shadow: 0 16px 32px rgba(15, 23, 42, 0.1);
     padding: 4px 24px 16px;
+    /* The panel is position:absolute, so it doesn't grow the page — cap it to
+       the space below the bar and let it scroll, otherwise the last item
+       (Log in) gets clipped on short screens with no way to reach it. */
+    max-height: calc(100dvh - 76px);
+    max-height: calc(100vh - 76px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }
   .nav-links.nav-links--open {
     display: flex;
@@ -308,14 +317,16 @@ button {
   .nav-links a {
     padding: 14px 0;
     border-bottom: 1px solid var(--slate-100);
+    flex-shrink: 0;
   }
   .nav-links a:last-of-type {
     border-bottom: none;
   }
   .nav-login-mobile {
-    display: inline-flex;
+    display: flex;
     justify-content: center;
-    margin-top: 12px;
+    margin-top: 14px;
+    flex-shrink: 0;
   }
   .nav-actions {
     display: none;

@@ -1167,11 +1167,20 @@
         .brand-panel {
           display: none;
         }
+        /* Top-aligned natural flow — no vertical centering. Centering a card
+           that's taller than the (mobile) viewport pushed the Continue / Login
+           buttons off the bottom with no way to scroll to them. */
         .form-panel {
-          padding: 28px 20px;
+          display: block;
+          align-items: initial;
+          justify-content: initial;
+          overflow-y: visible;
+          padding: 28px 20px calc(40px + env(safe-area-inset-bottom, 0px));
           min-height: 100vh;
+          min-height: 100dvh;
         }
         .reg-card {
+          margin: 0 auto;
           padding: 32px 24px;
         }
         .card-logo-row {
@@ -1180,7 +1189,7 @@
       }
       @media (max-width: 600px) {
         .form-panel {
-          padding: 20px 14px;
+          padding: 20px 14px calc(36px + env(safe-area-inset-bottom, 0px));
         }
         .reg-card {
           padding: 24px 18px;
