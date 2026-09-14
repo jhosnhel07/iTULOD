@@ -1683,6 +1683,51 @@ table.data-table tbody tr:nth-child(even):hover td {
   font-size: 0.78rem;
 }
 
+/* Styled stand-in for the native "Choose File" button — the real <input> is
+   hidden and triggered via its <label for="...">, same technique used by the
+   clickable avatar circle above. */
+.file-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1.5px solid var(--border-blue, var(--blue));
+  background: var(--white, #fff);
+  color: var(--blue-dark, var(--blue));
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.file-upload-btn:hover {
+  border-color: var(--blue);
+  background: var(--blue-50, rgba(33, 150, 243, 0.08));
+}
+.file-upload-btn:active {
+  transform: translateY(1px);
+}
+.file-upload-btn i {
+  font-size: 0.85em;
+}
+/* Keyboard users tabbing to the hidden <input> still get a visible ring on
+   the button that represents it. */
+.avatar-upload input[type="file"]:focus-visible + .file-upload-btn {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.file-upload-name {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* =====================================================================
    STAR RATING
    ===================================================================== */

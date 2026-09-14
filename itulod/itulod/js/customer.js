@@ -13,8 +13,7 @@ let RATING_TARGET = null; // { kind, id }
   if (!CURRENT_PROFILE) return;
 
   document.getElementById('side-name').textContent = CURRENT_PROFILE.full_name;
-  document.getElementById('side-avatar').textContent = initials(CURRENT_PROFILE.full_name);
-  if (CURRENT_PROFILE.avatar_url) setAvatarImg(document.getElementById('side-avatar'), CURRENT_PROFILE.avatar_url);
+  refreshSideAvatar();
 
   await loadVehicleOptions();
 

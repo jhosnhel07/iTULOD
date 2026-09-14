@@ -765,18 +765,31 @@
           <div class="card card--narrow">
             <div class="card-head"><h3>Edit profile</h3></div>
             <div class="avatar-upload">
-              <div class="preview" id="profile-avatar-preview">
+              <label
+                class="preview"
+                id="profile-avatar-preview"
+                for="profile-avatar-file"
+                tabindex="0"
+                aria-label="Change profile photo"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+              >
                 ?
                 <div class="overlay"><i class="fa-solid fa-camera"></i></div>
-              </div>
+              </label>
               <div class="upload-info">
                 <input
                   type="file"
                   id="profile-avatar-file"
                   accept="image/*"
-                  style="font-size: 0.82rem"
+                  hidden
                 />
-                <small>JPG or PNG. Square images look best.</small>
+                <label for="profile-avatar-file" class="file-upload-btn">
+                  <i class="fa-solid fa-upload"></i> Choose photo
+                </label>
+                <span class="file-upload-name" id="profile-avatar-filename"
+                  >No file chosen</span
+                >
+                <small>JPG or PNG, up to 5MB. Square images look best.</small>
               </div>
             </div>
 

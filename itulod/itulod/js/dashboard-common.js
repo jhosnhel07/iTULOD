@@ -14,8 +14,20 @@ function initials(name) {
   return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
+// Sets el's contents to the avatar image, preserving a `.overlay` child if
+// one is already there (the clickable upload preview has one for its
+// hover-camera hint; the plain sidebar avatar badge doesn't).
 function setAvatarImg(el, url) {
+  const overlay = el.querySelector('.overlay');
   el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  if (overlay) el.appendChild(overlay);
+}
+
+function refreshSideAvatar() {
+  const el = document.getElementById('side-avatar');
+  if (!el) return;
+  if (CURRENT_PROFILE.avatar_url) setAvatarImg(el, CURRENT_PROFILE.avatar_url);
+  else el.textContent = initials(CURRENT_PROFILE.full_name);
 }
 
 // ---- Profile tab -------------------------------------------------------------
@@ -28,9 +40,43 @@ function populateProfileForm() {
   else preview.textContent = initials(CURRENT_PROFILE.full_name);
 }
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB — matches the hint text under the button
+
+// Instant feedback the moment a photo is picked, before it's ever uploaded:
+// shows it in the round preview and its filename next to the button. Wired
+// once per page (attachInputMask-style dataset guard) since wireProfileForm
+// can in principle run more than once.
+function wireAvatarPicker() {
+  const input = document.getElementById('profile-avatar-file');
+  if (!input || input.dataset.wired === '1') return;
+  input.dataset.wired = '1';
+  const preview = document.getElementById('profile-avatar-preview');
+  const nameEl = document.getElementById('profile-avatar-filename');
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast('Please choose an image file.', 'error');
+      input.value = '';
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast('That image is too large — please choose one under 5MB.', 'error');
+      input.value = '';
+      return;
+    }
+    if (nameEl) nameEl.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = (e) => setAvatarImg(preview, e.target.result);
+    reader.readAsDataURL(file);
+  });
+}
+
 function wireProfileForm() {
   attachInputMask(document.getElementById('profile-name'), formatName);
   attachInputMask(document.getElementById('profile-phone'), formatPhoneMobile);
+  wireAvatarPicker();
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('profile-submit');
@@ -65,6 +111,7 @@ function wireProfileForm() {
     if (error) { toast(error.message, 'error'); return; }
     CURRENT_PROFILE.full_name = full_name; CURRENT_PROFILE.phone = phone; CURRENT_PROFILE.avatar_url = avatar_url;
     document.getElementById('side-name').textContent = full_name;
+    refreshSideAvatar();
     toast('Profile updated!', 'success');
   });
 }
