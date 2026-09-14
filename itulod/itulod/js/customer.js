@@ -212,7 +212,7 @@ function wireRideForm() {
     // the amount shown can never drift from the amount charged.
     const fare = estimateFare(vehicle, km);
     setLoading(btn, true);
-    const { data: booking, error } = await supabase.from('transport_bookings').insert({
+    const { error } = await supabase.from('transport_bookings').insert({
       customer_id: CURRENT_PROFILE.id,
       vehicle_id: vehicle.id,
       pickup_address: pickup.value.trim(),
@@ -225,41 +225,32 @@ function wireRideForm() {
       destination_lat: coords?.dropoff?.[1] ?? null,
       status: 'pending',
       payment_method: paymentMethod
-    }).select('id').single();
+    });
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
-    if (paymentMethod === 'cash') {
-      toast('Ride booked! Waiting for a rider to accept.', 'success');
-      // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
-      const [pLngLat, dLngLat] = await Promise.all([
-        _geocodeAddress(pickup.value),
-        _geocodeAddress(dest.value),
-      ]);
-      if (pLngLat) setTrackingMarker('pickup', pLngLat, '#22c55e', 'Pickup');
-      if (dLngLat) setTrackingMarker('dropoff', dLngLat, '#ef4444', 'Drop-off');
-      if (pLngLat && dLngLat) drawRoute(pLngLat, dLngLat);
-    } else if (paymentMethod === 'gcash') {
-      // Confirm the amount first. Don't reset the form or reload history yet:
-      // the customer can still cancel out of the modal, and confirming
-      // navigates away to GCash anyway.
-      openGcashConfirm({
-        bookingType: 'transport',
-        bookingId: booking.id,
-        amount: fare,
-        rows: [
-          ['Payment method', 'GCash'],
-          ['Pickup', pickup.value.trim()],
-          ['Destination', dest.value.trim()],
-          ['Distance', km.toFixed(1) + ' km']
-        ]
-      });
-      return;
-    }
+    // Booking creation only places the booking — it never redirects to GCash
+    // by itself. A GCash payment is something the customer does afterward,
+    // as a separate step, from the "Pay ₱X" button on Home or Booking
+    // history (renderHomeActive / renderHistoryCard's needsPaymentRetry).
+    toast(
+      paymentMethod === 'gcash'
+        ? 'Ride booked! Pay with GCash from Home or Booking history whenever you’re ready.'
+        : 'Ride booked! Waiting for a rider to accept.',
+      'success'
+    );
+    // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
+    const [pLngLat, dLngLat] = await Promise.all([
+      _geocodeAddress(pickup.value),
+      _geocodeAddress(dest.value),
+    ]);
+    if (pLngLat) setTrackingMarker('pickup', pLngLat, '#22c55e', 'Pickup');
+    if (dLngLat) setTrackingMarker('dropoff', dLngLat, '#ef4444', 'Drop-off');
+    if (pLngLat && dLngLat) drawRoute(pLngLat, dLngLat);
 
     clearFormDraft('itulod-customer-ride');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
-    HISTORY_KIND = 'transport'; await loadHistory();
+    HISTORY_KIND = 'transport'; await loadHistory(); await loadHome();
   });
 }
 
@@ -472,6 +463,7 @@ function renderHomeActive(b, rider) {
     : b.status === 'accepted'
       ? 'Your rider has a 15-minute grace period to start this trip before it expires automatically.'
       : '';
+  const { needsPay, payable } = paymentDue(b, kind);
   el.innerHTML = `
     <div class="home-active card">
       <div class="home-active__head">
@@ -489,6 +481,9 @@ function renderHomeActive(b, rider) {
         <button type="button" class="btn btn-primary btn-sm" onclick="openBookingDetails({ kind: '${kind}', id: '${b.id}' })">
           <i class="fa-solid fa-eye"></i> View details
         </button>
+        ${needsPay
+          ? `<button type="button" class="btn btn-outline btn-sm" onclick="retryPayment('${b.id}','${kind}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay ${peso(payable)}</button>`
+          : ''}
         ${['pending', 'accepted'].includes(b.status)
           ? `<button type="button" class="btn btn-outline btn-sm btn-danger-ghost" onclick="cancelBooking('${kind}','${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>`
           : ''}
@@ -540,6 +535,21 @@ async function loadHistory() {
   renderPagination(totalPages);
 }
 
+// Shared between Home's active-booking card and Booking history: does this
+// booking still need a GCash payment, and for how much? Booking creation
+// never charges GCash itself — it's a separate step the customer takes here
+// (Home) or in Booking history, whenever they're ready. Transport's fare is
+// known at booking time (estimated_fare); food/parcel only becomes payable
+// once the rider confirms the real price at pickup (final_fare).
+function paymentDue(b, kind) {
+  const payable = kind === 'transport' ? b.estimated_fare : b.final_fare;
+  const needsPay = b.payment_method === 'gcash'
+    && ['pending', 'failed'].includes(b.payment_status)
+    && !['cancelled', 'expired', 'no_show'].includes(b.status)
+    && Number(payable) > 0;
+  return { needsPay, payable };
+}
+
 function renderHistoryCard(b, kind) {
   const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
     : kind === 'food' ? b.restaurant_name
@@ -550,13 +560,7 @@ function renderHistoryCard(b, kind) {
   const fare = b.final_fare ?? b.estimated_fare;
   const canCancel = ['pending', 'accepted'].includes(b.status);
   const canRate = b.status === 'completed' && !b.rating;
-  // GCash bookings that aren't paid yet. Food/parcel can only be paid once the
-  // rider has confirmed the final fare at pickup.
-  const payable = kind === 'transport' ? b.estimated_fare : b.final_fare;
-  const needsPaymentRetry = b.payment_method === 'gcash'
-    && ['pending', 'failed'].includes(b.payment_status)
-    && !['cancelled', 'expired', 'no_show'].includes(b.status)
-    && Number(payable) > 0;
+  const { needsPay: needsPaymentRetry, payable } = paymentDue(b, kind);
 
   const actions = [
     needsPaymentRetry && `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); retryPayment('${b.id}','${kind}')"><i class="fa-solid fa-mobile-screen-button"></i> Pay ${peso(payable)}</button>`,
