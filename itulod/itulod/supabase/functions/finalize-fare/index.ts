@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
     const admin = adminClient();
     const { data: booking } = await admin
       .from(table)
-      .select('id, rider_id, customer_id, estimated_fare, final_fare, status')
+      .select('id, rider_id, customer_id, estimated_fare, final_fare, status, payment_method, payment_status')
       .eq('id', booking_id)
       .single();
 
@@ -39,6 +39,11 @@ Deno.serve(async (req: Request) => {
     if (booking.rider_id !== user.id) return json({ error: 'You are not the rider for this booking.' }, 403);
     if (!['accepted', 'ongoing'].includes(booking.status)) {
       return json({ error: 'Fare can only be set on an active booking.' }, 400);
+    }
+    // Once GCash has actually been charged, the fare is locked — changing it
+    // now would no longer match what PayMongo collected.
+    if (booking.payment_status === 'paid') {
+      return json({ error: 'This delivery is already paid; the fare can no longer be changed.' }, 400);
     }
 
     const { data: cfg } = await admin.from('platform_config').select('*').single();
@@ -52,9 +57,12 @@ Deno.serve(async (req: Request) => {
 
     await admin.from(table).update({ final_fare: value }).eq('id', booking_id);
 
+    const isGcash = booking.payment_method === 'gcash';
     await notifyUser(admin, booking.customer_id, {
       title: 'Delivery fare confirmed',
-      message: `Your rider set the fare for this delivery to ₱${value.toFixed(2)}.`,
+      message: isGcash
+        ? `Your rider set the fare for this delivery to ₱${value.toFixed(2)}. Pay from Booking history to confirm your order.`
+        : `Your rider set the fare for this delivery to ₱${value.toFixed(2)}.`,
     });
 
     return json({ ok: true, final_fare: value });

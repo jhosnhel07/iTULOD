@@ -68,3 +68,27 @@ function wireProfileForm() {
     toast('Profile updated!', 'success');
   });
 }
+
+// A logged-in session is enough authorization to change your own password —
+// Supabase Auth updates whoever the current access token belongs to, so
+// there's no separate "current password" check to do here.
+function wireChangePasswordForm() {
+  const form = document.getElementById('change-password-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('change-password-submit');
+    const password = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-password').value;
+    if (!requireFields({ 'New password': password, 'Confirm new password': confirm })) return;
+    if (password.length < 8) { toast('Use at least 8 characters.', 'error'); return; }
+    if (password !== confirm) { toast('Those passwords don’t match.', 'error'); return; }
+
+    setLoading(btn, true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+    form.reset();
+    toast('Password updated.', 'success');
+  });
+}

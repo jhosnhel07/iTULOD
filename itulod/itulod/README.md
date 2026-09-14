@@ -12,6 +12,7 @@ itulod/
 ├── index.html              # Landing page
 ├── login.html               # Login (all roles) — styles in css/login.css
 ├── register.html            # Registration wizard — styles in css/register.css, logic in js/register.js
+├── reset-password.html      # Lands here from the "forgot password" email
 ├── payment-return.html      # Receipt page shown after the GCash redirect
 ├── offline.html             # PWA offline fallback
 ├── manifest.webmanifest     # PWA manifest
@@ -26,6 +27,7 @@ itulod/
 │   ├── utils.js              # Toasts, formatting, session guard, pagination, input masks
 │   ├── auth.js               # Login / register / logout / password reset
 │   ├── register.js            # Registration wizard UI logic
+│   ├── reset-password.js      # Completes the "forgot password" recovery link
 │   ├── pwa.js                 # Service worker registration (every page)
 │   ├── push.js                # Opt-in web-push subscription (needs VAPID key)
 │   ├── payment.js             # GCash confirm modal + PayMongo checkout (browser side)
@@ -43,7 +45,8 @@ itulod/
 │   ├── 002…004_*.sql           # Payment columns, rider docs, payout fixes
 │   ├── 005_server_side_money_and_hardening.sql   # Money trigger + hardened RLS + rider_locations
 │   ├── 006_push_subscriptions.sql                # Web-push subscription table
-│   └── 007_delivery_distance.sql                 # distance_km on food/parcel
+│   ├── 007_delivery_distance.sql                 # distance_km on food/parcel
+│   └── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking
 │   ├── paymongo-webhook/       # Source of truth: marks a booking paid/failed

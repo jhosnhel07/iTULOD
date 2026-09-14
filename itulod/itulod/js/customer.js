@@ -27,6 +27,7 @@ let RATING_TARGET = null; // { kind, id }
   wireParcelForm();
   wireHistoryTabs();
   wireProfileForm();
+  wireChangePasswordForm();
   wireStarInput();
 
   await loadHome();
@@ -298,14 +299,17 @@ function wireFoodForm() {
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
-    if (paymentMethod === 'gcash') {
-      openGcashConfirm({
-        bookingType: 'food', bookingId: booking.id, amount: fare,
-        rows: [['Payment method', 'GCash'], ['Restaurant', restaurant], ['Deliver to', address.value.trim()], ['Distance', km.toFixed(1) + ' km']],
-      });
-      return;
-    }
-    toast('Food delivery requested!', 'success');
+    // GCash is deliberately NOT charged here: the estimate isn't the real
+    // price for a food/parcel order, only the rider knows that once they're
+    // at pickup. finalize-fare sets final_fare, which is what turns on the
+    // "Pay ₱X" button in Booking history (see renderHistoryCard) — that's
+    // the moment the customer is actually asked for GCash.
+    toast(
+      paymentMethod === 'gcash'
+        ? "Food delivery requested! We'll ask you to pay by GCash once the rider confirms the fare at pickup."
+        : 'Food delivery requested!',
+      'success'
+    );
     clearFormDraft('itulod-customer-food');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
     HISTORY_KIND = 'food'; await loadHistory();
@@ -382,14 +386,16 @@ function wireParcelForm() {
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
-    if (paymentMethod === 'gcash' && fare) {
-      openGcashConfirm({
-        bookingType: 'parcel', bookingId: booking.id, amount: fare,
-        rows: [['Payment method', 'GCash'], ['To', payload.receiver_name], ['Drop-off', payload.receiver_address], ['Distance', km.toFixed(1) + ' km']],
-      });
-      return;
-    }
-    toast('Parcel delivery requested!', 'success');
+    // See wireFoodForm() for why GCash isn't charged here: only the rider
+    // knows the real price once they see the parcel, so payment waits for
+    // finalize-fare to set final_fare, which is what reveals "Pay ₱X" in
+    // Booking history.
+    toast(
+      paymentMethod === 'gcash'
+        ? "Parcel delivery requested! We'll ask you to pay by GCash once the rider confirms the fare at pickup."
+        : 'Parcel delivery requested!',
+      'success'
+    );
     clearFormDraft('itulod-customer-parcel');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
     HISTORY_KIND = 'parcel'; await loadHistory();

@@ -128,6 +128,7 @@ create table if not exists public.food_deliveries (
   status booking_status not null default 'pending',
   rating int check (rating between 1 and 5),
   review text,
+  cancelled_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -155,6 +156,7 @@ create table if not exists public.parcel_deliveries (
   status booking_status not null default 'pending',
   rating int check (rating between 1 and 5),
   review text,
+  cancelled_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

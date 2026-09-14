@@ -23,6 +23,7 @@ const PAGE_SIZE = 6;
   wireTabNav();
   wireHistoryTabs();
   wireProfileForm();
+  wireChangePasswordForm();
   populateProfileForm();
 
   await loadAccepted(); // sets RIDER_HAS_ACTIVE_BOOKING before requests render

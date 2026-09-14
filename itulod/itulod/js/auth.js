@@ -106,7 +106,7 @@ document.getElementById('forgot-link')?.addEventListener('click', async (e) => {
   }
   const email = resolveLoginEmail(username);
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/login.html'
+    redirectTo: window.location.origin + '/reset-password.html'
   });
   if (error) toast(error.message, 'error');
   else toast('Password reset link sent to ' + email, 'success');

@@ -55,6 +55,7 @@ once:
 | 5 | `sql/005_server_side_money_and_hardening.sql` | **money moves server-side**: `platform_config`, the `booking_before_update` trigger, hardened RLS, `rider_locations` |
 | 6 | `sql/006_push_subscriptions.sql` | web-push subscription table (skip if you only want SMS / in-app) |
 | 7 | `sql/007_delivery_distance.sql` | `distance_km` on food/parcel deliveries |
+| 8 | `sql/008_food_parcel_cancel_reason.sql` | `cancelled_reason` on food/parcel deliveries — without it, cancelling either fails |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -186,7 +187,10 @@ SMS + push + in-app notifications.
 - Project root deploys as-is; `vercel.json` rewrites `/*` →
   `/itulod/itulod/*` and sets no-cache headers on `.html` / `.css` / `.js`.
 - Supabase dashboard → **Authentication → URL Configuration → Site URL**: set to
-  the deployed origin, and add it to **Redirect URLs**.
+  the deployed origin, and add it to **Redirect URLs**. Also add
+  `<origin>/reset-password.html` to **Redirect URLs** — that's where
+  `resetPasswordForEmail()` sends the "Forgot password?" link, and Supabase
+  rejects a `redirectTo` that isn't on this list.
 - `js/config.js` is safe to commit: it holds only the Supabase URL, the anon
   key, the PayMongo **public** key, and the VAPID **public** key.
 
@@ -208,6 +212,12 @@ SMS + push + in-app notifications.
 6. Try to tamper: as the customer, `update transport_bookings set
    estimated_fare = 1 where id = '<yours>'` from the SQL editor **using a
    non-service connection** — it must raise an exception.
+7. Cancel a food delivery and a parcel delivery as the customer — both need
+   `sql/008` applied or they fail with a missing-column error.
+8. Password reset: **Forgot password?** on the login page → open the email →
+   the link should land on `reset-password.html` and let you set a new
+   password (needs the Redirect URLs entry from step 7 above). Also try
+   **Change password** from the Profile tab of either dashboard while logged in.
 
 Steps 4 and 6 are also the automated `npm run test:integration` check
 (`test/README.md`).

@@ -804,6 +804,42 @@
             </form>
           </div>
 
+          <div class="card card--narrow">
+            <div class="card-head"><h3>Change password</h3></div>
+            <form id="change-password-form">
+              <div class="field">
+                <label>New password</label>
+                <input
+                  type="password"
+                  id="new-password"
+                  minlength="8"
+                  required
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+              <div class="field" style="margin-bottom: 24px">
+                <label>Confirm new password</label>
+                <input
+                  type="password"
+                  id="confirm-password"
+                  minlength="8"
+                  required
+                  autocomplete="new-password"
+                  placeholder="Re-enter the password above"
+                />
+              </div>
+              <button
+                class="btn btn-outline"
+                id="change-password-submit"
+                type="submit"
+                style="width: 100%"
+              >
+                <i class="fa-solid fa-key"></i> Update password
+              </button>
+            </form>
+          </div>
+
           <!-- Shown only on phones, where the sidebar (and its log-out) is hidden -->
           <div class="card card--narrow mobile-account">
             <button class="btn btn-danger-ghost btn-block" onclick="logout()">
