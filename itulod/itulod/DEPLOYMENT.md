@@ -150,12 +150,13 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all six
-supabase functions deploy create-payment      --project-ref <ref>
-supabase functions deploy paymongo-webhook    --project-ref <ref>
-supabase functions deploy finalize-fare       --project-ref <ref>
-supabase functions deploy on-booking-change   --project-ref <ref>
-supabase functions deploy expire-bookings     --project-ref <ref>
+# deploy all seven
+supabase functions deploy create-payment       --project-ref <ref>
+supabase functions deploy paymongo-webhook     --project-ref <ref>
+supabase functions deploy finalize-fare        --project-ref <ref>
+supabase functions deploy on-booking-change    --project-ref <ref>
+supabase functions deploy expire-bookings      --project-ref <ref>
+supabase functions deploy sync-payment-status  --project-ref <ref>
 ```
 
 `paymongo-webhook`, `on-booking-change`, and `expire-bookings` must **not**
@@ -203,6 +204,23 @@ PayMongo dashboard → **Developers → Webhooks → Add endpoint**:
 - URL: `https://<ref>.functions.supabase.co/paymongo-webhook`
 - Events: `source.chargeable`, `payment.paid`, `payment.failed`
 - Copy the **signing secret** into `PAYMONGO_WEBHOOK_SECRET` (step 4).
+
+If the webhook secret is ever wrong or missing, every delivery gets silently
+rejected as an invalid signature — a real GCash payment can succeed on
+PayMongo's side while `payment_status` in the database stays stuck on
+`pending` forever, since nothing else tells it otherwise. Symptom: PayMongo's
+own dashboard (Developers → Webhooks → the endpoint → recent deliveries)
+shows 401s, or `payment-return.html` sits on "Still confirming…" past the
+~15-second poll window. `sync-payment-status` (below) papers over most of
+this in the UI, but the webhook secret being correct is still what actually
+gets bookings marked paid in the first place.
+
+`payment-return.html` and the dashboard also call **`sync-payment-status`**
+(needs no dashboard setup — it's just another deployed function) to ask
+PayMongo directly whether a still-pending GCash source has actually gone
+through, rather than only waiting on the webhook to arrive. It's read-only
+against PayMongo — it never creates a charge, so it can't double-charge
+anyone — it only syncs `payment_status` to match what PayMongo already says.
 
 ---
 

@@ -396,6 +396,23 @@ function wireParcelForm() {
 // ---- home / overview ---------------------------------------------------
 const HOME_KIND_LABEL = { transport: 'Ride', food: 'Food delivery', parcel: 'Parcel delivery' };
 
+// The webhook is the real source of truth, but it's pushed to us
+// asynchronously — a customer who clicks "Back to dashboard" before it lands
+// would otherwise still see "Awaiting confirmation" here. Nudge PayMongo
+// directly (read-only — see supabase/functions/sync-payment-status) for any
+// booking that's still waiting on a GCash payment, whenever the dashboard
+// loads a list that might contain one. Fire-and-forget: the realtime
+// subscription re-renders once the row actually changes.
+function syncPendingPayments(rows, kindOf) {
+  rows
+    .filter(b => b.payment_method === 'gcash' && b.payment_status === 'pending' && b.paymongo_reference)
+    .forEach(b => {
+      supabase.functions.invoke('sync-payment-status', {
+        body: { booking_type: kindOf(b), booking_id: b.id },
+      }).catch((err) => console.warn('sync-payment-status check failed:', err?.message)); // best-effort — the webhook/next load still catches it
+    });
+}
+
 async function loadHome() {
   const kinds = Object.keys(TABLE_BY_KIND);
   const perKind = await Promise.all(kinds.map(k =>
@@ -404,6 +421,7 @@ async function loadHome() {
       .then(r => (r.data || []).map(row => ({ ...row, _kind: k })))
   ));
   const rows = perKind.flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  syncPendingPayments(rows, (b) => b._kind);
 
   // Lifetime stats
   const completed = rows.filter(r => r.status === 'completed');
@@ -533,6 +551,7 @@ async function loadHistory() {
   const { slice, totalPages } = paginate(data, HISTORY_PAGE, PAGE_SIZE);
   list.innerHTML = slice.map(b => renderHistoryCard(b, HISTORY_KIND)).join('');
   renderPagination(totalPages);
+  syncPendingPayments(slice, () => HISTORY_KIND);
 }
 
 // Shared between Home's active-booking card and Booking history: does this

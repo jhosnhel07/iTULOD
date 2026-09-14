@@ -13,8 +13,8 @@
 // (--no-verify-jwt because PayMongo calls this anonymously; we verify the
 // PayMongo signature ourselves below instead of a Supabase JWT.)
 // =============================================================================
-import { adminClient, json, paymongoFetch, TABLE_BY_KIND, CORS_HEADERS } from '../_shared/helpers.ts';
-import { notifyUser } from '../_shared/notify.ts';
+import { adminClient, json, paymongoFetch, CORS_HEADERS } from '../_shared/helpers.ts';
+import { markBookingPaid, markBookingFailed } from '../_shared/payments.ts';
 
 async function hmacSha256Hex(secret: string, payload: string) {
   const key = await crypto.subtle.importKey(
@@ -33,37 +33,6 @@ async function verifySignature(rawBody: string, header: string | null, secret: s
   if (!parts.t) return false;
   const expected = await hmacSha256Hex(secret, `${parts.t}.${rawBody}`);
   return expected === parts.te || expected === parts.li;
-}
-
-// Look up which booking table + row a PayMongo reference (source id or
-// payment_intent id) belongs to.
-async function findBookingByReference(admin: ReturnType<typeof adminClient>, reference: string) {
-  for (const [kind, table] of Object.entries(TABLE_BY_KIND)) {
-    const { data } = await admin.from(table).select('id, customer_id, payment_status').eq('paymongo_reference', reference).maybeSingle();
-    if (data) return { kind, table, booking: data };
-  }
-  return null;
-}
-
-async function markPaid(admin: ReturnType<typeof adminClient>, reference: string) {
-  const hit = await findBookingByReference(admin, reference);
-  if (!hit) return;
-  if (hit.booking.payment_status === 'paid') return; // idempotent
-  await admin.from(hit.table).update({ payment_status: 'paid' }).eq('id', hit.booking.id);
-  await notifyUser(admin, hit.booking.customer_id, {
-    title: 'Payment received',
-    message: 'Your GCash payment went through. Thanks!',
-  }).catch((e) => console.error('notifyUser failed:', e));
-}
-
-async function markFailed(admin: ReturnType<typeof adminClient>, reference: string) {
-  const hit = await findBookingByReference(admin, reference);
-  if (!hit) return;
-  await admin.from(hit.table).update({ payment_status: 'failed' }).eq('id', hit.booking.id);
-  await notifyUser(admin, hit.booking.customer_id, {
-    title: 'Payment did not go through',
-    message: 'Your GCash payment failed. You can retry from Booking history.',
-  }).catch((e) => console.error('notifyUser failed:', e));
 }
 
 Deno.serve(async (req: Request) => {
@@ -94,27 +63,27 @@ Deno.serve(async (req: Request) => {
             data: { attributes: { amount, currency: 'PHP', source: { id: sourceId, type: 'source' }, description: 'iTULOD booking' } }
           })
         });
-        await markPaid(admin, sourceId);
+        await markBookingPaid(admin, sourceId);
         break;
       }
       case 'payment.paid': {
         const sourceId = resource.attributes?.source?.id;
-        if (sourceId) await markPaid(admin, sourceId);
+        if (sourceId) await markBookingPaid(admin, sourceId);
         break;
       }
       case 'payment.failed': {
         const sourceId = resource.attributes?.source?.id;
-        if (sourceId) await markFailed(admin, sourceId);
+        if (sourceId) await markBookingFailed(admin, sourceId);
         break;
       }
       case 'payment_intent.succeeded': {
         // Legacy: only fires for card intents created before card checkout was
         // removed. Kept so any in-flight one still settles correctly.
-        await markPaid(admin, resource.id);
+        await markBookingPaid(admin, resource.id);
         break;
       }
       case 'payment_intent.payment_failed': {
-        await markFailed(admin, resource.id);
+        await markBookingFailed(admin, resource.id);
         break;
       }
       default:

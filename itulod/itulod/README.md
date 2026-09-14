@@ -54,7 +54,8 @@ itulod/
 │   ├── finalize-fare/          # Rider confirms the food/parcel fare at pickup
 │   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
-│   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out)
+│   ├── sync-payment-status/    # On-demand: ask PayMongo directly instead of waiting on the webhook
+│   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)
 └── README.md

@@ -128,16 +128,31 @@
     return;
   }
 
-  // The webhook function is the source of truth, and it can take a few seconds
-  // to arrive after PayMongo redirects the shopper back — so poll briefly
-  // before settling on whatever status we have.
-  let status = booking.payment_status;
-  for (let attempt = 0; status === 'pending' && attempt < 8; attempt++) {
-    await new Promise(r => setTimeout(r, 1500));
+  // The webhook is the real source of truth, but it's pushed to us
+  // asynchronously and can lag a few seconds behind the redirect. Rather than
+  // just waiting on it, actively ask PayMongo ourselves on every attempt
+  // (sync-payment-status — read-only, never charges anything) so "Paid" shows
+  // up as soon as PayMongo confirms it, not whenever the webhook happens to
+  // arrive. Falls back to a plain DB read if that call itself fails.
+  async function syncOnce() {
+    try {
+      const { data } = await supabase.functions.invoke('sync-payment-status', {
+        body: { booking_type: type, booking_id: id },
+      });
+      if (data?.payment_status) return data.payment_status;
+    } catch (_) { /* fall through to a plain read below */ }
     const next = await fetchBooking();
-    if (!next) break;
-    status = next.payment_status;
-    renderReceipt(next);
+    return next ? next.payment_status : null;
+  }
+
+  let status = booking.payment_status;
+  for (let attempt = 0; status === 'pending' && attempt < 10; attempt++) {
+    const next = await syncOnce();
+    if (next == null) break;
+    status = next;
+    const fresh = await fetchBooking();
+    if (fresh) renderReceipt(fresh);
+    if (status === 'pending') await new Promise(r => setTimeout(r, attempt < 3 ? 800 : 1500));
   }
   setHeading(status);
 })();
