@@ -149,9 +149,11 @@ function statusBadge(status) {
   const map = {
     pending: 'badge--pending', accepted: 'badge--accepted', ongoing: 'badge--ongoing',
     completed: 'badge--completed', cancelled: 'badge--cancelled',
+    expired: 'badge--expired', no_show: 'badge--no-show',
     approved: 'badge--completed', rejected: 'badge--cancelled'
   };
-  return `<span class="badge ${map[status] || 'badge--pending'}">${status}</span>`;
+  const label = { no_show: 'No-show' }[status] || status;
+  return `<span class="badge ${map[status] || 'badge--pending'}">${label}</span>`;
 }
 
 /* ── Philippine field formatting + validation ─────────────────────────────

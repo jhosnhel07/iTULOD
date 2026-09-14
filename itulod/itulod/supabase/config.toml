@@ -426,3 +426,10 @@ verify_jwt = true
 [functions.paymongo-webhook]
 enabled = true
 verify_jwt = false
+
+# Called by a scheduler (Dashboard Cron Trigger, or an external pinger) with
+# no Supabase JWT — same reasoning as paymongo-webhook. It has nothing worth
+# protecting: no input, no data returned beyond a count.
+[functions.expire-bookings]
+enabled = true
+verify_jwt = false

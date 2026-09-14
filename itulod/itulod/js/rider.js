@@ -32,6 +32,7 @@ const PAGE_SIZE = 6;
   await loadVehicleInfo();
   await loadRiderHome();
   subscribeRealtime();
+  startBookingExpiryWatch();
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
 
@@ -323,6 +324,11 @@ function renderAcceptedCard(b, kind) {
     : '';
 
   const canComplete = b.status === 'ongoing' && !needsFinalFare;
+  // Grace period reminder: an accepted job that never starts expires
+  // automatically 15 minutes after it was accepted (sql/009).
+  const noShowAction = b.status === 'accepted'
+    ? `<button class="btn btn-outline btn-sm btn-danger-ghost" onclick="event.stopPropagation(); markNoShow('${kind}','${b.id}')"><i class="fa-solid fa-user-slash"></i> No-show</button>`
+    : '';
   const nextAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
     : canComplete
@@ -338,8 +344,17 @@ function renderAcceptedCard(b, kind) {
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
     footLeft: paidBadge,
-    actions: setFareAction + nextAction,
+    actions: setFareAction + noShowAction + nextAction,
   });
+}
+
+// The customer/order wasn't there when the rider arrived. Distinct from
+// cancelling (nobody backed out — the other party just didn't show), and
+// distinct from letting it silently expire (this books it as a no-show on
+// the record rather than a timeout).
+async function markNoShow(kind, id) {
+  if (!confirm("Mark this as a no-show? Use this only if you arrived and the customer/order wasn't there.")) return;
+  await updateStatus(kind, id, 'no_show');
 }
 
 async function setFinalFare(kind, id) {

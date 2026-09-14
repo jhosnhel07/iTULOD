@@ -33,13 +33,16 @@ Deno.serve(async (req: Request) => {
     // Load the booking and make sure it belongs to the caller.
     const { data: booking, error: bookingErr } = await admin
       .from(table)
-      .select('id, customer_id, estimated_fare, final_fare, payment_status')
+      .select('id, customer_id, estimated_fare, final_fare, payment_status, status')
       .eq('id', booking_id)
       .single();
 
     if (bookingErr || !booking) return json({ error: 'Booking not found.' }, 404);
     if (booking.customer_id !== user.id) return json({ error: 'This booking does not belong to you.' }, 403);
     if (booking.payment_status === 'paid') return json({ error: 'This booking is already paid.' }, 400);
+    if (['cancelled', 'expired', 'no_show'].includes(booking.status)) {
+      return json({ error: `This booking is ${booking.status.replace('_', '-')} and can no longer be paid.` }, 400);
+    }
 
     // Charge the confirmed final fare when the rider has set one (food / parcel),
     // otherwise the up-front estimate (transport).

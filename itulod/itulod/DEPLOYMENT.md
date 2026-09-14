@@ -56,6 +56,7 @@ once:
 | 6 | `sql/006_push_subscriptions.sql` | web-push subscription table (skip if you only want SMS / in-app) |
 | 7 | `sql/007_delivery_distance.sql` | `distance_km` on food/parcel deliveries |
 | 8 | `sql/008_food_parcel_cancel_reason.sql` | `cancelled_reason` on food/parcel deliveries — without it, cancelling either fails |
+| 9 | `sql/009_booking_expiration.sql` | Automatic booking expiration: `expired`/`no_show` statuses, `accepted_at`, `expire_stale_bookings()`, terminal-state lock. See §1a below — this one needs a follow-up step for the background sweep to actually run. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -83,6 +84,43 @@ in code.
   cancel while pending.
 - `rider_locations` is readable by the assigned customer only while the booking
   is active.
+
+### 1a. Automatic booking expiration — turn on the background sweep
+
+`sql/009_booking_expiration.sql` adds a database function,
+`expire_stale_bookings()`, that flips a booking to **Expired** when:
+
+- it's been **Pending** for more than **15 minutes** with no rider accepting it, or
+- it's been **Accepted** for more than **15 minutes** since acceptance with the
+  rider never starting the job (never moving it to Ongoing).
+
+An **Ongoing** booking is never auto-expired — a real trip can take longer
+than 15 minutes, and force-expiring one mid-trip would cancel real work.
+Completed, cancelled, expired, and no-show bookings are terminal: the trigger
+now refuses to let anyone but a trusted (service-role/admin) write change
+their status again.
+
+The app itself calls this function opportunistically (once when a dashboard
+loads, and every ~60 seconds while it's open), so expiration mostly "just
+works" whenever someone has the app open. To make it run **even when nobody
+does** (a hard requirement — see the spec this was built against), pick one:
+
+**Option A — pg_cron (simplest if your project has it):**
+The migration itself tries `select cron.schedule('itulod-expire-bookings', '* * * * *', 'select public.expire_stale_bookings();')`
+and just prints a notice instead of failing if the extension isn't enabled.
+To enable it: Supabase dashboard → **Database → Extensions → pg_cron** → enable,
+then re-run `sql/009_booking_expiration.sql`. Verify it's scheduled:
+```sql
+select * from cron.job where jobname = 'itulod-expire-bookings';
+```
+
+**Option B — the `expire-bookings` Edge Function on a schedule:**
+Deploy it (`supabase functions deploy expire-bookings --no-verify-jwt`, see §4),
+then Supabase dashboard → **Edge Functions → expire-bookings → Cron** → add a
+schedule (every 1–5 minutes). It takes no auth header and no body — it just
+calls the same database function. Works even on plans without pg_cron.
+
+Either one is enough on its own; both together is also fine (idempotent).
 
 ---
 
@@ -112,17 +150,19 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all five
+# deploy all six
 supabase functions deploy create-payment      --project-ref <ref>
 supabase functions deploy paymongo-webhook    --project-ref <ref>
 supabase functions deploy finalize-fare       --project-ref <ref>
 supabase functions deploy on-booking-change   --project-ref <ref>
+supabase functions deploy expire-bookings     --project-ref <ref>
 ```
 
-`paymongo-webhook` and `on-booking-change` must **not** require a Supabase JWT
-(they authenticate themselves): the repo's `supabase/functions/*/deno.json` /
-project config should mark them `--no-verify-jwt`, or set that in the dashboard
-under **Edge Functions → function → Details**.
+`paymongo-webhook`, `on-booking-change`, and `expire-bookings` must **not**
+require a Supabase JWT (they authenticate themselves, or — for
+`expire-bookings` — need no auth at all): the repo's `supabase/config.toml`
+marks them `verify_jwt = false`, or set that in the dashboard under
+**Edge Functions → function → Details** if deploying without the CLI config.
 
 ### Function secrets
 
@@ -218,8 +258,21 @@ SMS + push + in-app notifications.
    the link should land on `reset-password.html` and let you set a new
    password (needs the Redirect URLs entry from step 7 above). Also try
    **Change password** from the Profile tab of either dashboard while logged in.
+9. Booking expiration — the manual-timer-free way to check this quickly is
+   from the SQL editor rather than waiting 15 real minutes:
+   ```sql
+   -- back-date a pending booking, then run the sweep
+   update transport_bookings set created_at = now() - interval '20 minutes'
+     where id = '<a pending booking id>';
+   select expire_stale_bookings();  -- should return >= 1
+   ```
+   Confirm: the booking's `status` is now `expired`; its card shows the
+   **Expired** badge and the "This booking has expired…" note in Booking
+   history/details; trying to update it as that customer (e.g. Cancel) is
+   rejected. Then check an **ongoing** booking backdated the same way is
+   *not* touched — ongoing must never auto-expire.
 
-Steps 4 and 6 are also the automated `npm run test:integration` check
+Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).
 
 ---

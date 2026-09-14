@@ -1165,6 +1165,15 @@ button {
   background: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
 }
+/* Timed out on its own — distinct from a deliberate cancellation. */
+.badge--expired {
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+}
+.badge--no-show {
+  background: rgba(217, 70, 4, 0.14);
+  color: #9a3d00;
+}
 .badge--info {
   background: rgba(33, 150, 243, 0.1);
   color: var(--blue-dark);

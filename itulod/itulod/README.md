@@ -46,12 +46,14 @@ itulod/
 │   ├── 005_server_side_money_and_hardening.sql   # Money trigger + hardened RLS + rider_locations
 │   ├── 006_push_subscriptions.sql                # Web-push subscription table
 │   ├── 007_delivery_distance.sql                 # distance_km on food/parcel
-│   └── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
+│   ├── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
+│   └── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking
 │   ├── paymongo-webhook/       # Source of truth: marks a booking paid/failed
 │   ├── finalize-fare/          # Rider confirms the food/parcel fare at pickup
 │   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
+│   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
 │   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)

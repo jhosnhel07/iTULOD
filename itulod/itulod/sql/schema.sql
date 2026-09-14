@@ -21,8 +21,12 @@ do $$ begin
   create type application_status as enum ('pending', 'approved', 'rejected');
 exception when duplicate_object then null; end $$;
 
+-- 'expired' and 'no_show' are added by sql/009_booking_expiration.sql on an
+-- existing database; listed here too so a fresh install gets the full set
+-- straight away.
 do $$ begin
-  create type booking_status as enum ('pending', 'accepted', 'ongoing', 'completed', 'cancelled');
+  create type booking_status as enum
+    ('pending', 'accepted', 'ongoing', 'completed', 'cancelled', 'expired', 'no_show');
 exception when duplicate_object then null; end $$;
 
 do $$ begin
@@ -104,6 +108,7 @@ create table if not exists public.transport_bookings (
   estimated_fare numeric(10,2),
   final_fare numeric(10,2),
   status booking_status not null default 'pending',
+  accepted_at timestamptz,
   rating int check (rating between 1 and 5),
   review text,
   cancelled_reason text,
@@ -126,6 +131,7 @@ create table if not exists public.food_deliveries (
   final_fare numeric(10,2),
   distance_km numeric(6,2),
   status booking_status not null default 'pending',
+  accepted_at timestamptz,
   rating int check (rating between 1 and 5),
   review text,
   cancelled_reason text,
@@ -154,6 +160,7 @@ create table if not exists public.parcel_deliveries (
   final_fare numeric(10,2),
   distance_km numeric(6,2),
   status booking_status not null default 'pending',
+  accepted_at timestamptz,
   rating int check (rating between 1 and 5),
   review text,
   cancelled_reason text,

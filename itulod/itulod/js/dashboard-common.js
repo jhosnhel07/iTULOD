@@ -139,3 +139,23 @@ function wireChangePasswordForm() {
     toast('Password updated.', 'success');
   });
 }
+
+// ---- automatic booking expiration ----------------------------------------
+// The real sweep runs server-side (sql/009_booking_expiration.sql's
+// expire_stale_bookings(), on a schedule via pg_cron or the expire-bookings
+// Edge Function) so it happens even with nobody looking at the app. This is
+// just a background nudge: whenever a dashboard is open, ping the same
+// function so a stale booking flips to "Expired" within seconds rather than
+// waiting for the next scheduled tick. The realtime subscription each
+// dashboard already has picks up the resulting row change and re-renders it
+// — this never needs to touch the UI directly.
+const BOOKING_EXPIRY_CHECK_MS = 60 * 1000;
+function startBookingExpiryWatch() {
+  const tick = () => {
+    supabase.rpc('expire_stale_bookings').then(({ error }) => {
+      if (error) console.warn('expire_stale_bookings check failed:', error.message);
+    });
+  };
+  tick();
+  setInterval(tick, BOOKING_EXPIRY_CHECK_MS);
+}

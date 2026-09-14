@@ -34,6 +34,7 @@ let RATING_TARGET = null; // { kind, id }
   await loadNotifications();
   populateProfileForm();
   subscribeRealtime();
+  startBookingExpiryWatch();
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
 
@@ -464,6 +465,13 @@ function renderHomeActive(b, rider) {
   const riderLine = b.rider_id
     ? `<span><i class="fa-solid fa-motorcycle"></i> ${escapeHtml(rider?.full_name || 'Rider assigned')}${rider?.phone ? ' · ' + escapeHtml(rider.phone) : ''}</span>`
     : `<span><i class="fa-solid fa-user-clock"></i> No rider yet</span>`;
+  // Bookings expire automatically after a 15-minute grace period — pending
+  // ones if nobody accepts, accepted ones if the rider never starts the job.
+  const graceHint = b.status === 'pending'
+    ? "You have a 15-minute grace period — if no rider accepts by then, this request expires automatically."
+    : b.status === 'accepted'
+      ? 'Your rider has a 15-minute grace period to start this trip before it expires automatically.'
+      : '';
   el.innerHTML = `
     <div class="home-active card">
       <div class="home-active__head">
@@ -472,6 +480,7 @@ function renderHomeActive(b, rider) {
       </div>
       <h3>${escapeHtml(title)}</h3>
       <p class="home-active__stage">${stage}</p>
+      ${graceHint ? `<p class="home-active__hint"><i class="fa-regular fa-clock"></i> ${graceHint}</p>` : ''}
       <div class="home-active__meta">
         ${riderLine}
         <span><i class="fa-solid fa-peso-sign"></i> ${peso(b.final_fare ?? b.estimated_fare)}</span>
@@ -546,7 +555,7 @@ function renderHistoryCard(b, kind) {
   const payable = kind === 'transport' ? b.estimated_fare : b.final_fare;
   const needsPaymentRetry = b.payment_method === 'gcash'
     && ['pending', 'failed'].includes(b.payment_status)
-    && b.status !== 'cancelled'
+    && !['cancelled', 'expired', 'no_show'].includes(b.status)
     && Number(payable) > 0;
 
   const actions = [

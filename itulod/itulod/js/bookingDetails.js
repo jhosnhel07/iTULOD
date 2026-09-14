@@ -240,6 +240,32 @@
           </div>
         </div>` : '';
 
+      /* ---- 8b. Expiration / grace-period context ----
+         Bookings auto-expire after a 15-minute grace period: pending ones if
+         no rider accepts, accepted ones if the rider never starts the job.
+         See sql/009_booking_expiration.sql. */
+      let statusNote = '';
+      if (booking.status === 'expired') {
+        statusNote = `<div class="bd-status-note bd-status-note--warning">
+          <i class="fa-solid fa-hourglass-end"></i>
+          <span>This booking has expired because the scheduled date and time has already passed.</span>
+        </div>`;
+      } else if (booking.status === 'no_show') {
+        statusNote = `<div class="bd-status-note bd-status-note--warning">
+          <i class="fa-solid fa-user-slash"></i>
+          <span>This booking was marked as a no-show by the rider.</span>
+        </div>`;
+      } else if (booking.status === 'pending' || booking.status === 'accepted') {
+        statusNote = `<div class="bd-status-note bd-status-note--info">
+          <i class="fa-regular fa-clock"></i>
+          <span>You have a 15-minute grace period after your scheduled booking time —
+            ${booking.status === 'pending'
+              ? 'if no rider accepts within that window, this request expires automatically.'
+              : "if your rider doesn't start the trip within that window, it expires automatically."}
+          </span>
+        </div>`;
+      }
+
       /* ---- 9. Render ---- */
       body.innerHTML = `
         <div class="bd-header">
@@ -256,6 +282,7 @@
             <strong>${peso(fare)}</strong>
           </div>
         </div>
+        ${statusNote}
         ${routeSection}
         ${fareSection}
         ${vehicleSection}
