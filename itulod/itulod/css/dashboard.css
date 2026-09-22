@@ -649,9 +649,10 @@
 }
 .input-map input {
   flex: 1;
-  padding-right: 46px !important;
+  padding-right: 84px !important;
 }
-.map-pin-btn {
+.map-pin-btn,
+.saved-addr-btn {
   position: absolute;
   right: 5px;
   top: 5px;
@@ -668,13 +669,125 @@
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.map-pin-btn:hover {
+.saved-addr-btn {
+  right: 43px;
+}
+.map-pin-btn:hover,
+.saved-addr-btn:hover {
   background: var(--blue-200);
   color: var(--blue-dark);
 }
-.map-pin-btn:focus-visible {
+.map-pin-btn:focus-visible,
+.saved-addr-btn:focus-visible {
   outline: none;
   box-shadow: var(--ring);
+}
+
+/* Saved-address quick picker — a small popover anchored under the button
+   that opened it, injected/removed by toggleSavedAddressPicker(). */
+.saved-addr-picker {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 260px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--white, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.12));
+  padding: 6px;
+}
+.saved-addr-picker__empty {
+  padding: 12px 10px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.saved-addr-picker__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.saved-addr-picker__item:hover {
+  background: var(--blue-50);
+}
+.saved-addr-picker__item strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.saved-addr-picker__item span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-addr-picker__manage {
+  display: block;
+  text-align: center;
+  margin-top: 4px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--blue);
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+}
+.saved-addr-picker__manage:hover {
+  background: var(--blue-50);
+}
+
+/* Profile tab: the saved-addresses list itself (add/manage form is above it) */
+.saved-address-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.saved-address-row:last-child {
+  border-bottom: none;
+}
+.saved-address-row__icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--blue-50);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.saved-address-row__text {
+  flex: 1;
+  min-width: 0;
+}
+.saved-address-row__text strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.saved-address-row__text span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .map-card--flash {
   animation: mapCardFlash 1.2s ease;
@@ -1246,7 +1359,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   margin-bottom: 8px;
 }
 
-.fare-estimate-card .fare-row:last-child {
+.fare-estimate-card .fare-row--total {
   margin-bottom: 0;
   font-size: 1.05rem;
   font-weight: 600;
@@ -1258,6 +1371,15 @@ table.data-table tbody tr:nth-child(even):hover td {
   font-weight: 700;
   font-size: 1.3rem;
   color: var(--blue);
+}
+
+.fare-estimate-card .fare-row--breakdown {
+  margin: 4px 0 0;
+  justify-content: flex-start;
+}
+.fare-breakdown {
+  font-size: 0.76rem;
+  color: var(--text-muted);
 }
 
 /* =====================================================================

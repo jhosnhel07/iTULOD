@@ -168,6 +168,8 @@
           ${booking.distance_km && kind === 'transport' ? row('Distance', booking.distance_km + ' km') : ''}
           ${booking.payment_method ? row('Payment method', paymentMethodLabel(booking.payment_method)) : ''}
           ${booking.payment_status ? row('Payment status', paymentStatusBadge(booking.payment_status)) : ''}
+          ${booking.tip_amount        ? row('Tip',                peso(booking.tip_amount))        : ''}
+          ${booking.cancellation_fee  ? row('Cancellation fee',   peso(booking.cancellation_fee))   : ''}
           ${booking.rating         ? row('Your rating',    ratingStars(booking.rating))  : ''}
           ${booking.review         ? row('Your review',    escapeHtml(booking.review))    : ''}
         </div>`;

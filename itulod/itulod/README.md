@@ -47,7 +47,8 @@ itulod/
 │   ├── 006_push_subscriptions.sql                # Web-push subscription table
 │   ├── 007_delivery_distance.sql                 # distance_km on food/parcel
 │   ├── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
-│   └── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
+│   ├── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
+│   └── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking
 │   ├── paymongo-webhook/       # Source of truth: marks a booking paid/failed

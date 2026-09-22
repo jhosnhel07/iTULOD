@@ -42,6 +42,15 @@ Deno.serve(async (req: Request) => {
     const notifyRider = (title: string, message: string) =>
       rec.rider_id && notifyUser(admin, rec.rider_id, { title, message });
 
+    // Rider released the job back to the pool (sql/010: rider_id -> null,
+    // status -> pending) instead of leaving the customer stuck with them.
+    if (old.rider_id && !rec.rider_id && rec.status === 'pending' && old.status === 'accepted') {
+      await notifyCustomer(
+        'Looking for a new rider',
+        `Your rider had to release this ${label} — we're finding you another one.`,
+      );
+    }
+
     // Rider just accepted
     if (!old.rider_id && rec.rider_id) {
       const { data: rider } = await admin.from('profiles').select('full_name, phone').eq('id', rec.rider_id).single();
@@ -67,6 +76,14 @@ Deno.serve(async (req: Request) => {
     // Payment landed
     if (rec.payment_status === 'paid' && old.payment_status !== 'paid') {
       await notifyCustomer('Payment received', `We've received your payment for this ${label}.`);
+    }
+
+    // A tip or a cancellation fee was just recorded (sql/010)
+    if (rec.tip_amount && !old.tip_amount) {
+      await notifyRider('You got a tip! 🎉', `The customer added a ₱${Number(rec.tip_amount).toFixed(2)} tip for this ${label}.`);
+    }
+    if (rec.cancellation_fee && !old.cancellation_fee) {
+      await notifyCustomer('Cancellation fee applied', `A ₱${Number(rec.cancellation_fee).toFixed(2)} cancellation fee was recorded for this booking.`);
     }
 
     return json({ ok: true });

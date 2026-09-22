@@ -329,6 +329,11 @@ function renderAcceptedCard(b, kind) {
   const noShowAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm btn-danger-ghost" onclick="event.stopPropagation(); markNoShow('${kind}','${b.id}')"><i class="fa-solid fa-user-slash"></i> No-show</button>`
     : '';
+  // Can't make it after all — release the job back to the pool instead of
+  // stranding the customer with a rider who never shows up.
+  const releaseAction = b.status === 'accepted'
+    ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); releaseJob('${kind}','${b.id}')"><i class="fa-solid fa-arrow-rotate-left"></i> Release</button>`
+    : '';
   const nextAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
     : canComplete
@@ -344,7 +349,7 @@ function renderAcceptedCard(b, kind) {
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
     footLeft: paidBadge,
-    actions: setFareAction + noShowAction + nextAction,
+    actions: setFareAction + noShowAction + releaseAction + nextAction,
   });
 }
 
@@ -355,6 +360,20 @@ function renderAcceptedCard(b, kind) {
 async function markNoShow(kind, id) {
   if (!confirm("Mark this as a no-show? Use this only if you arrived and the customer/order wasn't there.")) return;
   await updateStatus(kind, id, 'no_show');
+}
+
+// Can't complete this job after accepting it — release it back to the pool
+// (rider_id -> null, status -> pending, per sql/010) so another rider can
+// pick it up instead of the customer being stuck with a no-show.
+async function releaseJob(kind, id) {
+  if (!confirm("Release this job back to other riders? Only do this if you genuinely can't complete it.")) return;
+  const table = TABLE_BY_KIND[kind];
+  const { error } = await supabase.from(table).update({ rider_id: null, status: 'pending' }).eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  toast('Job released — another rider can pick it up.', 'success');
+  await loadAccepted();
+  await loadRequests();
+  await loadEarnings();
 }
 
 async function setFinalFare(kind, id) {
@@ -466,7 +485,7 @@ async function loadHistory() {
       <div class="booking-card" role="button" tabindex="0" onclick="openBookingDetails({ kind: '${HISTORY_KIND}', id: '${b.id}' })" onkeydown="if(event.key==='Enter'||event.key===' '){ openBookingDetails({ kind: '${HISTORY_KIND}', id: '${b.id}' }); }">
         <div class="kind-icon" style="background:${COLOR_BY_KIND[HISTORY_KIND]}"><i class="fa-solid ${ICON_BY_KIND[HISTORY_KIND]}"></i></div>
         <div class="info"><div><h4>${escapeHtml(title)}</h4><p>${formatDate(b.created_at)}${b.rating ? ' · ' + '★'.repeat(b.rating) : ''}</p></div></div>
-        <div class="meta"><span class="fare">${peso(b.final_fare ?? b.estimated_fare)}</span>${statusBadge(b.status)}</div>
+        <div class="meta"><span class="fare">${peso(b.final_fare ?? b.estimated_fare)}</span>${b.tip_amount ? `<span class="tip-badge">+${peso(b.tip_amount)} tip</span>` : ''}${statusBadge(b.status)}</div>
       </div>`;
   }).join('');
   renderPagination(totalPages);

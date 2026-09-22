@@ -57,6 +57,7 @@ once:
 | 7 | `sql/007_delivery_distance.sql` | `distance_km` on food/parcel deliveries |
 | 8 | `sql/008_food_parcel_cancel_reason.sql` | `cancelled_reason` on food/parcel deliveries — without it, cancelling either fails |
 | 9 | `sql/009_booking_expiration.sql` | Automatic booking expiration: `expired`/`no_show` statuses, `accepted_at`, `expire_stale_bookings()`, terminal-state lock. See §1a below — this one needs a follow-up step for the background sweep to actually run. |
+| 10 | `sql/010_growth_features.sql` | `saved_addresses` table; `tip_amount` + `cancellation_fee` columns on all three booking tables; a rider can now "release" an accepted job back to the pool (`rider_id` → null, `status` → pending) instead of only ever ending it outright. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -291,6 +292,23 @@ SMS + push + in-app notifications.
    history/details; trying to update it as that customer (e.g. Cancel) is
    rejected. Then check an **ongoing** booking backdated the same way is
    *not* touched — ongoing must never auto-expire.
+10. Saved addresses: Profile tab → add one → open New booking → the
+    bookmark button next to any address field lists it → picking it fills
+    the field and updates the fare estimate.
+11. Fare breakdown: typing a pickup + destination in New booking shows a
+    small "₱X base + Y km × ₱Z/km" line under the fare total.
+12. Tip: rate a **completed** booking with an amount in "Add a cash tip" →
+    check `payments` for that booking — `amount` and `rider_payout` should
+    both have gone up by the tip, `platform_commission` unchanged. Rider
+    gets a "You got a tip!" notification.
+13. Cancellation fee: as the customer, cancel a booking a rider has already
+    **accepted** — the confirm dialog should quote the configured fee
+    (`platform_config.cancellation_fee`, ₱30 by default), and the
+    cancelled booking's `cancellation_fee` column should be set afterward.
+14. Rider release: accept a booking as one rider, tap **Release** — it
+    should disappear from that rider's Accepted list, reappear in every
+    approved rider's Requests list (status back to `pending`, `rider_id`
+    null), and the customer gets a "Looking for a new rider" notification.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

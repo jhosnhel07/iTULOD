@@ -175,6 +175,15 @@
                     />
                     <button
                       type="button"
+                      class="saved-addr-btn"
+                      onclick="toggleSavedAddressPicker(this, 'ride-pickup')"
+                      aria-label="Use a saved address"
+                      title="Saved addresses"
+                    >
+                      <i class="fa-solid fa-bookmark"></i>
+                    </button>
+                    <button
+                      type="button"
                       class="map-pin-btn"
                       onclick="pinOnMap('ride', 'pickup')"
                       aria-label="Set pickup on map"
@@ -193,6 +202,15 @@
                       placeholder="e.g. Batac Public Market, Batac"
                       required
                     />
+                    <button
+                      type="button"
+                      class="saved-addr-btn"
+                      onclick="toggleSavedAddressPicker(this, 'ride-destination')"
+                      aria-label="Use a saved address"
+                      title="Saved addresses"
+                    >
+                      <i class="fa-solid fa-bookmark"></i>
+                    </button>
                     <button
                       type="button"
                       class="map-pin-btn"
@@ -215,9 +233,12 @@
                     <span>Estimated distance</span>
                     <span id="ride-distance">—</span>
                   </div>
-                  <div class="fare-row">
+                  <div class="fare-row fare-row--total">
                     <span>Estimated fare</span>
                     <strong id="ride-fare">₱0.00</strong>
+                  </div>
+                  <div class="fare-row fare-row--breakdown">
+                    <small id="ride-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
 
@@ -340,6 +361,15 @@
                     />
                     <button
                       type="button"
+                      class="saved-addr-btn"
+                      onclick="toggleSavedAddressPicker(this, 'food-pickup')"
+                      aria-label="Use a saved address"
+                      title="Saved addresses"
+                    >
+                      <i class="fa-solid fa-bookmark"></i>
+                    </button>
+                    <button
+                      type="button"
                       class="map-pin-btn"
                       onclick="pinOnMap('food', 'pickup')"
                       aria-label="Set pickup on map"
@@ -358,6 +388,15 @@
                       required
                       placeholder="e.g. Brgy. 1, Sarrat, Ilocos Norte"
                     />
+                    <button
+                      type="button"
+                      class="saved-addr-btn"
+                      onclick="toggleSavedAddressPicker(this, 'food-address')"
+                      aria-label="Use a saved address"
+                      title="Saved addresses"
+                    >
+                      <i class="fa-solid fa-bookmark"></i>
+                    </button>
                     <button
                       type="button"
                       class="map-pin-btn"
@@ -387,9 +426,12 @@
                     <span>Estimated distance</span>
                     <span id="food-distance">—</span>
                   </div>
-                  <div class="fare-row">
+                  <div class="fare-row fare-row--total">
                     <span>Estimated fare</span>
                     <strong id="food-fare">₱0.00</strong>
+                  </div>
+                  <div class="fare-row fare-row--breakdown">
+                    <small id="food-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
 
@@ -505,6 +547,15 @@
                       />
                       <button
                         type="button"
+                        class="saved-addr-btn"
+                        onclick="toggleSavedAddressPicker(this, 'parcel-sender-address')"
+                        aria-label="Use a saved address"
+                        title="Saved addresses"
+                      >
+                        <i class="fa-solid fa-bookmark"></i>
+                      </button>
+                      <button
+                        type="button"
                         class="map-pin-btn"
                         onclick="pinOnMap('parcel', 'pickup')"
                         aria-label="Set sender address on map"
@@ -537,6 +588,15 @@
                         required
                         placeholder="e.g. Brgy. Poblacion, Pagudpud, Ilocos Norte"
                       />
+                      <button
+                        type="button"
+                        class="saved-addr-btn"
+                        onclick="toggleSavedAddressPicker(this, 'parcel-receiver-address')"
+                        aria-label="Use a saved address"
+                        title="Saved addresses"
+                      >
+                        <i class="fa-solid fa-bookmark"></i>
+                      </button>
                       <button
                         type="button"
                         class="map-pin-btn"
@@ -632,9 +692,12 @@
                     <span>Estimated distance</span>
                     <span id="parcel-distance">—</span>
                   </div>
-                  <div class="fare-row">
+                  <div class="fare-row fare-row--total">
                     <span>Estimated fare</span>
                     <strong id="parcel-fare">₱0.00</strong>
+                  </div>
+                  <div class="fare-row fare-row--breakdown">
+                    <small id="parcel-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
 
@@ -854,6 +917,45 @@
             </form>
           </div>
 
+          <div class="card card--narrow">
+            <div class="card-head"><h3>Saved addresses</h3></div>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
+              Save the places you book often — pick them from the
+              <i class="fa-solid fa-bookmark"></i> button next to any address
+              field.
+            </p>
+            <form id="saved-address-form" style="margin-bottom: 16px">
+              <div class="field">
+                <label>Label</label>
+                <input
+                  type="text"
+                  id="saved-address-label"
+                  placeholder="Home, Work, Mom's house…"
+                  maxlength="40"
+                  required
+                />
+              </div>
+              <div class="field" style="margin-bottom: 14px">
+                <label>Address</label>
+                <input
+                  type="text"
+                  id="saved-address-text"
+                  placeholder="e.g. Brgy. San Lorenzo, Laoag City"
+                  required
+                />
+              </div>
+              <button
+                class="btn btn-outline"
+                id="saved-address-submit"
+                type="submit"
+                style="width: 100%"
+              >
+                <i class="fa-solid fa-plus"></i> Save this address
+              </button>
+            </form>
+            <div id="saved-address-list"></div>
+          </div>
+
           <!-- Shown only on phones, where the sidebar (and its log-out) is hidden -->
           <div class="card card--narrow mobile-account">
             <button class="btn btn-danger-ghost btn-block" onclick="logout()">
@@ -978,6 +1080,20 @@
               rows="3"
               placeholder="Share your experience…"
             ></textarea>
+          </div>
+          <div class="field" style="margin-bottom: 0">
+            <label>Add a cash tip (optional)</label>
+            <input
+              type="number"
+              id="rate-tip"
+              min="1"
+              step="1"
+              placeholder="₱"
+            />
+            <small class="hint" style="margin-top: 6px; display: block">
+              Hand this directly to your rider — it's recorded here just so
+              it shows up in their earnings.
+            </small>
           </div>
         </div>
         <div class="modal-foot">

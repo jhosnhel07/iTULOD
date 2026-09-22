@@ -1165,6 +1165,16 @@ button {
   background: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
 }
+.tip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
 /* Timed out on its own — distinct from a deliberate cancellation. */
 .badge--expired {
   background: rgba(100, 116, 139, 0.14);

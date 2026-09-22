@@ -27,11 +27,13 @@ let RATING_TARGET = null; // { kind, id }
   wireHistoryTabs();
   wireProfileForm();
   wireChangePasswordForm();
+  wireSavedAddressForm();
   wireStarInput();
 
   await loadHome();
   await loadHistory();
   await loadNotifications();
+  await loadSavedAddresses();
   populateProfileForm();
   subscribeRealtime();
   startBookingExpiryWatch();
@@ -117,7 +119,7 @@ function wireTabNav() {
 
 // ---- fare estimator: real OSRM road distance when we can get it, the
 //      deterministic placeholder otherwise --------------------------------
-function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl }) {
+function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl }) {
   let route = null;        // { km, pickup:[lng,lat], dropoff:[lng,lat] } once a real route is known
   let lastKey = '';
   let timer = null;
@@ -126,7 +128,13 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
 
   function render(km, isReal) {
     distanceEl.textContent = km ? km.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
-    fareEl.textContent = km ? peso(estimateFare(vehicle(), km)) : '₱0.00';
+    const v = vehicle();
+    fareEl.textContent = km ? peso(estimateFare(v, km)) : '₱0.00';
+    if (breakdownEl) {
+      breakdownEl.textContent = (km && v)
+        ? `${peso(v.base_fare)} base + ${Math.max(km, 1).toFixed(1)} km × ${peso(v.per_km_rate)}/km`
+        : '';
+    }
   }
 
   function recalc() {
@@ -171,6 +179,113 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
   };
 }
 
+// ---- saved / favorite addresses ------------------------------------------
+let SAVED_ADDRESSES = [];
+
+async function loadSavedAddresses() {
+  const { data, error } = await supabase.from('saved_addresses').select('*')
+    .eq('customer_id', CURRENT_PROFILE.id).order('created_at', { ascending: false });
+  if (error) { console.warn('loadSavedAddresses failed:', error.message); return; }
+  SAVED_ADDRESSES = data || [];
+  renderSavedAddressesList();
+}
+
+function renderSavedAddressesList() {
+  const el = document.getElementById('saved-address-list');
+  if (!el) return;
+  el.innerHTML = SAVED_ADDRESSES.length
+    ? SAVED_ADDRESSES.map(a => `
+      <div class="saved-address-row">
+        <div class="saved-address-row__icon"><i class="fa-solid fa-bookmark"></i></div>
+        <div class="saved-address-row__text">
+          <strong>${escapeHtml(a.label)}</strong>
+          <span>${escapeHtml(a.address)}</span>
+        </div>
+        <button type="button" class="icon-btn" title="Delete" onclick="deleteSavedAddress('${a.id}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>`).join('')
+    : emptyState({ icon: 'fa-bookmark', title: 'No saved addresses yet', body: 'Add one above to fill it in with one tap next time you book.' });
+}
+
+function wireSavedAddressForm() {
+  const form = document.getElementById('saved-address-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('saved-address-submit');
+    const label = document.getElementById('saved-address-label').value.trim();
+    const address = document.getElementById('saved-address-text').value.trim();
+    if (!requireFields({ Label: label, Address: address })) return;
+
+    setLoading(btn, true);
+    const { error } = await supabase.from('saved_addresses').insert({
+      customer_id: CURRENT_PROFILE.id, label, address,
+    });
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Address saved!', 'success');
+    form.reset();
+    await loadSavedAddresses();
+  });
+}
+
+async function deleteSavedAddress(id) {
+  if (!confirm('Remove this saved address?')) return;
+  const { error } = await supabase.from('saved_addresses').delete().eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  await loadSavedAddresses();
+}
+
+// The small "pick a saved address" popover opened from the bookmark button
+// next to every address field in the booking forms.
+let _addrPicker = null;
+function _addrPickerOutsideClick(e) {
+  if (_addrPicker && !_addrPicker.contains(e.target) && !e.target.closest('.saved-addr-btn')) {
+    closeSavedAddressPicker();
+  }
+}
+function closeSavedAddressPicker() {
+  if (_addrPicker) { _addrPicker.remove(); _addrPicker = null; }
+  document.removeEventListener('click', _addrPickerOutsideClick, true);
+}
+function toggleSavedAddressPicker(btn, inputId) {
+  if (_addrPicker) { closeSavedAddressPicker(); return; }
+  const wrap = btn.closest('.input-map');
+  if (!wrap) return;
+
+  const picker = document.createElement('div');
+  picker.className = 'saved-addr-picker';
+  picker.innerHTML = (SAVED_ADDRESSES.length
+    ? SAVED_ADDRESSES.map(a => `
+        <button type="button" class="saved-addr-picker__item" data-id="${a.id}">
+          <strong>${escapeHtml(a.label)}</strong>
+          <span>${escapeHtml(a.address)}</span>
+        </button>`).join('')
+    : `<div class="saved-addr-picker__empty">No saved addresses yet.</div>`
+  ) + `<button type="button" class="saved-addr-picker__manage">Manage in Profile</button>`;
+  wrap.appendChild(picker);
+  _addrPicker = picker;
+
+  picker.querySelectorAll('.saved-addr-picker__item').forEach(item => {
+    item.addEventListener('click', () => {
+      const addr = SAVED_ADDRESSES.find(a => a.id === item.dataset.id);
+      const input = document.getElementById(inputId);
+      if (addr && input) {
+        input.value = addr.address;
+        input.dispatchEvent(new Event('input', { bubbles: true })); // recalculates the fare estimate
+      }
+      closeSavedAddressPicker();
+    });
+  });
+  picker.querySelector('.saved-addr-picker__manage').addEventListener('click', () => {
+    closeSavedAddressPicker();
+    activateTab('profile');
+  });
+
+  setTimeout(() => document.addEventListener('click', _addrPickerOutsideClick, true), 0);
+}
+
 // ---- vehicle select + fare estimate -------------------------------------
 async function loadVehicleOptions() {
   const { data, error } = await supabase.from('vehicles').select('*').eq('is_available', true).order('base_fare');
@@ -191,8 +306,9 @@ function wireRideForm() {
   const vehicleSel = document.getElementById('ride-vehicle');
   const distanceEl = document.getElementById('ride-distance');
   const fareEl = document.getElementById('ride-fare');
+  const breakdownEl = document.getElementById('ride-fare-breakdown');
 
-  const est = createFareEstimator({ tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl });
+  const est = createFareEstimator({ tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl, breakdownEl });
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-ride', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-ride', form));
@@ -249,7 +365,7 @@ function wireRideForm() {
     if (pLngLat && dLngLat) drawRoute(pLngLat, dLngLat);
 
     clearFormDraft('itulod-customer-ride');
-    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
+    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
     HISTORY_KIND = 'transport'; await loadHistory(); await loadHome();
   });
 }
@@ -261,8 +377,9 @@ function wireFoodForm() {
   const vehicleSel = document.getElementById('food-vehicle');
   const distanceEl = document.getElementById('food-distance');
   const fareEl = document.getElementById('food-fare');
+  const breakdownEl = document.getElementById('food-fare-breakdown');
 
-  const est = createFareEstimator({ tab: 'food', pickupEl: pickup, dropoffEl: address, vehicleSel, distanceEl, fareEl });
+  const est = createFareEstimator({ tab: 'food', pickupEl: pickup, dropoffEl: address, vehicleSel, distanceEl, fareEl, breakdownEl });
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-food', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-food', form));
@@ -302,7 +419,7 @@ function wireFoodForm() {
       'success'
     );
     clearFormDraft('itulod-customer-food');
-    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
+    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
     HISTORY_KIND = 'food'; await loadHistory();
   });
 }
@@ -314,8 +431,9 @@ function wireParcelForm() {
   const vehicleSel = document.getElementById('parcel-vehicle');
   const distanceEl = document.getElementById('parcel-distance');
   const fareEl = document.getElementById('parcel-fare');
+  const breakdownEl = document.getElementById('parcel-fare-breakdown');
 
-  const est = createFareEstimator({ tab: 'parcel', pickupEl: senderAddr, dropoffEl: receiverAddr, vehicleSel, distanceEl, fareEl });
+  const est = createFareEstimator({ tab: 'parcel', pickupEl: senderAddr, dropoffEl: receiverAddr, vehicleSel, distanceEl, fareEl, breakdownEl });
   const masks = [
     attachInputMask(document.getElementById('parcel-sender-name'), formatName),
     attachInputMask(document.getElementById('parcel-receiver-name'), formatName),
@@ -388,7 +506,7 @@ function wireParcelForm() {
       'success'
     );
     clearFormDraft('itulod-customer-parcel');
-    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00';
+    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
     HISTORY_KIND = 'parcel'; await loadHistory();
   });
 }
@@ -634,8 +752,20 @@ function renderPagination(totalPages) {
 function changeHistoryPage(delta) { HISTORY_PAGE += delta; loadHistory(); }
 
 async function cancelBooking(kind, id) {
-  if (!confirm('Cancel this booking?')) return;
   const table = TABLE_BY_KIND[kind];
+  // A rider already accepting is exactly the case the DB records a
+  // cancellation fee for (sql/010) — warn about it before they confirm,
+  // using the real configured amount rather than a guessed number.
+  const { data: b } = await supabase.from(table).select('status').eq('id', id).single();
+  let message = 'Cancel this booking?';
+  if (b?.status === 'accepted') {
+    const { data: cfg } = await supabase.from('platform_config').select('cancellation_fee').single();
+    message = cfg?.cancellation_fee
+      ? `A rider has already accepted — cancelling now may incur a ${peso(cfg.cancellation_fee)} cancellation fee. Cancel anyway?`
+      : 'A rider has already accepted this booking. Cancel anyway?';
+  }
+  if (!confirm(message)) return;
+
   const { error } = await supabase.from(table).update({ status: 'cancelled', cancelled_reason: 'Cancelled by customer' }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast('Booking cancelled.', 'success');
@@ -650,6 +780,8 @@ function openRateModal(kind, id) {
   selectedStars = 0;
   document.querySelectorAll('#star-input i').forEach(i => i.classList.remove('active'));
   document.getElementById('rate-comment').value = '';
+  const tipInput = document.getElementById('rate-tip');
+  if (tipInput) tipInput.value = '';
   document.getElementById('rate-modal').classList.add('open');
 }
 function closeRateModal() { document.getElementById('rate-modal').classList.remove('open'); }
@@ -664,8 +796,14 @@ function wireStarInput() {
     if (!selectedStars) { toast('Please select a star rating.', 'error'); return; }
     const table = TABLE_BY_KIND[RATING_TARGET.kind];
     const comment = document.getElementById('rate-comment').value.trim();
+    const tipRaw = parseFloat(document.getElementById('rate-tip')?.value);
+    const tip = tipRaw > 0 ? Math.round(tipRaw * 100) / 100 : null;
+
+    const payload = { rating: selectedStars, review: comment };
+    if (tip) payload.tip_amount = tip; // omitted entirely when there's no tip — the trigger rejects tip_amount <= 0
+
     const { data: booking } = await supabase.from(table).select('rider_id').eq('id', RATING_TARGET.id).single();
-    const { error } = await supabase.from(table).update({ rating: selectedStars, review: comment }).eq('id', RATING_TARGET.id);
+    const { error } = await supabase.from(table).update(payload).eq('id', RATING_TARGET.id);
     if (error) { toast(error.message, 'error'); return; }
     if (booking?.rider_id) {
       await supabase.from('reviews').insert({
@@ -674,7 +812,7 @@ function wireStarInput() {
         rating: selectedStars, comment
       });
     }
-    toast('Thanks for rating your rider!', 'success');
+    toast(tip ? `Thanks for rating your rider — don't forget the ${peso(tip)} tip!` : 'Thanks for rating your rider!', 'success');
     closeRateModal();
     loadHistory();
   });

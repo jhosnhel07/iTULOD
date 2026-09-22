@@ -112,6 +112,8 @@ create table if not exists public.transport_bookings (
   rating int check (rating between 1 and 5),
   review text,
   cancelled_reason text,
+  tip_amount numeric(10,2),
+  cancellation_fee numeric(10,2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -135,6 +137,8 @@ create table if not exists public.food_deliveries (
   rating int check (rating between 1 and 5),
   review text,
   cancelled_reason text,
+  tip_amount numeric(10,2),
+  cancellation_fee numeric(10,2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -164,6 +168,8 @@ create table if not exists public.parcel_deliveries (
   rating int check (rating between 1 and 5),
   review text,
   cancelled_reason text,
+  tip_amount numeric(10,2),
+  cancellation_fee numeric(10,2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
