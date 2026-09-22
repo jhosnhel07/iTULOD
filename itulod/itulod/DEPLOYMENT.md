@@ -65,7 +65,7 @@ once:
 | 15 | `sql/015_booking_chat.sql` | In-app chat: `booking_messages` (customer ↔ assigned rider, read/write gated by RLS to the two participants, sending gated to `accepted`/`ongoing`); a trigger notifies whichever side didn't send the message. |
 | 16 | `sql/016_multi_stop_rides.sql` | Multi-stop rides: `ride_stops` (up to 3 stops between pickup and destination, set once at booking time, the rider marks each arrived in order). |
 | 17 | `sql/017_nearby_riders.sql` | "Riders near you" live map: `is_online` on `rider_locations`; `get_nearby_riders()` returns coarse (rounded, ~110m) coordinates for online, approved, not-currently-on-a-job riders only — the only way this data reaches a customer. |
-| 18 | `sql/018_restaurant_menu_cart.sql` | Restaurant + menu data model (part 1 of the restaurant/menu/cart feature): `restaurants`, `menu_items` (admin-managed, browsable by any signed-in user), `food_order_items` (order line items, customer-insertable only at checkout time); `restaurant_id`/`item_subtotal`/`delivery_fee` on `food_deliveries`. The customer-facing browse/cart/checkout UI ships in a follow-up migration/commit. |
+| 18 | `sql/018_restaurant_menu_cart.sql` | Restaurant + menu data model (part 1 of the restaurant/menu/cart feature): `restaurants`, `menu_items` (admin-managed, browsable by any signed-in user), `food_order_items` (order line items, customer-insertable only at checkout time); `restaurant_id`/`item_subtotal`/`delivery_fee` on `food_deliveries`. Part 2 (this commit) is the customer-facing browse/cart/checkout UI — no further migration needed. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -390,8 +390,20 @@ SMS + push + in-app notifications.
 26. Restaurant admin: admin → **Restaurants** → **Add restaurant** → fill
     name/address → save → it appears in the table. Click the utensils icon
     to open its menu → add a couple of items with prices → they appear in
-    the menu table, toggleable available/unavailable, deletable. (Customer
-    ordering from these restaurants ships in a follow-up.)
+    the menu table, toggleable available/unavailable, deletable.
+27. Restaurant ordering (customer): New booking → Food → **Choose a
+    restaurant** → pick one from the list → its menu opens in the same
+    modal → use +/- to add a couple of items → **Done**. Back on the form:
+    pickup is auto-filled (read-only) with the restaurant's address, "Your
+    order" lists what you picked, and the fare card shows item subtotal +
+    delivery fee + estimated total. Fill delivery address + vehicle, submit.
+    Check: `food_deliveries.item_subtotal`/`delivery_fee` are set,
+    `final_fare` is still **null** (GCash is only charged once the rider
+    confirms — unchanged from before), and `food_order_items` has one row
+    per item ordered. Accept the booking as a rider — the "Set fare" input
+    should already be pre-filled with the correct total (one-tap confirm),
+    and the booking's details should list the ordered items under Food
+    Delivery Details for both customer and rider.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

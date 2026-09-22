@@ -373,43 +373,31 @@
               <div class="card-head"><h3>Food delivery request</h3></div>
               <form id="food-form">
                 <div class="field">
-                  <label>Restaurant / store name</label>
-                  <input
-                    type="text"
-                    id="food-restaurant"
-                    required
-                    placeholder="e.g. Herencia Cafe, Laoag"
-                  />
-                </div>
-                <div class="field">
-                  <label>Pickup location</label>
-                  <div class="input-map">
-                    <input
-                      type="text"
-                      id="food-pickup"
-                      required
-                      placeholder="e.g. Rizal St., Laoag City"
-                    />
-                    <button
-                      type="button"
-                      class="saved-addr-btn"
-                      onclick="toggleSavedAddressPicker(this, 'food-pickup')"
-                      aria-label="Use a saved address"
-                      title="Saved addresses"
-                    >
-                      <i class="fa-solid fa-bookmark"></i>
-                    </button>
-                    <button
-                      type="button"
-                      class="map-pin-btn"
-                      onclick="pinOnMap('food', 'pickup')"
-                      aria-label="Set pickup on map"
-                      title="Set on map"
-                    >
-                      <i class="fa-solid fa-map-location-dot"></i>
+                  <label>Restaurant</label>
+                  <div id="food-restaurant-summary" class="card" style="padding: 12px; margin-bottom: 0">
+                    <p id="food-restaurant-empty-note" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px">
+                      No restaurant chosen yet.
+                    </p>
+                    <p id="food-restaurant-name-display" style="font-weight: 600; margin-bottom: 8px; display: none"></p>
+                    <button type="button" class="btn btn-outline btn-sm" id="food-choose-restaurant-btn">
+                      <i class="fa-solid fa-store"></i> <span id="food-choose-btn-label">Choose a restaurant</span>
                     </button>
                   </div>
                 </div>
+                <input type="hidden" id="food-restaurant-id" />
+                <div class="field" id="food-pickup-field" style="display: none">
+                  <label>Pickup location</label>
+                  <input type="text" id="food-pickup" readonly />
+                </div>
+
+                <div class="field" id="food-cart-field" style="display: none">
+                  <label>Your order</label>
+                  <div id="food-cart-list" class="card" style="padding: 12px; margin-bottom: 8px"></div>
+                  <button type="button" class="btn btn-outline btn-sm" id="food-edit-cart-btn">
+                    <i class="fa-solid fa-pen"></i> Edit items
+                  </button>
+                </div>
+
                 <div class="field">
                   <label>Delivery address</label>
                   <div class="input-map">
@@ -455,15 +443,16 @@
 
                 <div class="fare-estimate-card">
                   <div class="fare-row">
-                    <span>Estimated distance</span>
-                    <span id="food-distance">—</span>
+                    <span>Item subtotal</span>
+                    <span id="food-item-subtotal">₱0.00</span>
+                  </div>
+                  <div class="fare-row">
+                    <span>Delivery fee (<span id="food-distance">—</span>)</span>
+                    <span id="food-delivery-fee">₱0.00</span>
                   </div>
                   <div class="fare-row fare-row--total">
-                    <span>Estimated fare</span>
+                    <span>Estimated total</span>
                     <strong id="food-fare">₱0.00</strong>
-                  </div>
-                  <div class="fare-row fare-row--breakdown">
-                    <small id="food-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
 
@@ -474,9 +463,9 @@
                     <option value="gcash">GCash</option>
                   </select>
                   <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
-                    <i class="fa-solid fa-lock"></i> The rider may adjust the
-                    final fare at pickup; you'll only be charged the confirmed
-                    amount.
+                    <i class="fa-solid fa-lock"></i> The price above is what
+                    the rider will confirm at pickup. If you chose GCash,
+                    you'll pay once they do.
                   </p>
                 </div>
 
@@ -502,31 +491,9 @@
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
-              <div class="map-step-indicator">
-                <button
-                  type="button"
-                  class="map-step active"
-                  id="food-map-mode-pickup"
-                  onclick="setMapMode('pickup', 'food')"
-                >
-                  <span class="step-num">1</span>
-                  <span
-                    ><i class="fa-solid fa-location-dot"></i> Set Pickup</span
-                  >
-                </button>
-                <button
-                  type="button"
-                  class="map-step"
-                  id="food-map-mode-dropoff"
-                  onclick="setMapMode('dropoff', 'food')"
-                >
-                  <span class="step-num">2</span>
-                  <span
-                    ><i class="fa-solid fa-flag-checkered"></i> Set
-                    Drop-off</span
-                  >
-                </button>
-              </div>
+              <!-- Pickup is auto-set from the chosen restaurant now (see
+                   js/customer.js updateFoodRestaurantSummary) — this map is
+                   only ever used to set the delivery address. -->
               <p
                 id="food-map-mode-hint"
                 style="
@@ -536,7 +503,7 @@
                 "
               >
                 <i class="fa-solid fa-circle-info"></i> Click on the map to set
-                pickup location.
+                your delivery address.
               </p>
               <div id="food-map" class="map-canvas"></div>
               <button
@@ -1207,6 +1174,27 @@
           </button>
           <button class="btn btn-primary btn-sm" id="submit-rating">
             <i class="fa-solid fa-paper-plane"></i> Submit rating
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Restaurant browse + menu/cart — opened by "Choose a restaurant" /
+         "Edit items" on the Food tab, driven by js/customer.js. Shows the
+         restaurant list first; picking one swaps the body to its menu. -->
+    <div class="modal-overlay" id="restaurant-browse-modal">
+      <div class="modal" style="max-width: 560px; width: 100%">
+        <div class="modal-head">
+          <h3 id="restaurant-browse-title">Choose a restaurant</h3>
+          <button class="modal-close" onclick="closeRestaurantBrowseModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="restaurant-browse-body"></div>
+        <div class="modal-foot" id="restaurant-browse-foot" style="display: none">
+          <button class="btn btn-outline-gray btn-sm" onclick="backToRestaurantList()">
+            <i class="fa-solid fa-arrow-left"></i> Back to restaurants
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="closeRestaurantBrowseModal()">
+            <i class="fa-solid fa-check"></i> Done
           </button>
         </div>
       </div>

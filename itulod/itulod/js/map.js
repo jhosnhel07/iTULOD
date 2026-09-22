@@ -214,7 +214,10 @@ const _maps = {
     routeSource: 'route', routeLayer: 'route-line', routeColor: '#2196f3',
   },
   food: {
-    map: null, markers: {}, mode: 'pickup',
+    // Pickup is auto-set from the chosen restaurant (see customer.js
+    // updateFoodRestaurantSummary) — this map only ever sets the delivery
+    // address, so it defaults straight to dropoff mode.
+    map: null, markers: {}, mode: 'dropoff',
     pickupInputId: 'food-pickup', dropoffInputId: 'food-address',
     hintId: 'food-map-mode-hint', btnPickupId: 'food-map-mode-pickup', btnDropoffId: 'food-map-mode-dropoff',
     routeSource: 'food-route', routeLayer: 'food-route-line', routeColor: '#0d47a1',

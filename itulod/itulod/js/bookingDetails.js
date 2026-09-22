@@ -100,6 +100,11 @@
         ? (await supabase.from('ride_stops').select('*').eq('booking_id', id).order('stop_order', { ascending: true })).data || []
         : [];
 
+      /* ---- 2c. Order items (food only, cart-based orders) ---- */
+      const orderItems = kind === 'food'
+        ? (await supabase.from('food_order_items').select('*').eq('food_delivery_id', id).order('created_at', { ascending: true })).data || []
+        : [];
+
       /* ---- 3. Build title ---- */
       const title = kind === 'transport'
         ? `${booking.pickup_address} → ${booking.destination_address}`
@@ -145,6 +150,11 @@
             ${mapSection}
           </div>`;
       } else if (kind === 'food') {
+        const itemsRows = orderItems.map(it => `
+          <div class="bd-row">
+            <span>${it.quantity} × ${escapeHtml(it.name)}</span>
+            <strong>${peso(it.subtotal)}</strong>
+          </div>`).join('');
         routeSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-utensils"></i> Food Delivery Details</h4>
@@ -152,6 +162,11 @@
             ${row('<i class="fa-solid fa-location-dot"></i> Pickup', escapeHtml(booking.pickup_address || '—'))}
             ${row('<i class="fa-solid fa-flag-checkered"></i> Deliver to', escapeHtml(booking.delivery_address || '—'))}
             ${booking.instructions ? row('<i class="fa-solid fa-note-sticky"></i> Instructions', escapeHtml(booking.instructions)) : ''}
+            ${orderItems.length ? `
+              <div style="margin-top:10px">
+                <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Order</div>
+                <div class="bd-stops-list">${itemsRows}</div>
+              </div>` : ''}
             ${mapSection}
           </div>`;
       } else {
@@ -175,6 +190,8 @@
       const fareSection = `
         <div class="bd-section">
           <h4><i class="fa-solid fa-peso-sign"></i> Fare & Payment</h4>
+          ${booking.item_subtotal != null ? row('Item subtotal', peso(booking.item_subtotal)) : ''}
+          ${booking.delivery_fee  != null ? row('Delivery fee',  peso(booking.delivery_fee))  : ''}
           ${booking.estimated_fare ? row('Estimated fare', peso(booking.estimated_fare)) : ''}
           ${booking.final_fare     ? row('Final fare',     peso(booking.final_fare))     : ''}
           ${!booking.estimated_fare && !booking.final_fare ? row('Fare', '—') : ''}

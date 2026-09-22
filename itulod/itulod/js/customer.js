@@ -493,58 +493,287 @@ function wireRideForm() {
   });
 }
 
+// ---- food: restaurant + menu + cart --------------------------------------
+// A cart order's item prices are fixed and known up front, unlike a typed
+// free-text order — but GCash is still only ever charged once the rider
+// confirms the fare (never at booking time, an explicit standing product
+// decision — see finalize-fare / needsFinalFare in rider.js). estimated_fare
+// is set to the real computed total (items + delivery) here, which the
+// rider's "Set fare" input already defaults to, so confirming it is a
+// one-tap action instead of a blind guess — final_fare itself is still only
+// ever set by the rider, same as every other food order.
+let FOOD_CART = { restaurantId: null, restaurantName: null, restaurantAddress: null, items: {} };
+let FOOD_ROUTE_KM = null;
+let FOOD_ROUTE_TIMER = null;
+
+function foodCartSubtotal() {
+  return Object.values(FOOD_CART.items).reduce((sum, it) => sum + it.price * it.qty, 0);
+}
+
+function renderFoodFare(km, vehicle, subtotal, isReal) {
+  const distanceEl = document.getElementById('food-distance');
+  const feeEl = document.getElementById('food-delivery-fee');
+  const totalEl = document.getElementById('food-fare');
+  const subtotalEl = document.getElementById('food-item-subtotal');
+  if (subtotalEl) subtotalEl.textContent = peso(subtotal);
+  if (distanceEl) distanceEl.textContent = km ? km.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
+  const deliveryFee = (km && vehicle) ? estimateFare(vehicle, km) : 0;
+  if (feeEl) feeEl.textContent = peso(deliveryFee);
+  if (totalEl) totalEl.textContent = peso(subtotal + deliveryFee);
+}
+
+function recalcFoodFare() {
+  const pickup = (document.getElementById('food-pickup').value || '').trim();
+  const address = (document.getElementById('food-address').value || '').trim();
+  const vehicle = VEHICLES.find(v => v.id === document.getElementById('food-vehicle').value);
+  const subtotal = foodCartSubtotal();
+
+  if (!pickup || !address) {
+    FOOD_ROUTE_KM = null;
+    renderFoodFare(null, vehicle, subtotal, false);
+    return;
+  }
+
+  const guess = simulateDistanceKm(pickup.toLowerCase(), address.toLowerCase());
+  renderFoodFare(guess, vehicle, subtotal, false);
+
+  clearTimeout(FOOD_ROUTE_TIMER);
+  const key = pickup.toLowerCase() + '|' + address.toLowerCase();
+  FOOD_ROUTE_TIMER = setTimeout(async () => {
+    if (typeof routeBetweenAddresses !== 'function') return;
+    const r = await routeBetweenAddresses(pickup, address);
+    const nowPickup = (document.getElementById('food-pickup').value || '').trim().toLowerCase();
+    const nowAddress = (document.getElementById('food-address').value || '').trim().toLowerCase();
+    if (r && (nowPickup + '|' + nowAddress) === key) {
+      FOOD_ROUTE_KM = r.km;
+      renderFoodFare(r.km, VEHICLES.find(v => v.id === document.getElementById('food-vehicle').value), foodCartSubtotal(), true);
+    }
+  }, 700);
+}
+
+function updateFoodRestaurantSummary() {
+  const emptyNote = document.getElementById('food-restaurant-empty-note');
+  const nameDisplay = document.getElementById('food-restaurant-name-display');
+  const btnLabel = document.getElementById('food-choose-btn-label');
+  const pickupField = document.getElementById('food-pickup-field');
+  const pickupInput = document.getElementById('food-pickup');
+  const cartField = document.getElementById('food-cart-field');
+  const cartList = document.getElementById('food-cart-list');
+
+  document.getElementById('food-restaurant-id').value = FOOD_CART.restaurantId || '';
+
+  if (!FOOD_CART.restaurantId) {
+    if (emptyNote) emptyNote.style.display = '';
+    if (nameDisplay) nameDisplay.style.display = 'none';
+    if (btnLabel) btnLabel.textContent = 'Choose a restaurant';
+    if (pickupField) pickupField.style.display = 'none';
+    if (cartField) cartField.style.display = 'none';
+    pickupInput.value = '';
+  } else {
+    if (emptyNote) emptyNote.style.display = 'none';
+    if (nameDisplay) { nameDisplay.style.display = ''; nameDisplay.textContent = FOOD_CART.restaurantName; }
+    if (btnLabel) btnLabel.textContent = 'Change restaurant';
+    if (pickupField) pickupField.style.display = '';
+    pickupInput.value = FOOD_CART.restaurantAddress;
+
+    const items = Object.values(FOOD_CART.items);
+    if (cartField) cartField.style.display = items.length ? '' : 'none';
+    if (cartList) {
+      cartList.innerHTML = items.length
+        ? items.map(it => `<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:2px 0"><span>${it.qty} × ${escapeHtml(it.name)}</span><span>${peso(it.price * it.qty)}</span></div>`).join('')
+        : '';
+    }
+  }
+  recalcFoodFare();
+}
+
 function wireFoodForm() {
   const form = document.getElementById('food-form');
-  const pickup = document.getElementById('food-pickup');
   const address = document.getElementById('food-address');
   const vehicleSel = document.getElementById('food-vehicle');
-  const distanceEl = document.getElementById('food-distance');
-  const fareEl = document.getElementById('food-fare');
-  const breakdownEl = document.getElementById('food-fare-breakdown');
 
-  const est = createFareEstimator({ tab: 'food', pickupEl: pickup, dropoffEl: address, vehicleSel, distanceEl, fareEl, breakdownEl });
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-food', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-food', form));
   });
   restoreFormDraft('itulod-customer-food', form);
-  est.recalc();
+  // The restaurant/cart is deliberately never restored from a draft (it's
+  // dynamic state, not a named form field) — the customer just re-picks if
+  // they left mid-order.
+  [address, vehicleSel].forEach(el => el.addEventListener('input', recalcFoodFare));
+  updateFoodRestaurantSummary();
+
+  const chooseBtn = document.getElementById('food-choose-restaurant-btn');
+  if (chooseBtn) chooseBtn.addEventListener('click', () => openRestaurantBrowseModal());
+  const editCartBtn = document.getElementById('food-edit-cart-btn');
+  if (editCartBtn) editCartBtn.addEventListener('click', () => openRestaurantBrowseModal(FOOD_CART.restaurantId));
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('food-submit');
-    const restaurant = document.getElementById('food-restaurant').value.trim();
     const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
+    const items = Object.values(FOOD_CART.items);
     const instructions = document.getElementById('food-instructions').value.trim();
-    if (!requireFields({ 'Restaurant/store name': restaurant, 'Pickup location': pickup.value, 'Delivery address': address.value, 'Vehicle': vehicle })) return;
-    const { km } = est.current();
-    const fare = estimateFare(vehicle, km);
+
+    if (!FOOD_CART.restaurantId || items.length === 0) {
+      toast('Choose a restaurant and add at least one item.', 'error');
+      return;
+    }
+    if (!requireFields({ 'Delivery address': address.value, 'Vehicle': vehicle })) return;
+
+    const subtotal = foodCartSubtotal();
+    const km = FOOD_ROUTE_KM ?? simulateDistanceKm(FOOD_CART.restaurantAddress.toLowerCase(), address.value.trim().toLowerCase());
+    const deliveryFee = estimateFare(vehicle, km);
+    const total = Math.round((subtotal + deliveryFee) * 100) / 100;
     const paymentMethod = document.getElementById('food-payment')?.value || 'cash';
+
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('food_deliveries').insert({
-      customer_id: CURRENT_PROFILE.id, restaurant_name: restaurant,
-      pickup_address: pickup.value.trim(), delivery_address: address.value.trim(),
-      instructions, vehicle_id: vehicle.id, estimated_fare: fare,
-      distance_km: Number(km.toFixed(2)), status: 'pending', payment_method: paymentMethod
+      customer_id: CURRENT_PROFILE.id,
+      restaurant_id: FOOD_CART.restaurantId,
+      restaurant_name: FOOD_CART.restaurantName,
+      pickup_address: FOOD_CART.restaurantAddress,
+      delivery_address: address.value.trim(),
+      instructions, vehicle_id: vehicle.id,
+      item_subtotal: subtotal, delivery_fee: deliveryFee,
+      // final_fare is deliberately left unset here, same as every other food
+      // order — GCash is only ever charged once the rider confirms the fare
+      // (see finalize-fare / needsFinalFare in rider.js), never at booking
+      // time. estimated_fare is the real, computed total though, so the
+      // rider's "Set fare" input is pre-filled with the right number already
+      // (renderAcceptedCard's ff-${id} input defaults to estimated_fare) —
+      // a one-tap confirmation instead of a blind guess.
+      estimated_fare: total,
+      distance_km: Number(km.toFixed(2)), status: 'pending', payment_method: paymentMethod,
     }).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
-    // GCash is deliberately NOT charged here: the estimate isn't the real
-    // price for a food/parcel order, only the rider knows that once they're
-    // at pickup. finalize-fare sets final_fare, which is what turns on the
-    // "Pay ₱X" button in Booking history (see renderHistoryCard) — that's
-    // the moment the customer is actually asked for GCash.
+    const { error: itemsErr } = await supabase.from('food_order_items').insert(
+      items.map(it => ({
+        food_delivery_id: booking.id, menu_item_id: it.id, name: it.name,
+        unit_price: it.price, quantity: it.qty, subtotal: Math.round(it.price * it.qty * 100) / 100,
+      }))
+    );
+    if (itemsErr) toast(`Order placed, but the item list didn't save: ${itemsErr.message}`, 'error');
+
     toast(
       paymentMethod === 'gcash'
-        ? "Food delivery requested! We'll ask you to pay by GCash once the rider confirms the fare at pickup."
-        : 'Food delivery requested!',
+        ? `Order placed (${peso(total)})! We'll ask you to pay by GCash once the rider confirms the fare at pickup.`
+        : `Order placed! You'll pay ${peso(total)} cash on delivery.`,
       'success'
     );
+
     clearFormDraft('itulod-customer-food');
-    e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
+    e.target.reset();
+    FOOD_CART = { restaurantId: null, restaurantName: null, restaurantAddress: null, items: {} };
+    FOOD_ROUTE_KM = null;
+    updateFoodRestaurantSummary();
     HISTORY_KIND = 'food'; await loadHistory();
   });
+}
+
+// ---- restaurant browse + menu modal ---------------------------------------
+let RESTAURANT_BROWSE_VIEW = 'list'; // 'list' | 'menu'
+let RESTAURANT_BROWSE_RESTAURANT = null;
+
+async function openRestaurantBrowseModal(preselectRestaurantId) {
+  document.getElementById('restaurant-browse-modal').classList.add('open');
+  if (preselectRestaurantId) {
+    const { data } = await supabase.from('restaurants').select('*').eq('id', preselectRestaurantId).maybeSingle();
+    if (data) { await showRestaurantMenu(data); return; }
+  }
+  await showRestaurantList();
+}
+function closeRestaurantBrowseModal() {
+  document.getElementById('restaurant-browse-modal').classList.remove('open');
+  updateFoodRestaurantSummary();
+}
+function backToRestaurantList() { showRestaurantList(); }
+
+async function showRestaurantList() {
+  RESTAURANT_BROWSE_VIEW = 'list';
+  RESTAURANT_BROWSE_RESTAURANT = null;
+  document.getElementById('restaurant-browse-title').textContent = 'Choose a restaurant';
+  document.getElementById('restaurant-browse-foot').style.display = 'none';
+  const body = document.getElementById('restaurant-browse-body');
+  body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading restaurants…</div>`;
+
+  const { data, error } = await supabase.from('restaurants').select('*').eq('is_active', true).order('name');
+  if (error) { body.innerHTML = `<p class="muted">Could not load restaurants: ${escapeHtml(error.message)}</p>`; return; }
+  if (!data || data.length === 0) {
+    body.innerHTML = emptyState({ icon: 'fa-store', title: 'No restaurants yet', body: 'Check back soon.' });
+    return;
+  }
+  body.innerHTML = data.map(r => `
+    <div class="booking-card" style="cursor:pointer" onclick='selectRestaurantForMenu(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
+      <div class="kind-icon" style="background:var(--blue)"><i class="fa-solid fa-store"></i></div>
+      <div class="info"><div>
+        <h4>${escapeHtml(r.name)}</h4>
+        <p>${escapeHtml(r.cuisine_type || 'Restaurant')} · ${escapeHtml(r.address)}</p>
+      </div></div>
+      <div class="meta"><i class="fa-solid fa-chevron-right"></i></div>
+    </div>`).join('');
+}
+
+async function selectRestaurantForMenu(restaurant) {
+  if (FOOD_CART.restaurantId && FOOD_CART.restaurantId !== restaurant.id && Object.keys(FOOD_CART.items).length) {
+    if (!confirm(`Switching restaurants clears your current order from ${FOOD_CART.restaurantName}. Continue?`)) return;
+    FOOD_CART.items = {};
+  }
+  await showRestaurantMenu(restaurant);
+}
+
+async function showRestaurantMenu(restaurant) {
+  RESTAURANT_BROWSE_VIEW = 'menu';
+  RESTAURANT_BROWSE_RESTAURANT = restaurant;
+  FOOD_CART.restaurantId = restaurant.id;
+  FOOD_CART.restaurantName = restaurant.name;
+  FOOD_CART.restaurantAddress = restaurant.address;
+
+  document.getElementById('restaurant-browse-title').textContent = restaurant.name;
+  document.getElementById('restaurant-browse-foot').style.display = '';
+  const body = document.getElementById('restaurant-browse-body');
+  body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading menu…</div>`;
+
+  const { data, error } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurant.id).eq('is_available', true).order('name');
+  if (error) { body.innerHTML = `<p class="muted">Could not load the menu: ${escapeHtml(error.message)}</p>`; return; }
+  renderMenuItems(data || []);
+}
+
+function renderMenuItems(items) {
+  const body = document.getElementById('restaurant-browse-body');
+  if (items.length === 0) {
+    body.innerHTML = emptyState({ icon: 'fa-utensils', title: 'No items available', body: 'This restaurant has nothing listed right now.' });
+    return;
+  }
+  body.innerHTML = items.map(m => {
+    const qty = FOOD_CART.items[m.id]?.qty || 0;
+    return `
+      <div class="bd-row" data-menu-item="${m.id}">
+        <span>
+          <strong>${escapeHtml(m.name)}</strong><br>
+          <span style="color:var(--text-muted);font-size:0.82rem">${peso(m.price)}${m.description ? ' · ' + escapeHtml(m.description) : ''}</span>
+        </span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <button type="button" class="icon-btn" onclick='changeCartQty(${JSON.stringify(m).replace(/'/g, "&#39;")}, -1)'><i class="fa-solid fa-minus"></i></button>
+          <span class="menu-item-qty" style="min-width:1.2em;text-align:center">${qty}</span>
+          <button type="button" class="icon-btn" onclick='changeCartQty(${JSON.stringify(m).replace(/'/g, "&#39;")}, 1)'><i class="fa-solid fa-plus"></i></button>
+        </span>
+      </div>`;
+  }).join('');
+}
+
+function changeCartQty(menuItem, delta) {
+  const existing = FOOD_CART.items[menuItem.id];
+  const nextQty = (existing?.qty || 0) + delta;
+  if (nextQty <= 0) {
+    delete FOOD_CART.items[menuItem.id];
+  } else {
+    FOOD_CART.items[menuItem.id] = { id: menuItem.id, name: menuItem.name, price: Number(menuItem.price), qty: nextQty };
+  }
+  const qtyEl = document.querySelector(`.bd-row[data-menu-item="${menuItem.id}"] .menu-item-qty`);
+  if (qtyEl) qtyEl.textContent = nextQty > 0 ? nextQty : 0;
 }
 
 function wireParcelForm() {
