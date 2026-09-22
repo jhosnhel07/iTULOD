@@ -63,6 +63,7 @@ once:
 | 13 | `sql/013_referrals.sql` | Referral program: `referral_code`/`referred_by` on `profiles` (auto-generated code per profile), `referral_events`; a trigger pays the referrer ₱50 into their wallet once the referred customer's first booking completes. |
 | 14 | `sql/014_scheduled_bookings.sql` | Scheduled ("book later") rides: `scheduled_for` on `transport_bookings`; `expire_stale_bookings()` now measures a scheduled ride's 15-minute grace period from its pickup time instead of from when it was booked. |
 | 15 | `sql/015_booking_chat.sql` | In-app chat: `booking_messages` (customer ↔ assigned rider, read/write gated by RLS to the two participants, sending gated to `accepted`/`ongoing`); a trigger notifies whichever side didn't send the message. |
+| 16 | `sql/016_multi_stop_rides.sql` | Multi-stop rides: `ride_stops` (up to 3 stops between pickup and destination, set once at booking time, the rider marks each arrived in order). |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -367,6 +368,14 @@ SMS + push + in-app notifications.
     `itulod-backup-<timestamp>.json` file containing every table. Open it
     and spot-check that `tables.profiles` and `tables.transport_bookings`
     are non-empty arrays.
+24. Multi-stop ride: New booking → ride → **Add a stop** (up to 3) → fill
+    pickup, one or two stops, and destination → the fare/distance should
+    update to the *summed* multi-leg distance, not just pickup→destination.
+    Book it, accept as a rider, open the booking's details — a **Stops**
+    list appears under Trip Details with a **Mark arrived** button on the
+    first unvisited stop only (rider's view). Marking it arrived should
+    advance the button to the next stop. **View route on map** should draw
+    through every stop in order, not a straight pickup→destination line.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

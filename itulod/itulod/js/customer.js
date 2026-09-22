@@ -124,12 +124,13 @@ function wireTabNav() {
 
 // ---- fare estimator: real OSRM road distance when we can get it, the
 //      deterministic placeholder otherwise --------------------------------
-function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl }) {
+function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops }) {
   let route = null;        // { km, pickup:[lng,lat], dropoff:[lng,lat] } once a real route is known
   let lastKey = '';
   let timer = null;
   const vehicle = () => VEHICLES.find(v => v.id === vehicleSel.value);
-  const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase();
+  const stopsList = () => (typeof getStops === 'function' ? getStops() : []).filter(Boolean);
+  const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + stopsList().join(',').toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase();
 
   function render(km, isReal) {
     distanceEl.textContent = km ? km.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
@@ -145,6 +146,7 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
   function recalc() {
     const a = (pickupEl.value || '').trim();
     const b = (dropoffEl.value || '').trim();
+    const stops = stopsList();
     if (!a || !b) { route = null; lastKey = ''; render(null); return; }
     const key = keyOf();
     if (route && key === lastKey) { render(route.km, true); return; }
@@ -152,6 +154,15 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
     lastKey = key;
     clearTimeout(timer);
     timer = setTimeout(async () => {
+      if (stops.length) {
+        if (typeof routeThroughWaypoints !== 'function') return;
+        const r = await routeThroughWaypoints([a, ...stops, b]);
+        if (r && keyOf() === lastKey) {
+          route = { km: r.km, pickup: r.waypoints[0], dropoff: r.waypoints[r.waypoints.length - 1] };
+          render(r.km, true);
+        }
+        return;
+      }
       if (typeof routeBetweenAddresses !== 'function') return;
       const r = await routeBetweenAddresses(a, b);
       if (r && keyOf() === lastKey) {
@@ -162,8 +173,11 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
   }
 
   // Pinning both points on the map hands us coordinates + a real route now.
+  // (Map-pinning only ever sets pickup/dropoff — stops are typed addresses —
+  // so this path is skipped whenever stops are present.)
   if (typeof onBookingRoute === 'function') {
     onBookingRoute(tab, ({ km, pickup, dropoff }) => {
+      if (stopsList().length) return;
       route = { km, pickup, dropoff };
       lastKey = keyOf();
       render(km, true);
@@ -325,6 +339,8 @@ async function loadVehicleOptions() {
   });
 }
 
+const MAX_RIDE_STOPS = 3;
+
 function wireRideForm() {
   const form = document.getElementById('ride-form');
   const pickup = document.getElementById('ride-pickup');
@@ -333,8 +349,45 @@ function wireRideForm() {
   const distanceEl = document.getElementById('ride-distance');
   const fareEl = document.getElementById('ride-fare');
   const breakdownEl = document.getElementById('ride-fare-breakdown');
+  const stopsContainer = document.getElementById('ride-stops-container');
+  const addStopBtn = document.getElementById('ride-add-stop-btn');
 
-  const est = createFareEstimator({ tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl, breakdownEl });
+  const getStops = () => Array.from(stopsContainer?.querySelectorAll('input') || []).map(i => i.value.trim());
+  const est = createFareEstimator({ tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl, breakdownEl, getStops });
+
+  function updateAddStopBtn() {
+    if (addStopBtn && stopsContainer) addStopBtn.style.display = stopsContainer.children.length >= MAX_RIDE_STOPS ? 'none' : '';
+  }
+  function addStopRow() {
+    if (!stopsContainer || stopsContainer.children.length >= MAX_RIDE_STOPS) return;
+    const row = document.createElement('div');
+    row.className = 'ride-stop-row';
+    row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = `Stop ${stopsContainer.children.length + 1} address`;
+    input.style.flex = '1';
+    input.addEventListener('input', () => est.recalc());
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'icon-btn';
+    removeBtn.title = 'Remove stop';
+    removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+      Array.from(stopsContainer.querySelectorAll('.ride-stop-row')).forEach((r, i) => {
+        r.querySelector('input').placeholder = `Stop ${i + 1} address`;
+      });
+      updateAddStopBtn();
+      est.recalc();
+    });
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    stopsContainer.appendChild(row);
+    updateAddStopBtn();
+  }
+  if (addStopBtn) addStopBtn.addEventListener('click', addStopRow);
+
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-ride', form));
     el.addEventListener('change', () => saveFormDraft('itulod-customer-ride', form));
@@ -393,6 +446,14 @@ function wireRideForm() {
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
+    const stopAddresses = getStops().filter(Boolean);
+    if (stopAddresses.length) {
+      const { error: stopsErr } = await supabase.from('ride_stops').insert(
+        stopAddresses.map((address, i) => ({ booking_id: booking.id, stop_order: i + 1, address }))
+      );
+      if (stopsErr) toast(`Ride booked, but the stops didn't save: ${stopsErr.message}`, 'error');
+    }
+
     // Booking creation only places the booking — it never redirects to GCash
     // by itself. A GCash payment is something the customer does afterward,
     // as a separate step, from the "Pay ₱X" button on Home or Booking
@@ -418,6 +479,8 @@ function wireRideForm() {
     clearFormDraft('itulod-customer-ride');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
     if (scheduleField) scheduleField.style.display = 'none';
+    if (stopsContainer) stopsContainer.innerHTML = '';
+    updateAddStopBtn();
     HISTORY_KIND = 'transport'; await loadHistory(); await loadHome();
   });
 }

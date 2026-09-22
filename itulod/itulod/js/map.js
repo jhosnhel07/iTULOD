@@ -111,10 +111,13 @@ async function _reverseGeocode(lngLat) {
   return `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`;
 }
 
-// Draws the driving route and returns { km, min } for the real road distance
-// and time (or null if OSRM is unreachable).
-async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, dropoffLngLat) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${pickupLngLat[0]},${pickupLngLat[1]};${dropoffLngLat[0]},${dropoffLngLat[1]}?overview=full&geometries=geojson`;
+// Draws the driving route through an ordered list of [lng,lat] waypoints
+// (2 or more — a plain pickup/dropoff route is just the 2-waypoint case) and
+// returns { km, min } for the real road distance/time, or null if OSRM is
+// unreachable.
+async function _drawRouteOnMapMulti(map, sourceId, layerId, color, waypoints) {
+  const coordStr = waypoints.map(w => `${w[0]},${w[1]}`).join(';');
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -140,6 +143,12 @@ async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, drop
   }
 }
 
+// Draws the driving route and returns { km, min } for the real road distance
+// and time (or null if OSRM is unreachable).
+async function _drawRouteOnMap(map, sourceId, layerId, color, pickupLngLat, dropoffLngLat) {
+  return _drawRouteOnMapMulti(map, sourceId, layerId, color, [pickupLngLat, dropoffLngLat]);
+}
+
 // Geocode two address strings and ask OSRM for the driving distance/time
 // between them. Used to price a booking from the typed addresses before the
 // customer has pinned anything on the map. Returns
@@ -158,6 +167,25 @@ async function routeBetweenAddresses(pickupText, dropoffText) {
     return { km: route.distance / 1000, min: route.duration / 60, pickup: p, dropoff: d };
   } catch (err) {
     console.warn('routeBetweenAddresses failed — fare falls back to the estimate:', err && err.message);
+    return null;
+  }
+}
+
+// Same idea as routeBetweenAddresses but for pickup -> stop1 -> ... -> dropoff
+// (a multi-stop ride). Returns the *total* distance/time across every leg in
+// one OSRM request, plus each waypoint's [lng,lat] in order.
+async function routeThroughWaypoints(addresses) {
+  if (!addresses || addresses.length < 2) return null;
+  try {
+    const coords = await Promise.all(addresses.map(a => _geocodeAddress(a)));
+    if (coords.some(c => !c)) return null;
+    const coordStr = coords.map(c => `${c[0]},${c[1]}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=false`;
+    const route = (await (await fetch(url)).json()).routes?.[0];
+    if (!route) return null;
+    return { km: route.distance / 1000, min: route.duration / 60, waypoints: coords };
+  } catch (err) {
+    console.warn('routeThroughWaypoints failed — fare falls back to the estimate:', err && err.message);
     return null;
   }
 }
@@ -617,19 +645,27 @@ function initBookingDetailsMap(containerId) {
   return bdMap;
 }
 
-async function showBookingDetailsRoute(pickupAddr, dropoffAddr) {
+async function showBookingDetailsRoute(pickupAddr, dropoffAddr, stopAddrs = []) {
   if (!bdMap) return;
   await _whenMapReady(bdMap);
-  const [pickup, dropoff] = await Promise.all([_geocodeAddress(pickupAddr), _geocodeAddress(dropoffAddr)]);
-  if (!pickup || !dropoff || !bdMap) return;
-  [['pickup', pickup, '#22c55e', 'Pickup'], ['dropoff', dropoff, '#ef4444', 'Drop-off']].forEach(([id, lngLat, color, label]) => {
-    if (bdMarkers[id]) bdMarkers[id].remove();
-    bdMarkers[id] = _makeMarker(bdMap, lngLat, color, label);
-  });
-  // Frame both points first, then _drawRouteOnMap refines the fit to the path
-  // (and this stays put if the routing service is unavailable).
-  bdMap.fitBounds(new mapboxgl.LngLatBounds(pickup, dropoff), { padding: 56, maxZoom: 15, duration: 0 });
-  await _drawRouteOnMap(bdMap, 'bd-route', 'bd-route-line', '#2196f3', pickup, dropoff);
+  const allAddrs = [pickupAddr, ...stopAddrs, dropoffAddr];
+  const coords = await Promise.all(allAddrs.map(a => _geocodeAddress(a)));
+  if (coords.some(c => !c) || !bdMap) return;
+  const [pickup, ...rest] = coords;
+  const dropoff = rest[rest.length - 1];
+  const stopCoords = rest.slice(0, -1);
+
+  Object.values(bdMarkers).forEach(m => m.remove());
+  bdMarkers = {};
+  bdMarkers.pickup = _makeMarker(bdMap, pickup, '#22c55e', 'Pickup');
+  stopCoords.forEach((c, i) => { bdMarkers[`stop${i}`] = _makeMarker(bdMap, c, '#f59e0b', `Stop ${i + 1}`); });
+  bdMarkers.dropoff = _makeMarker(bdMap, dropoff, '#ef4444', 'Drop-off');
+
+  // Frame every point first, then _drawRouteOnMapMulti refines the fit to the
+  // path (and this stays put if the routing service is unavailable).
+  const bounds = coords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+  bdMap.fitBounds(bounds, { padding: 56, maxZoom: 15, duration: 0 });
+  await _drawRouteOnMapMulti(bdMap, 'bd-route', 'bd-route-line', '#2196f3', coords);
 }
 
 function destroyBookingDetailsMap() {

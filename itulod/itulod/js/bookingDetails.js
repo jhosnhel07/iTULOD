@@ -95,6 +95,11 @@
       const riderApplication = appResult.data       || null;
       const vehicle          = vehicleResult.data   || null;
 
+      /* ---- 2b. Ride stops (transport only) ---- */
+      const rideStops = kind === 'transport'
+        ? (await supabase.from('ride_stops').select('*').eq('booking_id', id).order('stop_order', { ascending: true })).data || []
+        : [];
+
       /* ---- 3. Build title ---- */
       const title = kind === 'transport'
         ? `${booking.pickup_address} → ${booking.destination_address}`
@@ -121,12 +126,20 @@
         </div>
       ` : '';
 
+      const canManageStops = riderId && ['accepted', 'ongoing'].includes(booking.status);
+      const stopsRows = rideStops.map(s => `
+        <div class="bd-row" data-stop-row="${s.id}">
+          <span>${s.arrived_at ? '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>' : '<i class="fa-regular fa-circle"></i>'} Stop ${s.stop_order}: ${escapeHtml(s.address)}</span>
+          ${(!s.arrived_at && canManageStops) ? `<button type="button" class="btn btn-outline btn-sm bd-stop-arrive-btn" data-stop-id="${s.id}" style="display:none">Mark arrived</button>` : ''}
+        </div>`).join('');
+
       let routeSection = '';
       if (kind === 'transport') {
         routeSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-route"></i> Trip Details</h4>
             ${row('<i class="fa-solid fa-location-dot"></i> Pickup',      escapeHtml(booking.pickup_address || '—'))}
+            ${rideStops.length ? `<div class="bd-stops-list">${stopsRows}</div>` : ''}
             ${row('<i class="fa-solid fa-flag-checkered"></i> Destination', escapeHtml(booking.destination_address || '—'))}
             ${booking.distance_km ? row('<i class="fa-solid fa-road"></i> Distance', booking.distance_km + ' km') : ''}
             ${mapSection}
@@ -329,6 +342,9 @@
       if (riderId) {
         initChat({ kind, id: booking.id, canSend: canChat });
       }
+      if (rideStops.length) {
+        initStopControls({ kind, id: booking.id, riderId, stops: rideStops });
+      }
 
       /* ---- 10. Route map — built on demand from the "View route on map" button.
          Shows the pickup and drop-off markers with the driving route between
@@ -352,7 +368,7 @@
           try {
             if (typeof loadMapbox === 'function') await loadMapbox();
             initBookingDetailsMap('bd-map');
-            showBookingDetailsRoute(routePickup, routeDropoff);
+            showBookingDetailsRoute(routePickup, routeDropoff, rideStops.map(s => s.address));
             mapEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             // Live rider position while the trip is active
             if (booking.rider_id && ['accepted', 'ongoing'].includes(booking.status)
@@ -448,6 +464,36 @@
         input.value = '';
       });
     }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Multi-stop rides — only the assigned rider, only for the first      */
+  /* not-yet-arrived stop, keeping stops worked through in order.        */
+  /* ------------------------------------------------------------------ */
+
+  async function initStopControls({ kind, id, riderId, stops }) {
+    const nextStop = stops.find(s => !s.arrived_at);
+    if (!nextStop) return;
+    const btn = document.querySelector(`.bd-stop-arrive-btn[data-stop-id="${nextStop.id}"]`);
+    if (!btn) return; // no rider assigned, or the trip isn't accepted/ongoing — canManageStops was false
+
+    // The button element only exists when canManageStops was true (rider
+    // assigned, trip accepted/ongoing) — but the customer views the same
+    // markup, so also check *this* viewer is that rider before revealing it.
+    // RLS enforces the real security boundary; this just avoids showing the
+    // customer a button that would error if clicked.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id !== riderId) return;
+
+    btn.style.display = '';
+    btn.addEventListener('click', async () => {
+      setLoading(btn, true);
+      const { error } = await supabase.from('ride_stops').update({ arrived_at: new Date().toISOString() }).eq('id', nextStop.id);
+      setLoading(btn, false);
+      if (error) { toast(error.message, 'error'); return; }
+      toast(`Marked stop ${nextStop.stop_order} arrived.`, 'success');
+      openBookingDetails({ kind, id }); // re-render to advance to the next stop
+    });
   }
 
   /* ------------------------------------------------------------------ */
