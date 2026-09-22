@@ -951,6 +951,33 @@
           </div>
 
           <div class="card card--narrow">
+            <div class="card-head"><h3>Refer a friend</h3></div>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
+              Share your code — they get ₱50 in their wallet right away, and
+              you get ₱50 once their first booking is completed.
+            </p>
+            <div style="text-align: center; margin-bottom: 16px">
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px">Your code</p>
+              <div class="receipt-amount" id="referral-code" style="letter-spacing: 2px">——————</div>
+            </div>
+            <button class="btn btn-outline btn-block" id="referral-copy-btn" style="margin-bottom: 16px">
+              <i class="fa-solid fa-copy"></i> Copy code
+            </button>
+            <form id="referral-redeem-form" style="display: none; gap: 8px" >
+              <div class="field" style="margin-bottom: 10px">
+                <label>Have a code? Redeem it</label>
+                <input type="text" id="referral-redeem-code" placeholder="e.g. AB12CD" style="text-transform: uppercase" required />
+              </div>
+              <button class="btn btn-primary btn-sm" id="referral-redeem-submit" type="submit" style="width: 100%">
+                <i class="fa-solid fa-gift"></i> Redeem
+              </button>
+            </form>
+            <p id="referral-redeemed-note" style="display: none; color: var(--text-muted); font-size: 0.82rem; text-align: center">
+              <i class="fa-solid fa-circle-check" style="color: var(--green)"></i> Referral applied — thanks!
+            </p>
+          </div>
+
+          <div class="card card--narrow">
             <div class="card-head"><h3>Saved addresses</h3></div>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
               Save the places you book often — pick them from the

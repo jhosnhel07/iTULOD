@@ -60,6 +60,7 @@ once:
 | 10 | `sql/010_growth_features.sql` | `saved_addresses` table; `tip_amount` + `cancellation_fee` columns on all three booking tables; a rider can now "release" an accepted job back to the pool (`rider_id` → null, `status` → pending) instead of only ever ending it outright. |
 | 11 | `sql/011_proof_promo_support.sql` | Proof-of-delivery photo (`delivery_proof_url` on food/parcel + a `delivery-proof` storage bucket); `promo_codes`/`promo_redemptions` (transport-only for now); `support_requests` (refund/dispute self-service). |
 | 12 | `sql/012_wallet.sql` | In-app wallet: `wallets`, `wallet_transactions` (ledger), `wallet_topups`; `wallet` added to the `payment_method` enum; `adjust_wallet_balance()` does the atomic, race-safe balance update. |
+| 13 | `sql/013_referrals.sql` | Referral program: `referral_code`/`referred_by` on `profiles` (auto-generated code per profile), `referral_events`; a trigger pays the referrer ₱50 into their wallet once the referred customer's first booking completes. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -153,7 +154,7 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all ten
+# deploy all eleven
 supabase functions deploy create-payment       --project-ref <ref>
 supabase functions deploy paymongo-webhook     --project-ref <ref>
 supabase functions deploy finalize-fare        --project-ref <ref>
@@ -163,6 +164,7 @@ supabase functions deploy sync-payment-status  --project-ref <ref>
 supabase functions deploy check-email          --project-ref <ref>
 supabase functions deploy redeem-promo         --project-ref <ref>
 supabase functions deploy wallet-topup         --project-ref <ref>
+supabase functions deploy apply-referral-code  --project-ref <ref>
 ```
 
 `paymongo-webhook`, `on-booking-change`, `expire-bookings`, and `check-email`
@@ -336,6 +338,13 @@ SMS + push + in-app notifications.
     it should resolve immediately (no GCash redirect), set that booking's
     `payment_method` to `wallet` and `payment_status` to `paid`, and leave a
     negative `payment` row in `wallet_transactions`.
+20. Referral: Profile → **Refer a friend** shows your code. As a *second*
+    customer account, redeem the first account's code in **Have a code?
+    Redeem it** — the second account's wallet should gain ₱50 immediately.
+    Book and complete a ride as the second account; the first account's
+    wallet should then gain ₱50 too (`referral_bonus` in `wallet_transactions`,
+    `referral_events.referrer_paid` = true). Redeeming a second code on the
+    same account should be rejected.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

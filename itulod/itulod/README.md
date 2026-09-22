@@ -50,7 +50,8 @@ itulod/
 │   ├── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
 │   ├── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
 │   ├── 011_proof_promo_support.sql               # proof of delivery, promo codes, support requests
-│   └── 012_wallet.sql                            # in-app wallet: balance, ledger, top-ups
+│   ├── 012_wallet.sql                            # in-app wallet: balance, ledger, top-ups
+│   └── 013_referrals.sql                         # referral codes, welcome + referrer bonuses
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking, or pays it from wallet balance
 │   ├── paymongo-webhook/       # Source of truth: marks a booking (or wallet top-up) paid/failed
@@ -61,6 +62,7 @@ itulod/
 │   ├── check-email/            # Anonymous: is this email already registered?
 │   ├── redeem-promo/           # Validates + applies a promo code (transport only, for now)
 │   ├── wallet-topup/           # Opens a PayMongo GCash source to top up a customer's wallet
+│   ├── apply-referral-code/    # Redeems a referral code: welcome bonus now, referrer bonus on first completed booking
 │   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed, wallet credit)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)

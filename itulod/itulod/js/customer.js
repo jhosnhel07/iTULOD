@@ -31,12 +31,14 @@ let RATING_TARGET = null; // { kind, id }
   wireStarInput();
   wireSupportRequestForm();
   wireWalletTopupForm();
+  wireReferralCard();
 
   await loadHome();
   await loadHistory();
   await loadNotifications();
   await loadSavedAddresses();
   await loadWalletBalance();
+  await loadReferralInfo();
   populateProfileForm();
   subscribeRealtime();
   startBookingExpiryWatch();
@@ -909,6 +911,57 @@ async function loadWalletBalance() {
 function walletTxnLabel(type) {
   return { topup: 'Top-up', payment: 'Booking payment', refund: 'Refund', referral_bonus: 'Referral bonus', admin_adjustment: 'Adjustment' }[type] || type;
 }
+
+// ---- referrals ------------------------------------------------------------
+async function loadReferralInfo() {
+  const { data } = await supabase.from('profiles').select('referral_code, referred_by').eq('id', CURRENT_PROFILE.id).single();
+  if (!data) return;
+  const codeEl = document.getElementById('referral-code');
+  if (codeEl) codeEl.textContent = data.referral_code || '——————';
+
+  const form = document.getElementById('referral-redeem-form');
+  const note = document.getElementById('referral-redeemed-note');
+  if (data.referred_by) {
+    if (form) form.style.display = 'none';
+    if (note) note.style.display = '';
+  } else {
+    if (form) form.style.display = '';
+    if (note) note.style.display = 'none';
+  }
+}
+function wireReferralCard() {
+  const copyBtn = document.getElementById('referral-copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const code = document.getElementById('referral-code').textContent.trim();
+      if (!code || code === '——————') return;
+      try {
+        await navigator.clipboard.writeText(code);
+        toast('Referral code copied.', 'success');
+      } catch {
+        toast(code, 'info');
+      }
+    });
+  }
+  const form = document.getElementById('referral-redeem-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('referral-redeem-submit');
+      const code = document.getElementById('referral-redeem-code').value.trim();
+      if (!code) return;
+      setLoading(btn, true);
+      const { data, error } = await supabase.functions.invoke('apply-referral-code', { body: { code } });
+      setLoading(btn, false);
+      if (error || data?.error) { toast(data?.error || 'Could not redeem that code.', 'error'); return; }
+      toast(`Redeemed! ₱${Number(data.bonus).toFixed(2)} added to your wallet.`, 'success');
+      form.reset();
+      await loadReferralInfo();
+      await loadWalletBalance();
+    });
+  }
+}
+
 function wireWalletTopupForm() {
   const form = document.getElementById('wallet-topup-form');
   if (!form) return;
