@@ -342,11 +342,32 @@ function wireRideForm() {
   restoreFormDraft('itulod-customer-ride', form);
   est.recalc();
 
+  const scheduleToggle = document.getElementById('ride-schedule-toggle');
+  const scheduleField = document.getElementById('ride-schedule-field');
+  const scheduleInput = document.getElementById('ride-schedule-time');
+  if (scheduleToggle) {
+    scheduleToggle.addEventListener('change', () => {
+      scheduleField.style.display = scheduleToggle.checked ? '' : 'none';
+      if (!scheduleToggle.checked) scheduleInput.value = '';
+    });
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('ride-submit');
     const vehicle = VEHICLES.find(v => v.id === vehicleSel.value);
     if (!requireFields({ 'Pickup location': pickup.value, 'Destination': dest.value, 'Vehicle': vehicle })) return;
+
+    let scheduledFor = null;
+    if (scheduleToggle?.checked) {
+      if (!scheduleInput.value) { toast('Pick a pickup date and time, or turn off scheduling.', 'error'); return; }
+      const when = new Date(scheduleInput.value);
+      const minLead = new Date(Date.now() + 10 * 60 * 1000);
+      const maxLead = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      if (when < minLead) { toast('Scheduled pickup must be at least 10 minutes from now.', 'error'); return; }
+      if (when > maxLead) { toast('Scheduled pickup can be at most 7 days from now.', 'error'); return; }
+      scheduledFor = when.toISOString();
+    }
 
     const paymentMethod = document.getElementById('ride-payment').value; // cash | gcash
     const { km, coords } = est.current();
@@ -366,7 +387,8 @@ function wireRideForm() {
       destination_lng: coords?.dropoff?.[0] ?? null,
       destination_lat: coords?.dropoff?.[1] ?? null,
       status: 'pending',
-      payment_method: paymentMethod
+      payment_method: paymentMethod,
+      scheduled_for: scheduledFor
     }).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
@@ -376,9 +398,11 @@ function wireRideForm() {
     // as a separate step, from the "Pay ₱X" button on Home or Booking
     // history (renderHomeActive / renderHistoryCard's needsPaymentRetry).
     toast(
-      paymentMethod === 'gcash'
-        ? 'Ride booked! Pay with GCash from Home or Booking history whenever you’re ready.'
-        : 'Ride booked! Waiting for a rider to accept.',
+      scheduledFor
+        ? `Ride scheduled for ${formatDate(scheduledFor)}. We'll line up a rider closer to the time.`
+        : paymentMethod === 'gcash'
+          ? 'Ride booked! Pay with GCash from Home or Booking history whenever you’re ready.'
+          : 'Ride booked! Waiting for a rider to accept.',
       'success'
     );
     await applyPromoIfEntered('transport', booking.id, 'ride-promo');
@@ -393,6 +417,7 @@ function wireRideForm() {
 
     clearFormDraft('itulod-customer-ride');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
+    if (scheduleField) scheduleField.style.display = 'none';
     HISTORY_KIND = 'transport'; await loadHistory(); await loadHome();
   });
 }
@@ -718,7 +743,8 @@ function renderHistoryCard(b, kind) {
   const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
     : kind === 'food' ? b.restaurant_name
     : `${b.sender_name} → ${b.receiver_name}`;
-  const sub = kind === 'transport' ? formatDate(b.created_at)
+  const sub = kind === 'transport'
+    ? (b.scheduled_for && b.status === 'pending' ? `Scheduled for ${formatDate(b.scheduled_for)}` : formatDate(b.created_at))
     : kind === 'food' ? `${b.pickup_address} → ${b.delivery_address}`
     : `${b.parcel_size || ''} · ${formatDate(b.created_at)}`;
   const fare = b.final_fare ?? b.estimated_fare;

@@ -51,7 +51,8 @@ itulod/
 │   ├── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
 │   ├── 011_proof_promo_support.sql               # proof of delivery, promo codes, support requests
 │   ├── 012_wallet.sql                            # in-app wallet: balance, ledger, top-ups
-│   └── 013_referrals.sql                         # referral codes, welcome + referrer bonuses
+│   ├── 013_referrals.sql                         # referral codes, welcome + referrer bonuses
+│   └── 014_scheduled_bookings.sql                # "book later" rides: scheduled_for + expiry grace period fix
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking, or pays it from wallet balance
 │   ├── paymongo-webhook/       # Source of truth: marks a booking (or wallet top-up) paid/failed

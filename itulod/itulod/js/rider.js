@@ -34,6 +34,11 @@ const PAGE_SIZE = 6;
   await loadRiderHome();
   subscribeRealtime();
   startBookingExpiryWatch();
+  // Realtime only fires on INSERT/UPDATE, so a scheduled ride crossing into
+  // its 30-minute visibility window (loadRequests()) wouldn't otherwise
+  // reappear until the next manual refresh — nothing about the row changes
+  // when time simply passes. Same 60s cadence as the expiry watch above.
+  setInterval(() => { if (!RIDER_HAS_ACTIVE_BOOKING) loadRequests(); }, 60 * 1000);
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
 
@@ -200,9 +205,16 @@ function renderRiderHomeActive(list, openCount) {
 async function loadRequests() {
   const list = document.getElementById('requests-list');
   showSkeleton(list, skeletonList(3));
-  const results = await Promise.all(Object.keys(TABLE_BY_KIND).map(kind =>
-    supabase.from(TABLE_BY_KIND[kind]).select('*').is('rider_id', null).eq('status', 'pending').order('created_at', { ascending: false }).then(r => ({ kind, rows: r.data || [] }))
-  ));
+  // A ride scheduled for later stays out of sight here until its pickup time
+  // is close — no point showing a rider a job they'd have to remember about
+  // for hours. food/parcel have no scheduled_for column, so the filter is a
+  // no-op for them.
+  const visibleBy = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const results = await Promise.all(Object.keys(TABLE_BY_KIND).map(kind => {
+    let q = supabase.from(TABLE_BY_KIND[kind]).select('*').is('rider_id', null).eq('status', 'pending');
+    if (kind === 'transport') q = q.or(`scheduled_for.is.null,scheduled_for.lte.${visibleBy}`);
+    return q.order('created_at', { ascending: false }).then(r => ({ kind, rows: r.data || [] }));
+  }));
   const merged = results.flatMap(r => r.rows.map(row => ({ ...row, _kind: r.kind }))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   if (merged.length === 0) {
@@ -225,9 +237,12 @@ function renderRequestCard(b, kind) {
     : RIDER_HAS_ACTIVE_BOOKING
       ? 'disabled title="Finish your current booking before accepting another"'
       : '';
+  const sub = b.scheduled_for
+    ? `Scheduled · ${formatDate(b.scheduled_for)}`
+    : `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`;
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
-    title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
+    title, sub,
     fare: b.estimated_fare,
     actions: `<button class="btn btn-primary btn-sm" ${disabledReason} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
   });

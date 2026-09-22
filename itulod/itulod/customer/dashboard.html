@@ -232,6 +232,17 @@
                   <input type="text" id="ride-promo" placeholder="e.g. WELCOME10" style="text-transform:uppercase" />
                 </div>
 
+                <div class="field">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+                    <input type="checkbox" id="ride-schedule-toggle" style="width: auto" />
+                    Schedule for later instead of now
+                  </label>
+                </div>
+                <div class="field" id="ride-schedule-field" style="display: none">
+                  <label>Pickup date &amp; time</label>
+                  <input type="datetime-local" id="ride-schedule-time" />
+                </div>
+
                 <!-- Fare estimate card with blue left-border accent -->
                 <div class="fare-estimate-card">
                   <div class="fare-row">
