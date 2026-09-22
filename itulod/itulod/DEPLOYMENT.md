@@ -62,6 +62,7 @@ once:
 | 12 | `sql/012_wallet.sql` | In-app wallet: `wallets`, `wallet_transactions` (ledger), `wallet_topups`; `wallet` added to the `payment_method` enum; `adjust_wallet_balance()` does the atomic, race-safe balance update. |
 | 13 | `sql/013_referrals.sql` | Referral program: `referral_code`/`referred_by` on `profiles` (auto-generated code per profile), `referral_events`; a trigger pays the referrer ₱50 into their wallet once the referred customer's first booking completes. |
 | 14 | `sql/014_scheduled_bookings.sql` | Scheduled ("book later") rides: `scheduled_for` on `transport_bookings`; `expire_stale_bookings()` now measures a scheduled ride's 15-minute grace period from its pickup time instead of from when it was booked. |
+| 15 | `sql/015_booking_chat.sql` | In-app chat: `booking_messages` (customer ↔ assigned rider, read/write gated by RLS to the two participants, sending gated to `accepted`/`ongoing`); a trigger notifies whichever side didn't send the message. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -354,6 +355,14 @@ SMS + push + in-app notifications.
     in Requests, labelled "Scheduled · <time>". It should not auto-expire
     while its scheduled time is still more than 15 minutes away, even if
     `created_at` is old.
+22. Chat: open a booking's details with a rider assigned and status
+    accepted/ongoing (from either dashboard) — a **Messages** section
+    appears with a composer. Send a message as the customer, then open the
+    same booking as the rider (or vice versa) — it should already be there,
+    and appear live without a refresh if both are open at once. Mark the
+    booking completed and reopen its details — the composer should be gone
+    and the thread read-only. The recipient should also get an in-app
+    notification for each message.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

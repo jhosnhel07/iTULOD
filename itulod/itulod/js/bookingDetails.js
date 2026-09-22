@@ -277,6 +277,24 @@
           </a>
         </div>` : '';
 
+      /* ---- 8d. Chat — only once a rider is assigned. Sending is gated to
+         'accepted'/'ongoing' by RLS; a finished trip still shows the thread,
+         just without the composer. */
+      const canChat = riderId && ['accepted', 'ongoing'].includes(booking.status);
+      const chatSection = riderId ? `
+        <div class="bd-section">
+          <h4><i class="fa-solid fa-comment-dots"></i> Messages</h4>
+          <div class="bd-chat-messages" id="bd-chat-messages">
+            <p class="muted" style="font-size:0.85rem">Loading…</p>
+          </div>
+          ${canChat ? `
+            <form id="bd-chat-form" style="display:flex;gap:8px;margin-top:10px">
+              <input type="text" id="bd-chat-input" placeholder="Type a message…" maxlength="1000" style="flex:1" autocomplete="off" />
+              <button type="submit" class="btn btn-primary btn-sm" id="bd-chat-send"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+          ` : `<p class="muted" style="font-size:0.8rem;margin-top:8px">This thread is read-only now that the booking is ${escapeHtml(booking.status)}.</p>`}
+        </div>` : '';
+
       /* ---- 9. Render ---- */
       body.innerHTML = `
         <div class="bd-header">
@@ -300,12 +318,17 @@
         ${riderSection}
         ${docsSection}
         ${proofSection}
+        ${chatSection}
         <div class="bd-section">
           <button type="button" class="btn btn-outline btn-block btn-sm" onclick="typeof openSupportRequestModal === 'function' && openSupportRequestModal({ kind: '${kind}', id: '${booking.id}' })">
             <i class="fa-solid fa-circle-question"></i> Report an issue with this booking
           </button>
         </div>
       `;
+
+      if (riderId) {
+        initChat({ kind, id: booking.id, canSend: canChat });
+      }
 
       /* ---- 10. Route map — built on demand from the "View route on map" button.
          Shows the pickup and drop-off markers with the driving route between
@@ -356,6 +379,78 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Chat                                                                 */
+  /* ------------------------------------------------------------------ */
+
+  let CHAT_CHANNEL = null;
+
+  function renderChatMessages(messages, myId) {
+    const el = document.getElementById('bd-chat-messages');
+    if (!el) return;
+    if (!messages.length) {
+      el.innerHTML = `<p class="muted" style="font-size:0.85rem">No messages yet — say hello!</p>`;
+      return;
+    }
+    el.innerHTML = messages.map(m => {
+      const mine = m.sender_id === myId;
+      return `<div style="display:flex;justify-content:${mine ? 'flex-end' : 'flex-start'};margin-bottom:8px">
+        <div style="max-width:75%;padding:8px 12px;border-radius:14px;font-size:0.85rem;background:${mine ? 'var(--blue)' : 'var(--bg-alt, #f1f3f5)'};color:${mine ? '#fff' : 'inherit'}">
+          <div>${escapeHtml(m.body)}</div>
+          <div style="font-size:0.7rem;opacity:0.7;margin-top:2px">${formatDate(m.created_at)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function initChat({ kind, id, canSend }) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const myId = session?.user?.id;
+    if (!myId) return;
+
+    const { data: messages, error } = await supabase
+      .from('booking_messages')
+      .select('*')
+      .eq('booking_type', kind)
+      .eq('booking_id', id)
+      .order('created_at', { ascending: true });
+    if (error) {
+      const el = document.getElementById('bd-chat-messages');
+      if (el) el.innerHTML = `<p class="muted" style="font-size:0.85rem">Could not load messages.</p>`;
+      return;
+    }
+    renderChatMessages(messages || [], myId);
+
+    if (CHAT_CHANNEL) { supabase.removeChannel(CHAT_CHANNEL); CHAT_CHANNEL = null; }
+    CHAT_CHANNEL = supabase
+      .channel(`booking-chat-${kind}-${id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'booking_messages', filter: `booking_id=eq.${id}` }, () => {
+        if (!document.getElementById('bd-chat-messages')) return; // modal has since closed
+        supabase.from('booking_messages').select('*').eq('booking_type', kind).eq('booking_id', id).order('created_at', { ascending: true })
+          .then(({ data }) => renderChatMessages(data || [], myId));
+      })
+      .subscribe();
+
+    const form = document.getElementById('bd-chat-form');
+    if (form && canSend) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('bd-chat-input');
+        const body = input.value.trim();
+        if (!body) return;
+        const btn = document.getElementById('bd-chat-send');
+        setLoading(btn, true);
+        const { error: sendErr } = await supabase.from('booking_messages').insert({
+          booking_type: kind, booking_id: id, sender_id: myId, body,
+        });
+        setLoading(btn, false);
+        if (sendErr) { toast(sendErr.message, 'error'); return; }
+        input.value = '';
+      });
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Close                                                                */
   /* ------------------------------------------------------------------ */
 
@@ -368,6 +463,7 @@
     document.body.style.overflow = '';
     if (typeof stopTrackingRider === 'function') stopTrackingRider();
     if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
+    if (CHAT_CHANNEL) { supabase.removeChannel(CHAT_CHANNEL); CHAT_CHANNEL = null; }
     const body = document.getElementById('booking-details-body');
     if (body) body.innerHTML = '';
   }
