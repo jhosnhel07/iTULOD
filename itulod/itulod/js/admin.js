@@ -906,3 +906,49 @@ async function resolveSupportRequest() {
   closeSupportModal();
   await loadSupportRequests();
 }
+
+// ---- database backup (export only — see admin/dashboard.html for why
+// restore isn't offered as an in-app action) --------------------------------
+const BACKUP_TABLES = [
+  'profiles', 'rider_applications', 'vehicles',
+  'transport_bookings', 'food_deliveries', 'parcel_deliveries',
+  'payments', 'reviews', 'notifications', 'announcements', 'platform_config',
+  'saved_addresses', 'promo_codes', 'promo_redemptions', 'support_requests',
+  'wallets', 'wallet_transactions', 'wallet_topups', 'referral_events',
+  'booking_messages', 'push_subscriptions', 'rider_locations',
+];
+
+async function exportBackup() {
+  const btn = document.getElementById('backup-export-btn');
+  setLoading(btn, true);
+  try {
+    const results = await Promise.all(
+      BACKUP_TABLES.map(t => supabase.from(t).select('*').then(r => ({ table: t, r })))
+    );
+    const failed = results.filter(({ r }) => r.error);
+    if (failed.length) {
+      console.error('Backup: failed tables', failed.map(f => `${f.table}: ${f.r.error.message}`));
+    }
+    const snapshot = {
+      exported_at: new Date().toISOString(),
+      exported_by: CURRENT_PROFILE?.id || null,
+      tables: Object.fromEntries(results.map(({ table, r }) => [table, r.data || []])),
+    };
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `itulod-backup-${snapshot.exported_at.slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast(failed.length
+      ? `Backup downloaded, but ${failed.length} table(s) failed — check the console.`
+      : 'Backup downloaded.', failed.length ? 'error' : 'success');
+  } catch (err) {
+    toast(err.message || 'Backup failed.', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}

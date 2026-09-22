@@ -497,7 +497,7 @@
               <div class="card-head"><h3>Database backup</h3></div>
 
               <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:20px;line-height:1.6">
-                Export a snapshot of platform data, or restore from a previous export. Connect to a Supabase Edge Function or scheduled job for production use.
+                Download a JSON snapshot of all platform data for safekeeping. Restoring from a backup isn't offered here — see below.
               </p>
 
               <div class="setting-stack">
@@ -508,7 +508,8 @@
                   </div>
                   <button
                     class="btn btn-outline btn-sm"
-                    onclick="toast('Backup placeholder — connect to a storage export job.', 'info')"
+                    id="backup-export-btn"
+                    onclick="exportBackup()"
                   >
                     <i class="fa-solid fa-download"></i> Backup now
                   </button>
@@ -517,11 +518,11 @@
                 <div class="setting-row setting-row--danger">
                   <div class="setting-row-text">
                     <strong>Restore backup</strong>
-                    <span>Replace all data from a previous export</span>
+                    <span>Not available in-app — restoring can overwrite live customer/payment data</span>
                   </div>
                   <button
                     class="btn btn-danger btn-sm"
-                    onclick="toast('Restore placeholder — connect to a storage import job.', 'info')"
+                    onclick="toast('Restore isn\'t offered as an in-app button — it\'s too easy to nuke live data by accident. Use Supabase\'s own point-in-time recovery (Project Settings → Backups) instead.', 'info')"
                   >
                     <i class="fa-solid fa-upload"></i> Restore
                   </button>

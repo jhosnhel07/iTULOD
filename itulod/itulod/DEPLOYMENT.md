@@ -363,6 +363,10 @@ SMS + push + in-app notifications.
     booking completed and reopen its details — the composer should be gone
     and the thread read-only. The recipient should also get an in-app
     notification for each message.
+23. Backup export: admin → Settings → **Backup now** downloads a
+    `itulod-backup-<timestamp>.json` file containing every table. Open it
+    and spot-check that `tables.profiles` and `tables.transport_bookings`
+    are non-empty arrays.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).
