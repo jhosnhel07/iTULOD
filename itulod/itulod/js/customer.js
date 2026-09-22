@@ -29,6 +29,7 @@ let RATING_TARGET = null; // { kind, id }
   wireChangePasswordForm();
   wireSavedAddressForm();
   wireStarInput();
+  wireSupportRequestForm();
 
   await loadHome();
   await loadHistory();
@@ -286,6 +287,27 @@ function toggleSavedAddressPicker(btn, inputId) {
   setTimeout(() => document.addEventListener('click', _addrPickerOutsideClick, true), 0);
 }
 
+// If the customer typed a promo code, validate + apply it server-side
+// (supabase/functions/redeem-promo) right after the booking is created —
+// this can only ever knock the fare down, never up, and it's applied to
+// the real row in the database, not just displayed, so there's nothing for
+// a client to spoof. Clears the input either way so a failed code doesn't
+// silently get retried on the next booking.
+async function applyPromoIfEntered(kind, bookingId, promoInputId) {
+  const input = document.getElementById(promoInputId);
+  const code = input?.value.trim();
+  if (!code) return;
+  input.value = '';
+  const { data, error } = await supabase.functions.invoke('redeem-promo', {
+    body: { code, booking_type: kind, booking_id: bookingId },
+  });
+  if (error || data?.error) {
+    toast(data?.error || error.message || 'That promo code could not be applied.', 'error');
+    return;
+  }
+  toast(`Promo applied — you saved ${peso(data.discount_amount)}!`, 'success');
+}
+
 // ---- vehicle select + fare estimate -------------------------------------
 async function loadVehicleOptions() {
   const { data, error } = await supabase.from('vehicles').select('*').eq('is_available', true).order('base_fare');
@@ -328,7 +350,7 @@ function wireRideForm() {
     // the amount shown can never drift from the amount charged.
     const fare = estimateFare(vehicle, km);
     setLoading(btn, true);
-    const { error } = await supabase.from('transport_bookings').insert({
+    const { data: booking, error } = await supabase.from('transport_bookings').insert({
       customer_id: CURRENT_PROFILE.id,
       vehicle_id: vehicle.id,
       pickup_address: pickup.value.trim(),
@@ -341,7 +363,7 @@ function wireRideForm() {
       destination_lat: coords?.dropoff?.[1] ?? null,
       status: 'pending',
       payment_method: paymentMethod
-    });
+    }).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
@@ -355,6 +377,7 @@ function wireRideForm() {
         : 'Ride booked! Waiting for a rider to accept.',
       'success'
     );
+    await applyPromoIfEntered('transport', booking.id, 'ride-promo');
     // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
     const [pLngLat, dLngLat] = await Promise.all([
       _geocodeAddress(pickup.value),
@@ -815,6 +838,47 @@ function wireStarInput() {
     toast(tip ? `Thanks for rating your rider — don't forget the ${peso(tip)} tip!` : 'Thanks for rating your rider!', 'success');
     closeRateModal();
     loadHistory();
+  });
+}
+
+// ---- support / refund / dispute requests ----------------------------------
+let SUPPORT_REQUEST_TARGET = null; // { kind, id } when opened from a specific booking, else null
+
+function openSupportRequestModal(bookingRef) {
+  SUPPORT_REQUEST_TARGET = bookingRef || null;
+  const context = document.getElementById('support-request-context');
+  if (SUPPORT_REQUEST_TARGET) {
+    context.textContent = `About your ${SUPPORT_REQUEST_TARGET.kind} booking #${SUPPORT_REQUEST_TARGET.id.slice(0, 8)}.`;
+    context.style.display = '';
+  } else {
+    context.style.display = 'none';
+  }
+  document.getElementById('support-category').value = 'refund';
+  document.getElementById('support-subject').value = '';
+  document.getElementById('support-message').value = '';
+  document.getElementById('support-request-modal').classList.add('open');
+}
+function closeSupportRequestModal() { document.getElementById('support-request-modal').classList.remove('open'); }
+
+function wireSupportRequestForm() {
+  document.getElementById('submit-support-request').addEventListener('click', async () => {
+    const btn = document.getElementById('submit-support-request');
+    const category = document.getElementById('support-category').value;
+    const subject = document.getElementById('support-subject').value.trim();
+    const message = document.getElementById('support-message').value.trim();
+    if (!requireFields({ Subject: subject, Details: message })) return;
+
+    setLoading(btn, true);
+    const { error } = await supabase.from('support_requests').insert({
+      customer_id: CURRENT_PROFILE.id,
+      booking_type: SUPPORT_REQUEST_TARGET?.kind || null,
+      booking_id: SUPPORT_REQUEST_TARGET?.id || null,
+      category, subject, message,
+    });
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+    toast("Sent! We'll get back to you soon.", 'success');
+    closeSupportRequestModal();
   });
 }
 

@@ -268,6 +268,15 @@
         </div>`;
       }
 
+      /* ---- 8c. Proof of delivery (food/parcel only) ---- */
+      const proofSection = (kind !== 'transport' && booking.delivery_proof_url) ? `
+        <div class="bd-section">
+          <h4><i class="fa-solid fa-camera"></i> Proof of Delivery</h4>
+          <a href="${booking.delivery_proof_url}" target="_blank" rel="noopener noreferrer">
+            <img src="${booking.delivery_proof_url}" alt="Proof of delivery" style="width:100%;max-width:320px;border-radius:var(--radius-sm);border:1px solid var(--border);display:block">
+          </a>
+        </div>` : '';
+
       /* ---- 9. Render ---- */
       body.innerHTML = `
         <div class="bd-header">
@@ -290,6 +299,12 @@
         ${vehicleSection}
         ${riderSection}
         ${docsSection}
+        ${proofSection}
+        <div class="bd-section">
+          <button type="button" class="btn btn-outline btn-block btn-sm" onclick="typeof openSupportRequestModal === 'function' && openSupportRequestModal({ kind: '${kind}', id: '${booking.id}' })">
+            <i class="fa-solid fa-circle-question"></i> Report an issue with this booking
+          </button>
+        </div>
       `;
 
       /* ---- 10. Route map — built on demand from the "View route on map" button.

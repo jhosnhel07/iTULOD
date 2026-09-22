@@ -376,6 +376,11 @@
   </nav>
 </div>
 
+<!-- Proof of delivery — hidden, reused for whichever booking's "Mark
+     complete" was tapped (food/parcel only). See completeWithProof() /
+     wireProofUpload() in js/rider.js. -->
+<input type="file" id="proof-upload-input" accept="image/*" capture="environment" hidden>
+
 <script src="../js/pwa.js"></script>
 <script src="../js/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

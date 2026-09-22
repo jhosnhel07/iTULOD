@@ -48,7 +48,8 @@ itulod/
 │   ├── 007_delivery_distance.sql                 # distance_km on food/parcel
 │   ├── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
 │   ├── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
-│   └── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
+│   ├── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
+│   └── 011_proof_promo_support.sql               # proof of delivery, promo codes, support requests
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking
 │   ├── paymongo-webhook/       # Source of truth: marks a booking paid/failed
@@ -57,6 +58,7 @@ itulod/
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
 │   ├── sync-payment-status/    # On-demand: ask PayMongo directly instead of waiting on the webhook
 │   ├── check-email/            # Anonymous: is this email already registered?
+│   ├── redeem-promo/           # Validates + applies a promo code (transport only, for now)
 │   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)

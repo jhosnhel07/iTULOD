@@ -58,6 +58,7 @@ once:
 | 8 | `sql/008_food_parcel_cancel_reason.sql` | `cancelled_reason` on food/parcel deliveries — without it, cancelling either fails |
 | 9 | `sql/009_booking_expiration.sql` | Automatic booking expiration: `expired`/`no_show` statuses, `accepted_at`, `expire_stale_bookings()`, terminal-state lock. See §1a below — this one needs a follow-up step for the background sweep to actually run. |
 | 10 | `sql/010_growth_features.sql` | `saved_addresses` table; `tip_amount` + `cancellation_fee` columns on all three booking tables; a rider can now "release" an accepted job back to the pool (`rider_id` → null, `status` → pending) instead of only ever ending it outright. |
+| 11 | `sql/011_proof_promo_support.sql` | Proof-of-delivery photo (`delivery_proof_url` on food/parcel + a `delivery-proof` storage bucket); `promo_codes`/`promo_redemptions` (transport-only for now); `support_requests` (refund/dispute self-service). |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -151,7 +152,7 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all eight
+# deploy all nine
 supabase functions deploy create-payment       --project-ref <ref>
 supabase functions deploy paymongo-webhook     --project-ref <ref>
 supabase functions deploy finalize-fare        --project-ref <ref>
@@ -159,6 +160,7 @@ supabase functions deploy on-booking-change    --project-ref <ref>
 supabase functions deploy expire-bookings      --project-ref <ref>
 supabase functions deploy sync-payment-status  --project-ref <ref>
 supabase functions deploy check-email          --project-ref <ref>
+supabase functions deploy redeem-promo         --project-ref <ref>
 ```
 
 `paymongo-webhook`, `on-booking-change`, `expire-bookings`, and `check-email`
@@ -309,6 +311,18 @@ SMS + push + in-app notifications.
     should disappear from that rider's Accepted list, reappear in every
     approved rider's Requests list (status back to `pending`, `rider_id`
     null), and the customer gets a "Looking for a new rider" notification.
+15. Proof of delivery: mark a **food or parcel** booking complete as the
+    rider — a photo prompt appears first; the uploaded image should show
+    up in that booking's details for the customer.
+16. Promo code: admin → Settings → Promo codes → create one → book a
+    **ride** with that code in the Promo code field → confirm the toast
+    reports a discount and `transport_bookings.promo_code` /
+    `discount_amount` are set. Try the same code again as the same
+    customer — it should be rejected as already used.
+17. Support request: Profile → **Report an issue** (or from a booking's
+    details) → submit → it should appear in admin's **Support requests**
+    tab with the Open-count badge on the sidebar; replying and resolving
+    should notify the customer.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

@@ -24,12 +24,16 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireCustomerSearch();
   wireVehicleForm();
   wireAnnouncementForm();
+  wirePromoForm();
+  wireSupportSubTabs();
 
   await loadAnalytics();
   await loadCustomers();
   await loadPendingApplications();
   await loadAllRiders();
   await loadVehicles();
+  await loadPromoCodes();
+  await loadSupportRequests();
   await loadBookings();
   await loadPayments();
   await loadAnnouncements();
@@ -43,7 +47,7 @@ function wireTabNav() {
   document.querySelectorAll('.side-link[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.side-link[data-tab]').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#tab-analytics, #tab-customers, #tab-riders, #tab-vehicles, #tab-bookings, #tab-payments, #tab-announcements, #tab-settings').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('#tab-analytics, #tab-customers, #tab-riders, #tab-vehicles, #tab-support, #tab-bookings, #tab-payments, #tab-announcements, #tab-settings').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
       const titles = {
@@ -51,6 +55,7 @@ function wireTabNav() {
         customers: ['Customers', 'All registered customers.'],
         riders: ['Riders & applications', 'Approve riders and manage the fleet.'],
         vehicles: ['Vehicle categories', 'Manage available vehicle types and fares.'],
+        support: ['Support requests', 'Refunds, disputes, and everything else customers flag.'],
         bookings: ['Bookings & deliveries', 'Monitor all activity across the platform.'],
         payments: ['Payments', 'Transactions, commissions, and payouts.'],
         announcements: ['Announcements', 'Broadcast messages to your users.'],
@@ -733,5 +738,171 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => debouncedReload([loadPayments]))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'support_requests' }, () => debouncedReload([loadSupportRequests]))
     .subscribe();
+}
+
+// ---- promo codes -----------------------------------------------------------
+let ALL_PROMOS = [];
+async function loadPromoCodes() {
+  const tbody = document.querySelector('#promo-table tbody');
+  if (!tbody) return;
+  const { data, error } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('loadPromoCodes error:', error); return; }
+  ALL_PROMOS = data || [];
+  if (ALL_PROMOS.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5">${emptyState({ icon: 'fa-tag', title: 'No promo codes yet', body: 'Create one above — transport bookings only, for now.' })}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = ALL_PROMOS.map(p => `
+    <tr>
+      <td><code>${escapeHtml(p.code)}</code></td>
+      <td>${p.discount_type === 'percent' ? Number(p.discount_value) + '%' : peso(p.discount_value)}</td>
+      <td>${p.uses_count}${p.max_uses ? ' / ' + p.max_uses : ''}</td>
+      <td>${p.active ? '<span class="badge badge--completed">Active</span>' : '<span class="badge badge--cancelled">Inactive</span>'}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" title="${p.active ? 'Deactivate' : 'Activate'}" onclick="togglePromoActive('${p.id}', ${p.active})"><i class="fa-solid ${p.active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i></button>
+        <button class="icon-btn danger" title="Delete" onclick="deletePromoCode('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+function wirePromoForm() {
+  const form = document.getElementById('promo-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('promo-submit');
+    const code = document.getElementById('promo-code').value.trim().toUpperCase();
+    const discount_type = document.getElementById('promo-type').value;
+    const discount_value = parseFloat(document.getElementById('promo-value').value);
+    const maxUsesRaw = document.getElementById('promo-max-uses').value;
+    const max_uses = maxUsesRaw ? parseInt(maxUsesRaw, 10) : null;
+    if (!requireFields({ Code: code, Value: discount_value })) return;
+    if (discount_type === 'percent' && discount_value > 100) {
+      toast("A percentage discount can't be more than 100.", 'error');
+      return;
+    }
+    setLoading(btn, true);
+    const { error } = await supabase.from('promo_codes').insert({
+      code, discount_type, discount_value, max_uses, created_by: CURRENT_PROFILE.id,
+    });
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Promo code created.', 'success');
+    form.reset();
+    await loadPromoCodes();
+  });
+}
+async function togglePromoActive(id, currentlyActive) {
+  const { error } = await supabase.from('promo_codes').update({ active: !currentlyActive }).eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  await loadPromoCodes();
+}
+async function deletePromoCode(id) {
+  if (!confirm('Delete this promo code? This does not undo discounts already given.')) return;
+  const { error } = await supabase.from('promo_codes').delete().eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  await loadPromoCodes();
+}
+
+// ---- support requests --------------------------------------------------
+let SUPPORT_TAB = 'open';
+let ACTIVE_SUPPORT = null;
+let ALL_SUPPORT = [];
+
+function wireSupportSubTabs() {
+  document.querySelectorAll('.tab-btn[data-support-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn[data-support-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      SUPPORT_TAB = btn.dataset.supportTab;
+      renderSupportList();
+    });
+  });
+}
+
+async function loadSupportRequests() {
+  const { data, error } = await supabase
+    .from('support_requests')
+    .select('*, customer:customer_id(full_name, email)')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('loadSupportRequests error:', error); return; }
+  ALL_SUPPORT = data || [];
+  const openCount = ALL_SUPPORT.filter(r => r.status !== 'resolved').length;
+  const badge = document.getElementById('support-open-badge');
+  if (badge) {
+    badge.textContent = openCount;
+    badge.style.display = openCount > 0 ? 'inline-flex' : 'none';
+  }
+  renderSupportList();
+}
+
+function renderSupportList() {
+  const el = document.getElementById('support-list');
+  if (!el) return;
+  const rows = SUPPORT_TAB === 'open' ? ALL_SUPPORT.filter(r => r.status !== 'resolved') : ALL_SUPPORT;
+  if (rows.length === 0) {
+    el.innerHTML = `<div class="card">${emptyState({
+      icon: 'fa-life-ring',
+      title: SUPPORT_TAB === 'open' ? 'All clear!' : 'Nothing here yet',
+      body: SUPPORT_TAB === 'open' ? 'No open support requests right now.' : 'Customer refund/dispute requests will show up here.',
+      tone: SUPPORT_TAB === 'open' ? 'success' : undefined,
+    })}</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(r => `
+    <div class="booking-card" style="cursor:pointer" onclick='openSupportModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
+      <div class="kind-icon" style="background:var(--orange)"><i class="fa-solid fa-life-ring"></i></div>
+      <div class="info"><div>
+        <h4>${escapeHtml(r.subject)}</h4>
+        <p>${escapeHtml(r.customer?.full_name || 'Unknown')} · ${escapeHtml(r.category)} · ${formatDate(r.created_at)}</p>
+      </div></div>
+      <div class="meta">${statusBadge(r.status)}</div>
+    </div>`).join('');
+}
+
+function openSupportModal(req) {
+  ACTIVE_SUPPORT = req;
+  document.getElementById('support-modal-body').innerHTML = `
+    <div style="margin-bottom:14px">
+      <strong>${escapeHtml(req.customer?.full_name || 'Unknown')}</strong>
+      <div style="color:var(--text-muted);font-size:0.85rem">${escapeHtml(req.customer?.email || '')}</div>
+    </div>
+    <div style="margin-bottom:14px"><span class="badge badge--pending">${escapeHtml(req.category)}</span> ${statusBadge(req.status)}</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Message</div>
+      <p>${escapeHtml(req.message)}</p>
+    </div>
+    ${req.booking_id ? `<div style="margin-bottom:14px;font-size:0.85rem;color:var(--text-muted)">Booking: ${escapeHtml(req.booking_type || '')} · ${escapeHtml(req.booking_id)}</div>` : ''}
+    ${req.admin_response ? `<div style="margin-bottom:14px"><div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Your previous reply</div><p>${escapeHtml(req.admin_response)}</p></div>` : ''}
+    ${req.status !== 'resolved' ? `
+      <div class="field" style="margin-bottom:0">
+        <label>Reply to customer</label>
+        <textarea id="support-reply" rows="4" placeholder="Explain what you're doing about this…"></textarea>
+      </div>` : ''}
+  `;
+  document.getElementById('support-resolve-btn').style.display = req.status === 'resolved' ? 'none' : '';
+  document.getElementById('support-modal').classList.add('open');
+}
+function closeSupportModal() { document.getElementById('support-modal').classList.remove('open'); }
+
+async function resolveSupportRequest() {
+  if (!ACTIVE_SUPPORT) return;
+  const reply = document.getElementById('support-reply')?.value.trim();
+  if (!requireFields({ Reply: reply })) return;
+  const btn = document.getElementById('support-resolve-btn');
+  setLoading(btn, true);
+  const { error } = await supabase.from('support_requests').update({
+    status: 'resolved', admin_response: reply,
+  }).eq('id', ACTIVE_SUPPORT.id);
+  setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  await supabase.from('notifications').insert({
+    user_id: ACTIVE_SUPPORT.customer_id,
+    title: 'Your support request was resolved',
+    message: reply,
+  });
+  toast('Reply sent and marked resolved.', 'success');
+  closeSupportModal();
+  await loadSupportRequests();
 }

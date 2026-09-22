@@ -23,6 +23,7 @@ const PAGE_SIZE = 6;
   wireHistoryTabs();
   wireProfileForm();
   wireChangePasswordForm();
+  wireProofUpload();
   populateProfileForm();
 
   await loadAccepted(); // sets RIDER_HAS_ACTIVE_BOOKING before requests render
@@ -334,10 +335,15 @@ function renderAcceptedCard(b, kind) {
   const releaseAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); releaseJob('${kind}','${b.id}')"><i class="fa-solid fa-arrow-rotate-left"></i> Release</button>`
     : '';
+  // Food/parcel drop-off gets a proof-of-delivery photo; a ride has no
+  // "delivery" to photograph, so it completes the same way as before.
+  const completeAction = kind === 'transport'
+    ? `updateStatus('${kind}','${b.id}','completed')`
+    : `completeWithProof('${kind}','${b.id}')`;
   const nextAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
     : canComplete
-      ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','completed')"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`
+      ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); ${completeAction}"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`
       : '';
 
   const paidBadge = b.payment_method === 'gcash'
@@ -374,6 +380,46 @@ async function releaseJob(kind, id) {
   await loadAccepted();
   await loadRequests();
   await loadEarnings();
+}
+
+// ---- proof of delivery (food/parcel) ---------------------------------------
+// One hidden file input, reused for whichever booking's "Mark complete" was
+// tapped — set by completeWithProof(), read by the input's own change handler.
+let _proofTarget = null;
+
+function completeWithProof(kind, id) {
+  _proofTarget = { kind, id };
+  const input = document.getElementById('proof-upload-input');
+  if (!input) { updateStatus(kind, id, 'completed'); return; } // page hasn't got the input — complete without a photo rather than dead-end the rider
+  input.value = '';
+  input.click();
+}
+
+function wireProofUpload() {
+  const input = document.getElementById('proof-upload-input');
+  if (!input) return;
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    const target = _proofTarget;
+    _proofTarget = null;
+    if (!file || !target) return;
+    if (!file.type.startsWith('image/')) { toast('Please choose an image file.', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast('That photo is too large — please choose one under 5MB.', 'error'); return; }
+
+    toast('Uploading photo…', 'info');
+    const path = `${CURRENT_PROFILE.id}/${target.kind}-${target.id}-${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from('delivery-proof').upload(path, file, { upsert: true });
+    if (upErr) {
+      console.error('Proof of delivery upload failed:', upErr.message);
+      if (!confirm("Couldn't upload the photo. Mark this complete without one?")) return;
+      await updateStatus(target.kind, target.id, 'completed');
+      return;
+    }
+    const delivery_proof_url = supabase.storage.from('delivery-proof').getPublicUrl(path).data.publicUrl;
+    const table = TABLE_BY_KIND[target.kind];
+    await supabase.from(table).update({ delivery_proof_url }).eq('id', target.id);
+    await updateStatus(target.kind, target.id, 'completed');
+  });
 }
 
 async function setFinalFare(kind, id) {
