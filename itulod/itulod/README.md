@@ -54,7 +54,8 @@ itulod/
 │   ├── 013_referrals.sql                         # referral codes, welcome + referrer bonuses
 │   ├── 014_scheduled_bookings.sql                # "book later" rides: scheduled_for + expiry grace period fix
 │   ├── 015_booking_chat.sql                      # in-app chat: booking_messages, participant-only RLS, message notifications
-│   └── 016_multi_stop_rides.sql                  # ride_stops: up to 3 stops per ride, arrived-in-order tracking
+│   ├── 016_multi_stop_rides.sql                  # ride_stops: up to 3 stops per ride, arrived-in-order tracking
+│   └── 017_nearby_riders.sql                     # riders-near-you: is_online presence + get_nearby_riders() (coarse, privacy-rounded)
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking, or pays it from wallet balance
 │   ├── paymongo-webhook/       # Source of truth: marks a booking (or wallet top-up) paid/failed

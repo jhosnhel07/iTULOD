@@ -85,6 +85,14 @@ function setBookingService(svc) {
   const sub = document.getElementById('page-sub');
   if (sub && document.getElementById('tab-book').classList.contains('active')) sub.textContent = BOOKING_SUBTITLES[svc];
   if (typeof resizeBookingMap === 'function') requestAnimationFrame(() => resizeBookingMap(svc));
+
+  // "Riders near you" only makes sense on the ride map — stop polling
+  // whenever the customer isn't looking at it.
+  if (svc === 'ride' && typeof startNearbyRidersWatch === 'function') {
+    startNearbyRidersWatch('ride');
+  } else if (typeof stopNearbyRidersWatch === 'function') {
+    stopNearbyRidersWatch();
+  }
 }
 function wireBookingSwitch() {
   document.querySelectorAll('#booking-switch .seg-btn').forEach(btn => {

@@ -561,6 +561,88 @@ function stopLocationBroadcast() {
   }
 }
 
+/* ── "Riders near you" presence ─────────────────────────────────────────────
+   A separate, lighter-weight broadcast from the one above: this runs
+   whenever a rider is toggled online, independent of any specific job, so
+   customers can see roughly how many riders are around before they book
+   (see sql/017_nearby_riders.sql — get_nearby_riders() rounds the coordinates
+   and excludes anyone already on a job). Kept as its own watchPosition
+   rather than reusing startLocationBroadcast/stopLocationBroadcast above,
+   since those are tied to a specific booking and get deleted the moment a
+   trip ends — this one needs to keep running across jobs. */
+let _onlineWatchId = null;
+let _onlineLast = 0;
+
+function goOnline(onError) {
+  if (!('geolocation' in navigator) || typeof supabase === 'undefined') { onError?.(); return; }
+  if (_onlineWatchId != null) return; // already running
+  const push = (pos) => {
+    const now = Date.now();
+    if (now - _onlineLast < 20000) return; // ~1 write / 20s — idle presence, not active-trip tracking
+    _onlineLast = now;
+    supabase.from('rider_locations').upsert({
+      rider_id: (typeof CURRENT_PROFILE !== 'undefined' && CURRENT_PROFILE?.id) || null,
+      lat: Number(pos.coords.latitude.toFixed(6)),
+      lng: Number(pos.coords.longitude.toFixed(6)),
+      is_online: true,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'rider_id' }).then(() => {});
+  };
+  _onlineWatchId = navigator.geolocation.watchPosition(push, () => {
+    if (_onlineWatchId != null) { navigator.geolocation.clearWatch(_onlineWatchId); _onlineWatchId = null; }
+    onError?.();
+  }, {
+    enableHighAccuracy: false, maximumAge: 15000, timeout: 20000,
+  });
+}
+
+function goOffline() {
+  if (_onlineWatchId != null) { navigator.geolocation.clearWatch(_onlineWatchId); _onlineWatchId = null; }
+  if (typeof supabase !== 'undefined' && typeof CURRENT_PROFILE !== 'undefined' && CURRENT_PROFILE?.id) {
+    supabase.from('rider_locations').update({ is_online: false }).eq('rider_id', CURRENT_PROFILE.id).then(() => {});
+  }
+}
+
+/* ── Customer: "riders near you" markers on the ride booking map ──────────── */
+let _nearbyRidersTimer = null;
+let _nearbyRiderMarkers = [];
+
+async function refreshNearbyRiders(tab) {
+  const cfg = _maps[tab];
+  if (!cfg || !cfg.map || typeof supabase === 'undefined') return;
+  const { data, error } = await supabase.rpc('get_nearby_riders');
+  if (error) { console.warn('get_nearby_riders failed:', error.message); return; }
+  _nearbyRiderMarkers.forEach(m => m.remove());
+  _nearbyRiderMarkers = (data || []).map(r => {
+    const el = document.createElement('div');
+    el.innerHTML = '<i class="fa-solid fa-motorcycle"></i>';
+    el.style.cssText = 'color:#fff;background:#1a9d63;border-radius:50%;width:28px;height:28px;'
+      + 'display:flex;align-items:center;justify-content:center;font-size:14px;'
+      + 'box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff';
+    return new mapboxgl.Marker({ element: el }).setLngLat([r.lng, r.lat]).addTo(cfg.map);
+  });
+  const countEl = document.getElementById('nearby-riders-count');
+  if (countEl) {
+    const label = (data && data.length)
+      ? `${data.length} rider${data.length === 1 ? '' : 's'} nearby`
+      : 'No riders online right now';
+    countEl.innerHTML = `<i class="fa-solid fa-motorcycle"></i> ${label}`;
+  }
+}
+
+function startNearbyRidersWatch(tab) {
+  refreshNearbyRiders(tab);
+  clearInterval(_nearbyRidersTimer);
+  _nearbyRidersTimer = setInterval(() => refreshNearbyRiders(tab), 20000);
+}
+
+function stopNearbyRidersWatch() {
+  clearInterval(_nearbyRidersTimer);
+  _nearbyRidersTimer = null;
+  _nearbyRiderMarkers.forEach(m => m.remove());
+  _nearbyRiderMarkers = [];
+}
+
 let _trackChannel = null;
 let _trackMarker = null;
 

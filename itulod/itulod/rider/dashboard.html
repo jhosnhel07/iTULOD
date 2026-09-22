@@ -93,6 +93,18 @@
 
     <!-- ===================== HOME ===================== -->
     <section class="tab-panel active" id="tab-home">
+      <div class="card card--flush" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+        <div>
+          <strong id="online-status-label">Offline</strong>
+          <p style="color:var(--text-muted);font-size:0.82rem;margin:2px 0 0">
+            Go online so nearby customers can see you before they book.
+          </p>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" id="online-toggle-btn">
+          <i class="fa-solid fa-power-off"></i> Go online
+        </button>
+      </div>
+
       <div id="home-active" class="home-active-slot"></div>
 
       <div class="stat-grid">

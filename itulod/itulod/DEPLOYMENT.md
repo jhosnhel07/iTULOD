@@ -64,6 +64,7 @@ once:
 | 14 | `sql/014_scheduled_bookings.sql` | Scheduled ("book later") rides: `scheduled_for` on `transport_bookings`; `expire_stale_bookings()` now measures a scheduled ride's 15-minute grace period from its pickup time instead of from when it was booked. |
 | 15 | `sql/015_booking_chat.sql` | In-app chat: `booking_messages` (customer ↔ assigned rider, read/write gated by RLS to the two participants, sending gated to `accepted`/`ongoing`); a trigger notifies whichever side didn't send the message. |
 | 16 | `sql/016_multi_stop_rides.sql` | Multi-stop rides: `ride_stops` (up to 3 stops between pickup and destination, set once at booking time, the rider marks each arrived in order). |
+| 17 | `sql/017_nearby_riders.sql` | "Riders near you" live map: `is_online` on `rider_locations`; `get_nearby_riders()` returns coarse (rounded, ~110m) coordinates for online, approved, not-currently-on-a-job riders only — the only way this data reaches a customer. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -376,6 +377,15 @@ SMS + push + in-app notifications.
     first unvisited stop only (rider's view). Marking it arrived should
     advance the button to the next stop. **View route on map** should draw
     through every stop in order, not a straight pickup→destination line.
+25. Riders near you: as an approved rider, Home tab → **Go online** (grant
+    location permission when prompted) → `select is_online, updated_at from
+    rider_locations where rider_id = '<yours>'` should show `true` and a
+    fresh timestamp. As a customer, open New booking → Ride — within ~20s
+    a green motorcycle marker for that rider should appear on the map, and
+    the caption above it should read "1 rider nearby". Accept a booking as
+    that rider — the marker should disappear from the nearby map (they're
+    now excluded as on-a-job) without them ever going offline. Rider taps
+    **Go offline** — the marker should be gone within the next refresh.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

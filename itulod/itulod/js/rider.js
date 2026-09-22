@@ -4,6 +4,7 @@
 let CURRENT_PROFILE = null;
 let RIDER_APPROVED = false;
 let RIDER_HAS_ACTIVE_BOOKING = false;
+let RIDER_ONLINE = false;
 let HISTORY_KIND = 'transport';
 let HISTORY_PAGE = 1;
 const PAGE_SIZE = 6;
@@ -24,8 +25,10 @@ const PAGE_SIZE = 6;
   wireProfileForm();
   wireChangePasswordForm();
   wireProofUpload();
+  wireOnlineToggle();
   populateProfileForm();
 
+  await initOnlineStatus();
   await loadAccepted(); // sets RIDER_HAS_ACTIVE_BOOKING before requests render
   await loadRequests();
   await loadEarnings();
@@ -434,6 +437,50 @@ function wireProofUpload() {
     const table = TABLE_BY_KIND[target.kind];
     await supabase.from(table).update({ delivery_proof_url }).eq('id', target.id);
     await updateStatus(target.kind, target.id, 'completed');
+  });
+}
+
+// ---- "riders near you" presence toggle -------------------------------------
+function setOnlineUI(isOnline) {
+  RIDER_ONLINE = isOnline;
+  const label = document.getElementById('online-status-label');
+  const btn = document.getElementById('online-toggle-btn');
+  if (label) label.textContent = isOnline ? 'Online' : 'Offline';
+  if (btn) {
+    btn.innerHTML = isOnline
+      ? '<i class="fa-solid fa-power-off"></i> Go offline'
+      : '<i class="fa-solid fa-power-off"></i> Go online';
+    btn.classList.toggle('btn-primary', isOnline);
+    btn.classList.toggle('btn-outline', !isOnline);
+  }
+}
+
+async function initOnlineStatus() {
+  const { data } = await supabase.from('rider_locations').select('is_online').eq('rider_id', CURRENT_PROFILE.id).maybeSingle();
+  setOnlineUI(!!data?.is_online);
+  // Resume broadcasting after a page reload if they were already online.
+  if (data?.is_online && typeof goOnline === 'function') {
+    goOnline(() => { setOnlineUI(false); toast('Could not access your location — went back offline.', 'error'); });
+  }
+}
+
+function wireOnlineToggle() {
+  const btn = document.getElementById('online-toggle-btn');
+  if (!btn) return;
+  if (!RIDER_APPROVED) {
+    btn.disabled = true;
+    btn.title = 'Available once an admin approves your application';
+    return;
+  }
+  btn.addEventListener('click', () => {
+    if (RIDER_ONLINE) {
+      if (typeof goOffline === 'function') goOffline();
+      setOnlineUI(false);
+      return;
+    }
+    if (typeof goOnline !== 'function') return;
+    goOnline(() => { setOnlineUI(false); toast("Couldn't access your location. Check your browser's location permission and try again.", 'error'); });
+    setOnlineUI(true);
   });
 }
 
