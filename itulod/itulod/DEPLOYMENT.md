@@ -65,6 +65,7 @@ once:
 | 15 | `sql/015_booking_chat.sql` | In-app chat: `booking_messages` (customer ↔ assigned rider, read/write gated by RLS to the two participants, sending gated to `accepted`/`ongoing`); a trigger notifies whichever side didn't send the message. |
 | 16 | `sql/016_multi_stop_rides.sql` | Multi-stop rides: `ride_stops` (up to 3 stops between pickup and destination, set once at booking time, the rider marks each arrived in order). |
 | 17 | `sql/017_nearby_riders.sql` | "Riders near you" live map: `is_online` on `rider_locations`; `get_nearby_riders()` returns coarse (rounded, ~110m) coordinates for online, approved, not-currently-on-a-job riders only — the only way this data reaches a customer. |
+| 18 | `sql/018_restaurant_menu_cart.sql` | Restaurant + menu data model (part 1 of the restaurant/menu/cart feature): `restaurants`, `menu_items` (admin-managed, browsable by any signed-in user), `food_order_items` (order line items, customer-insertable only at checkout time); `restaurant_id`/`item_subtotal`/`delivery_fee` on `food_deliveries`. The customer-facing browse/cart/checkout UI ships in a follow-up migration/commit. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -386,6 +387,11 @@ SMS + push + in-app notifications.
     that rider — the marker should disappear from the nearby map (they're
     now excluded as on-a-job) without them ever going offline. Rider taps
     **Go offline** — the marker should be gone within the next refresh.
+26. Restaurant admin: admin → **Restaurants** → **Add restaurant** → fill
+    name/address → save → it appears in the table. Click the utensils icon
+    to open its menu → add a couple of items with prices → they appear in
+    the menu table, toggleable available/unavailable, deletable. (Customer
+    ordering from these restaurants ships in a follow-up.)
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

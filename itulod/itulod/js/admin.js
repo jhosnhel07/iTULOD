@@ -23,6 +23,8 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireBookingTabs();
   wireCustomerSearch();
   wireVehicleForm();
+  wireRestaurantForm();
+  wireMenuItemForm();
   wireAnnouncementForm();
   wirePromoForm();
   wireSupportSubTabs();
@@ -32,6 +34,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   await loadPendingApplications();
   await loadAllRiders();
   await loadVehicles();
+  await loadRestaurants();
   await loadPromoCodes();
   await loadSupportRequests();
   await loadBookings();
@@ -47,7 +50,7 @@ function wireTabNav() {
   document.querySelectorAll('.side-link[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.side-link[data-tab]').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#tab-analytics, #tab-customers, #tab-riders, #tab-vehicles, #tab-support, #tab-bookings, #tab-payments, #tab-announcements, #tab-settings').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('#tab-analytics, #tab-customers, #tab-riders, #tab-vehicles, #tab-restaurants, #tab-support, #tab-bookings, #tab-payments, #tab-announcements, #tab-settings').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
       const titles = {
@@ -55,6 +58,7 @@ function wireTabNav() {
         customers: ['Customers', 'All registered customers.'],
         riders: ['Riders & applications', 'Approve riders and manage the fleet.'],
         vehicles: ['Vehicle categories', 'Manage available vehicle types and fares.'],
+        restaurants: ['Restaurants', 'Manage restaurants and their menus for food delivery.'],
         support: ['Support requests', 'Refunds, disputes, and everything else customers flag.'],
         bookings: ['Bookings & deliveries', 'Monitor all activity across the platform.'],
         payments: ['Payments', 'Transactions, commissions, and payouts.'],
@@ -574,6 +578,146 @@ async function deleteVehicle(id) {
   if (error) { toast(error.message, 'error'); return; }
   toast('Vehicle deleted.', 'success');
   loadVehicles();
+}
+
+// ---- restaurants -----------------------------------------------------------
+let ALL_RESTAURANTS = [];
+
+async function loadRestaurants() {
+  showSkeleton(document.querySelector('#restaurants-table tbody'), skeletonRows(5, 5));
+  const { data, error } = await supabase.from('restaurants').select('*').order('name');
+  if (error) { console.error('loadRestaurants error:', error); toast(error.message, 'error'); }
+  ALL_RESTAURANTS = data || [];
+  const tbody = document.querySelector('#restaurants-table tbody');
+  if (ALL_RESTAURANTS.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5">${emptyState({
+      icon: 'fa-store',
+      title: 'No restaurants yet',
+      body: 'Add one so customers have somewhere to order food from.'
+    })}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = ALL_RESTAURANTS.map(r => `
+    <tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.address)}</td>
+      <td>${escapeHtml(r.cuisine_type || '—')}</td>
+      <td>${r.is_active ? '<span class="badge badge--completed">Yes</span>' : '<span class="badge badge--cancelled">No</span>'}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" title="Menu" onclick="openMenuModal('${r.id}')"><i class="fa-solid fa-utensils"></i></button>
+        <button class="icon-btn" title="Edit" onclick='openRestaurantModal(${JSON.stringify(r)})'><i class="fa-solid fa-pen"></i></button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteRestaurant('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+function openRestaurantModal(r) {
+  document.getElementById('restaurant-modal-title').textContent = r ? 'Edit restaurant' : 'Add restaurant';
+  document.getElementById('restaurant-id').value = r?.id || '';
+  document.getElementById('restaurant-name').value = r?.name || '';
+  document.getElementById('restaurant-address').value = r?.address || '';
+  document.getElementById('restaurant-cuisine').value = r?.cuisine_type || '';
+  document.getElementById('restaurant-available').value = String(r?.is_active ?? true);
+  document.getElementById('restaurant-image').value = r?.image_url || '';
+  document.getElementById('restaurant-modal').classList.add('open');
+}
+function closeRestaurantModal() { document.getElementById('restaurant-modal').classList.remove('open'); }
+function wireRestaurantForm() {
+  document.getElementById('restaurant-save').addEventListener('click', async () => {
+    const id = document.getElementById('restaurant-id').value;
+    const payload = {
+      name: document.getElementById('restaurant-name').value.trim(),
+      address: document.getElementById('restaurant-address').value.trim(),
+      cuisine_type: document.getElementById('restaurant-cuisine').value.trim() || null,
+      is_active: document.getElementById('restaurant-available').value === 'true',
+      image_url: document.getElementById('restaurant-image').value.trim() || null,
+    };
+    if (!requireFields({ Name: payload.name, Address: payload.address })) return;
+    if (!id) payload.created_by = CURRENT_PROFILE.id;
+
+    const { error } = id
+      ? await supabase.from('restaurants').update(payload).eq('id', id)
+      : await supabase.from('restaurants').insert(payload);
+    if (error) { toast(error.message, 'error'); return; }
+    toast(id ? 'Restaurant updated.' : 'Restaurant added.', 'success');
+    closeRestaurantModal();
+    loadRestaurants();
+  });
+}
+async function deleteRestaurant(id) {
+  if (!confirm('Delete this restaurant and its whole menu? Existing orders keep their history.')) return;
+  const { error } = await supabase.from('restaurants').delete().eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  toast('Restaurant deleted.', 'success');
+  loadRestaurants();
+}
+
+// ---- menu items --------------------------------------------------------
+let ACTIVE_MENU_RESTAURANT_ID = null;
+
+async function openMenuModal(restaurantId) {
+  ACTIVE_MENU_RESTAURANT_ID = restaurantId;
+  const restaurant = ALL_RESTAURANTS.find(r => r.id === restaurantId);
+  document.getElementById('menu-modal-title').textContent = restaurant ? `Menu — ${restaurant.name}` : 'Menu';
+  document.getElementById('menu-item-form').reset();
+  document.getElementById('menu-item-id').value = '';
+  document.getElementById('menu-modal').classList.add('open');
+  await loadMenuItems(restaurantId);
+}
+function closeMenuModal() {
+  document.getElementById('menu-modal').classList.remove('open');
+  ACTIVE_MENU_RESTAURANT_ID = null;
+}
+async function loadMenuItems(restaurantId) {
+  const tbody = document.querySelector('#menu-items-table tbody');
+  showSkeleton(tbody, skeletonRows(3, 4));
+  const { data, error } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId).order('name');
+  if (error) { console.error('loadMenuItems error:', error); toast(error.message, 'error'); return; }
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">${emptyState({ icon: 'fa-utensils', title: 'No items yet', body: 'Add this restaurant\'s menu above.' })}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(m => `
+    <tr>
+      <td>${escapeHtml(m.name)}</td>
+      <td>${peso(m.price)}</td>
+      <td><button class="icon-btn" title="${m.is_available ? 'Mark unavailable' : 'Mark available'}" onclick="toggleMenuItemAvailable('${m.id}', ${m.is_available})">
+        <i class="fa-solid ${m.is_available ? 'fa-toggle-on' : 'fa-toggle-off'}"></i>
+      </button></td>
+      <td><button class="icon-btn danger" title="Delete" onclick="deleteMenuItem('${m.id}')"><i class="fa-solid fa-trash"></i></button></td>
+    </tr>`).join('');
+}
+function wireMenuItemForm() {
+  const form = document.getElementById('menu-item-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!ACTIVE_MENU_RESTAURANT_ID) return;
+    const btn = document.getElementById('menu-item-save');
+    const name = document.getElementById('menu-item-name').value.trim();
+    const price = parseFloat(document.getElementById('menu-item-price').value);
+    if (!requireFields({ 'Item name': name, Price: price })) return;
+    setLoading(btn, true);
+    const { error } = await supabase.from('menu_items').insert({
+      restaurant_id: ACTIVE_MENU_RESTAURANT_ID, name, price,
+    });
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Item added.', 'success');
+    form.reset();
+    await loadMenuItems(ACTIVE_MENU_RESTAURANT_ID);
+  });
+}
+async function toggleMenuItemAvailable(id, currentlyAvailable) {
+  const { error } = await supabase.from('menu_items').update({ is_available: !currentlyAvailable }).eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  await loadMenuItems(ACTIVE_MENU_RESTAURANT_ID);
+}
+async function deleteMenuItem(id) {
+  if (!confirm('Delete this menu item?')) return;
+  const { error } = await supabase.from('menu_items').delete().eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  toast('Item deleted.', 'success');
+  await loadMenuItems(ACTIVE_MENU_RESTAURANT_ID);
 }
 
 // ---- bookings monitor -------------------------------------------------------
