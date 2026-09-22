@@ -433,3 +433,9 @@ verify_jwt = false
 [functions.expire-bookings]
 enabled = true
 verify_jwt = false
+
+# Called by anonymous visitors on the register page, before they have an
+# account — there's no Supabase session to verify yet.
+[functions.check-email]
+enabled = true
+verify_jwt = false

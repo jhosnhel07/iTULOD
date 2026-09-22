@@ -638,6 +638,39 @@
       .input-wrap input::placeholder {
         color: #d9c9c8;
       }
+      .email-status-icon {
+        position: absolute;
+        right: 14px;
+        font-size: 0.95rem;
+      }
+      .email-status-icon.checking {
+        color: #9aa6b2;
+      }
+      .email-status-icon.fa-circle-check {
+        color: #1a9d63;
+      }
+      .email-status-icon.fa-circle-xmark {
+        color: #e0455f;
+      }
+      .email-status {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+      }
+      .email-status.checking {
+        color: #9aa6b2;
+      }
+      .email-status.available {
+        color: #1a9d63;
+      }
+      .email-status.taken {
+        color: #e0455f;
+      }
+      .email-status a {
+        color: inherit;
+        font-weight: 700;
+        text-decoration: underline;
+      }
       .pw-toggle-btn {
         position: absolute;
         right: 12px;

@@ -480,6 +480,81 @@
         goToStep(4);
       }
 
+      // ── Email availability check ────────────────────────────────
+      // Tells the visitor "already registered" the moment they type it,
+      // instead of the only chance being the final submit — by then a rider
+      // may have already filled in vehicle info and uploaded documents.
+      // The real, authoritative check still happens at signUp() regardless;
+      // this is purely an early warning (supabase/functions/check-email).
+      let emailCheckState = null; // null | 'checking' | 'available' | 'taken'
+      let emailCheckedValue = "";
+      let emailCheckTimer = null;
+
+      function setEmailStatus(state, html) {
+        const icon = document.getElementById("email-status-icon");
+        const text = document.getElementById("email-status");
+        if (!icon || !text) return;
+        emailCheckState = state;
+        if (!state) {
+          icon.hidden = true;
+          text.hidden = true;
+          return;
+        }
+        icon.hidden = false;
+        text.hidden = false;
+        icon.className =
+          "fa-solid email-status-icon " +
+          (state === "checking"
+            ? "fa-circle-notch fa-spin checking"
+            : state === "available"
+              ? "fa-circle-check"
+              : "fa-circle-xmark");
+        text.className = "email-status " + state;
+        text.innerHTML = html;
+      }
+
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      async function checkEmailAvailability(value) {
+        try {
+          const { data, error } = await supabase.functions.invoke(
+            "check-email",
+            { body: { email: value } },
+          );
+          // The visitor kept typing after this call started — a newer check
+          // (or the debounce timer) already owns the display, don't clobber it.
+          if (document.getElementById("email").value.trim() !== value) return;
+          if (error || data?.error) {
+            setEmailStatus(null); // stay quiet — the final submit still catches it
+            return;
+          }
+          emailCheckedValue = value;
+          setEmailStatus(
+            data.available ? "available" : "taken",
+            data.available
+              ? "Available"
+              : 'This email is already registered — <a href="login.html">log in instead</a>.',
+          );
+        } catch (_) {
+          setEmailStatus(null);
+        }
+      }
+
+      function wireEmailAvailabilityCheck() {
+        const input = document.getElementById("email");
+        if (!input) return;
+        input.addEventListener("input", () => {
+          const value = input.value.trim();
+          clearTimeout(emailCheckTimer);
+          if (!EMAIL_RE.test(value)) {
+            setEmailStatus(null);
+            return;
+          }
+          setEmailStatus("checking", "Checking…");
+          emailCheckTimer = setTimeout(() => checkEmailAvailability(value), 600);
+        });
+      }
+
       // ── Personal Step Validation ───────────────────────────────
       function submitPersonalStep() {
         const name = document.getElementById("full_name").value.trim();
@@ -496,6 +571,19 @@
           if (typeof toast === "function")
             toast("Please fill in all required fields.", "error");
           else alert("Please fill in all required fields.");
+          return;
+        }
+        // The live check (wireEmailAvailabilityCheck) already flagged this
+        // exact address as taken — don't send them through the rest of the
+        // wizard (or the whole rider document upload) just to hit the same
+        // wall at the very end. signUp() itself remains the real check.
+        if (emailCheckState === "taken" && emailCheckedValue === email) {
+          if (typeof toast === "function")
+            toast(
+              "That email is already registered — log in instead.",
+              "error",
+            );
+          else alert("That email is already registered — log in instead.");
           return;
         }
         if (!isValidPhoneMobile(phone)) {
@@ -1003,6 +1091,8 @@
         if (nameInput && typeof IMask !== "undefined") {
           IMask(nameInput, { mask: /^[a-zA-ZÀ-ÖØ-öø-ÿ .'"-]{0,60}$/ });
         }
+
+        wireEmailAvailabilityCheck();
 
         document.addEventListener("input", saveRegistrationDraft, true);
         document.addEventListener("change", saveRegistrationDraft, true);

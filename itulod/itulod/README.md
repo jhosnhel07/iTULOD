@@ -55,6 +55,7 @@ itulod/
 │   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
 │   ├── sync-payment-status/    # On-demand: ask PayMongo directly instead of waiting on the webhook
+│   ├── check-email/            # Anonymous: is this email already registered?
 │   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)

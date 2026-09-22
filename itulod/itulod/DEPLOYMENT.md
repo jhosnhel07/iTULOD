@@ -150,18 +150,20 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all seven
+# deploy all eight
 supabase functions deploy create-payment       --project-ref <ref>
 supabase functions deploy paymongo-webhook     --project-ref <ref>
 supabase functions deploy finalize-fare        --project-ref <ref>
 supabase functions deploy on-booking-change    --project-ref <ref>
 supabase functions deploy expire-bookings      --project-ref <ref>
 supabase functions deploy sync-payment-status  --project-ref <ref>
+supabase functions deploy check-email          --project-ref <ref>
 ```
 
-`paymongo-webhook`, `on-booking-change`, and `expire-bookings` must **not**
-require a Supabase JWT (they authenticate themselves, or — for
-`expire-bookings` — need no auth at all): the repo's `supabase/config.toml`
+`paymongo-webhook`, `on-booking-change`, `expire-bookings`, and `check-email`
+must **not** require a Supabase JWT (they authenticate themselves, need no
+auth at all, or — for `check-email` — are called by visitors who don't have
+an account yet): the repo's `supabase/config.toml`
 marks them `verify_jwt = false`, or set that in the dashboard under
 **Edge Functions → function → Details** if deploying without the CLI config.
 
