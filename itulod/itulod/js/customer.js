@@ -30,11 +30,13 @@ let RATING_TARGET = null; // { kind, id }
   wireSavedAddressForm();
   wireStarInput();
   wireSupportRequestForm();
+  wireWalletTopupForm();
 
   await loadHome();
   await loadHistory();
   await loadNotifications();
   await loadSavedAddresses();
+  await loadWalletBalance();
   populateProfileForm();
   subscribeRealtime();
   startBookingExpiryWatch();
@@ -879,6 +881,48 @@ function wireSupportRequestForm() {
     if (error) { toast(error.message, 'error'); return; }
     toast("Sent! We'll get back to you soon.", 'success');
     closeSupportRequestModal();
+  });
+}
+
+// ---- wallet -------------------------------------------------------------
+async function loadWalletBalance() {
+  const [{ data: wallet }, { data: txns }] = await Promise.all([
+    supabase.from('wallets').select('balance').eq('customer_id', CURRENT_PROFILE.id).maybeSingle(),
+    supabase.from('wallet_transactions').select('*').eq('customer_id', CURRENT_PROFILE.id).order('created_at', { ascending: false }).limit(5),
+  ]);
+  window.WALLET_BALANCE = Number(wallet?.balance || 0);
+  const balEl = document.getElementById('wallet-balance');
+  if (balEl) balEl.textContent = peso(window.WALLET_BALANCE);
+
+  const listEl = document.getElementById('wallet-txn-list');
+  if (!listEl) return;
+  if (!txns || txns.length === 0) {
+    listEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.82rem">No wallet activity yet.</p>`;
+    return;
+  }
+  listEl.innerHTML = txns.map(t => `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+      <span>${escapeHtml(walletTxnLabel(t.type))} · ${formatDate(t.created_at)}</span>
+      <span style="color:${Number(t.amount) >= 0 ? 'var(--green)' : 'var(--text-muted)'};font-weight:600">${Number(t.amount) >= 0 ? '+' : ''}${peso(t.amount)}</span>
+    </div>`).join('');
+}
+function walletTxnLabel(type) {
+  return { topup: 'Top-up', payment: 'Booking payment', refund: 'Refund', referral_bonus: 'Referral bonus', admin_adjustment: 'Adjustment' }[type] || type;
+}
+function wireWalletTopupForm() {
+  const form = document.getElementById('wallet-topup-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('wallet-topup-submit');
+    const amount = parseFloat(document.getElementById('wallet-topup-amount').value);
+    if (!(amount > 0)) { toast('Enter an amount greater than zero.', 'error'); return; }
+    setLoading(btn, true);
+    const { data, error } = await supabase.functions.invoke('wallet-topup', { body: { amount } });
+    setLoading(btn, false);
+    if (error || data?.error) { toast(data?.error || 'Could not start top-up.', 'error'); return; }
+    toast('Redirecting to GCash…', 'info');
+    window.location.href = data.checkout_url;
   });
 }
 

@@ -59,6 +59,7 @@ once:
 | 9 | `sql/009_booking_expiration.sql` | Automatic booking expiration: `expired`/`no_show` statuses, `accepted_at`, `expire_stale_bookings()`, terminal-state lock. See §1a below — this one needs a follow-up step for the background sweep to actually run. |
 | 10 | `sql/010_growth_features.sql` | `saved_addresses` table; `tip_amount` + `cancellation_fee` columns on all three booking tables; a rider can now "release" an accepted job back to the pool (`rider_id` → null, `status` → pending) instead of only ever ending it outright. |
 | 11 | `sql/011_proof_promo_support.sql` | Proof-of-delivery photo (`delivery_proof_url` on food/parcel + a `delivery-proof` storage bucket); `promo_codes`/`promo_redemptions` (transport-only for now); `support_requests` (refund/dispute self-service). |
+| 12 | `sql/012_wallet.sql` | In-app wallet: `wallets`, `wallet_transactions` (ledger), `wallet_topups`; `wallet` added to the `payment_method` enum; `adjust_wallet_balance()` does the atomic, race-safe balance update. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -152,7 +153,7 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all nine
+# deploy all ten
 supabase functions deploy create-payment       --project-ref <ref>
 supabase functions deploy paymongo-webhook     --project-ref <ref>
 supabase functions deploy finalize-fare        --project-ref <ref>
@@ -161,6 +162,7 @@ supabase functions deploy expire-bookings      --project-ref <ref>
 supabase functions deploy sync-payment-status  --project-ref <ref>
 supabase functions deploy check-email          --project-ref <ref>
 supabase functions deploy redeem-promo         --project-ref <ref>
+supabase functions deploy wallet-topup         --project-ref <ref>
 ```
 
 `paymongo-webhook`, `on-booking-change`, `expire-bookings`, and `check-email`
@@ -323,6 +325,17 @@ SMS + push + in-app notifications.
     details) → submit → it should appear in admin's **Support requests**
     tab with the Open-count badge on the sidebar; replying and resolving
     should notify the customer.
+18. Wallet top-up: Profile → **My wallet** → enter an amount → **Top up** →
+    complete GCash checkout → back on the return page it should say the
+    money is ready to spend; `select balance from wallets where customer_id
+    = '<yours>'` should match, and `wallet_transactions` should have a
+    `topup` row for that amount.
+19. Wallet payment: with a positive balance, tap **Pay ₱X** on a GCash-method
+    booking in Booking history — the confirm modal should show a **Pay from
+    wallet (₱balance)** button when the balance covers the fare. Paying with
+    it should resolve immediately (no GCash redirect), set that booking's
+    `payment_method` to `wallet` and `payment_status` to `paid`, and leave a
+    negative `payment` row in `wallet_transactions`.
 
 Steps 4, 6, and 9 are also the automated `npm run test:integration` check
 (`test/README.md`).

@@ -925,6 +925,32 @@
           </div>
 
           <div class="card card--narrow">
+            <div class="card-head"><h3>My wallet</h3></div>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
+              Top up with GCash once, then pay for rides instantly at checkout — no redirect.
+            </p>
+            <div style="text-align: center; margin-bottom: 16px">
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px">Balance</p>
+              <div class="receipt-amount" id="wallet-balance">₱0.00</div>
+            </div>
+            <form id="wallet-topup-form" style="display: flex; gap: 8px; margin-bottom: 16px">
+              <input
+                type="number"
+                id="wallet-topup-amount"
+                min="1"
+                step="0.01"
+                placeholder="Amount"
+                required
+                style="flex: 1"
+              />
+              <button class="btn btn-primary btn-sm" id="wallet-topup-submit" type="submit">
+                <i class="fa-solid fa-mobile-screen-button"></i> Top up
+              </button>
+            </form>
+            <div id="wallet-txn-list"></div>
+          </div>
+
+          <div class="card card--narrow">
             <div class="card-head"><h3>Saved addresses</h3></div>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
               Save the places you book often — pick them from the
@@ -1059,6 +1085,9 @@
         <div class="modal-foot">
           <button class="btn btn-outline-gray btn-sm" onclick="closePayModal()">
             Cancel
+          </button>
+          <button class="btn btn-outline btn-sm" id="pay-wallet-btn" style="display: none">
+            <i class="fa-solid fa-wallet"></i> Pay from wallet
           </button>
           <button class="btn btn-primary btn-sm" id="pay-confirm">
             <i class="fa-solid fa-mobile-screen-button"></i> Pay

@@ -15,6 +15,7 @@
 // Secrets: supabase secrets set --env-file secrets.env
 // =============================================================================
 import { adminClient, getRequestUser, json, paymongoFetch, TABLE_BY_KIND, toCentavos, CORS_HEADERS } from '../_shared/helpers.ts';
+import { creditWallet } from '../_shared/payments.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
@@ -25,7 +26,7 @@ Deno.serve(async (req: Request) => {
 
     const { booking_type, booking_id, method } = await req.json();
     if (!TABLE_BY_KIND[booking_type]) return json({ error: 'Unknown booking_type.' }, 400);
-    if (method !== 'gcash') return json({ error: 'method must be gcash.' }, 400);
+    if (method !== 'gcash' && method !== 'wallet') return json({ error: 'method must be gcash or wallet.' }, 400);
 
     const table = TABLE_BY_KIND[booking_type];
     const admin = adminClient();
@@ -49,6 +50,22 @@ Deno.serve(async (req: Request) => {
     const payable = Number(booking.final_fare ?? booking.estimated_fare ?? 0);
     if (payable <= 0) {
       return json({ error: 'Booking has no payable amount yet.' }, 400);
+    }
+
+    if (method === 'wallet') {
+      const { data: wallet } = await admin.from('wallets').select('balance').eq('customer_id', user.id).maybeSingle();
+      const balance = Number(wallet?.balance || 0);
+      if (balance < payable) {
+        return json({ error: `Insufficient wallet balance. You have ₱${balance.toFixed(2)}, need ₱${payable.toFixed(2)}.` }, 400);
+      }
+      try {
+        await creditWallet(admin, user.id, -payable, { type: 'payment', bookingType: booking_type, bookingId: booking_id, note: 'Booking payment' });
+      } catch (e) {
+        console.error('wallet debit failed:', e);
+        return json({ error: 'Could not debit wallet.' }, 500);
+      }
+      await admin.from(table).update({ payment_method: 'wallet', payment_status: 'paid' }).eq('id', booking_id);
+      return json({ paid_from_wallet: true, new_balance: balance - payable });
     }
 
     const secretKey = Deno.env.get('PAYMONGO_SECRET_KEY')!;

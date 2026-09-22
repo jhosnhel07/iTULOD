@@ -14,7 +14,21 @@
 // PayMongo signature ourselves below instead of a Supabase JWT.)
 // =============================================================================
 import { adminClient, json, paymongoFetch, CORS_HEADERS } from '../_shared/helpers.ts';
-import { markBookingPaid, markBookingFailed } from '../_shared/payments.ts';
+import { markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
+
+// A PayMongo reference funds either a booking or a wallet top-up — try the
+// booking first (the common case) and fall back to a wallet top-up only when
+// nothing matched, so each reference is settled exactly once.
+async function settlePaid(admin: ReturnType<typeof adminClient>, reference: string) {
+  const hit = await markBookingPaid(admin, reference);
+  if (hit) return;
+  await markWalletTopupPaid(admin, reference);
+}
+async function settleFailed(admin: ReturnType<typeof adminClient>, reference: string) {
+  const hit = await markBookingFailed(admin, reference);
+  if (hit) return;
+  await markWalletTopupFailed(admin, reference);
+}
 
 async function hmacSha256Hex(secret: string, payload: string) {
   const key = await crypto.subtle.importKey(
@@ -63,17 +77,17 @@ Deno.serve(async (req: Request) => {
             data: { attributes: { amount, currency: 'PHP', source: { id: sourceId, type: 'source' }, description: 'iTULOD booking' } }
           })
         });
-        await markBookingPaid(admin, sourceId);
+        await settlePaid(admin, sourceId);
         break;
       }
       case 'payment.paid': {
         const sourceId = resource.attributes?.source?.id;
-        if (sourceId) await markBookingPaid(admin, sourceId);
+        if (sourceId) await settlePaid(admin, sourceId);
         break;
       }
       case 'payment.failed': {
         const sourceId = resource.attributes?.source?.id;
-        if (sourceId) await markBookingFailed(admin, sourceId);
+        if (sourceId) await settleFailed(admin, sourceId);
         break;
       }
       case 'payment_intent.succeeded': {

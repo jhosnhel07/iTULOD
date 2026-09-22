@@ -39,7 +39,8 @@
   const type = params.get('type');
   const id = params.get('id');
   const result = params.get('result'); // success | failed
-  const table = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' }[type];
+  const isWallet = type === 'wallet';
+  const table = isWallet ? 'wallet_topups' : { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' }[type];
 
   const iconEl = document.getElementById('return-icon');
   const titleEl = document.getElementById('return-title');
@@ -54,13 +55,17 @@
   }
 
   // Only transport bookings are charged up front, so only they have a route
-  // worth printing on the receipt.
-  const COLUMNS = 'payment_status, payment_method, paymongo_reference, estimated_fare, created_at'
-    + (type === 'transport' ? ', pickup_address, destination_address' : '');
+  // worth printing on the receipt. Wallet top-ups use their own status/amount
+  // column names (status/amount instead of payment_status/estimated_fare).
+  const COLUMNS = isWallet
+    ? 'status, paymongo_reference, amount, created_at'
+    : 'payment_status, payment_method, paymongo_reference, estimated_fare, created_at'
+      + (type === 'transport' ? ', pickup_address, destination_address' : '');
 
   async function fetchBooking() {
     const { data, error } = await supabase.from(table).select(COLUMNS).eq('id', id).single();
     if (error || !data) return null;
+    if (isWallet) return { ...data, payment_status: data.status, estimated_fare: data.amount, payment_method: 'gcash' };
     return data;
   }
 
@@ -74,7 +79,7 @@
   function renderReceipt(b) {
     const rows = [];
     if (b.paymongo_reference) rows.push(['Reference', escapeHtml(b.paymongo_reference)]);
-    rows.push(['Booking', escapeHtml('#' + id.slice(0, 8))]);
+    rows.push([isWallet ? 'Top-up' : 'Booking', escapeHtml('#' + id.slice(0, 8))]);
     if (type === 'transport' && b.pickup_address) {
       rows.push(['Route', escapeHtml(`${b.pickup_address} → ${b.destination_address}`)]);
     }
@@ -91,9 +96,11 @@
 
   function setHeading(status) {
     if (status === 'paid') {
-      show('fa-circle-check', 'var(--green)', 'Payment successful!', 'Your booking is confirmed. See you soon!');
+      show('fa-circle-check', 'var(--green)', 'Payment successful!',
+        isWallet ? "It's in your wallet — ready to spend on your next ride." : 'Your booking is confirmed. See you soon!');
     } else if (status === 'failed') {
-      show('fa-circle-xmark', 'var(--red)', 'Payment did not go through', 'You can retry from Booking history in your dashboard.');
+      show('fa-circle-xmark', 'var(--red)', 'Payment did not go through',
+        isWallet ? 'Your wallet was not topped up. You can try again from your dashboard.' : 'You can retry from Booking history in your dashboard.');
     } else {
       show('fa-clock', 'var(--slate-500)', 'Still confirming…', "This can take a minute — we'll update your booking history as soon as PayMongo confirms.");
     }

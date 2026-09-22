@@ -49,17 +49,19 @@ itulod/
 │   ├── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
 │   ├── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
 │   ├── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
-│   └── 011_proof_promo_support.sql               # proof of delivery, promo codes, support requests
+│   ├── 011_proof_promo_support.sql               # proof of delivery, promo codes, support requests
+│   └── 012_wallet.sql                            # in-app wallet: balance, ledger, top-ups
 ├── supabase/functions/
-│   ├── create-payment/         # Opens a PayMongo GCash source for a booking
-│   ├── paymongo-webhook/       # Source of truth: marks a booking paid/failed
+│   ├── create-payment/         # Opens a PayMongo GCash source for a booking, or pays it from wallet balance
+│   ├── paymongo-webhook/       # Source of truth: marks a booking (or wallet top-up) paid/failed
 │   ├── finalize-fare/          # Rider confirms the food/parcel fare at pickup
 │   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
-│   ├── sync-payment-status/    # On-demand: ask PayMongo directly instead of waiting on the webhook
+│   ├── sync-payment-status/    # On-demand: ask PayMongo directly instead of waiting on the webhook (bookings + wallet top-ups)
 │   ├── check-email/            # Anonymous: is this email already registered?
 │   ├── redeem-promo/           # Validates + applies a promo code (transport only, for now)
-│   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed)
+│   ├── wallet-topup/           # Opens a PayMongo GCash source to top up a customer's wallet
+│   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed, wallet credit)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook
 ├── secrets.env.example       # Template for local Edge Function secrets (never commit secrets.env)
 └── README.md

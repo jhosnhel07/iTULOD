@@ -41,3 +41,47 @@ export async function markBookingFailed(admin: ReturnType<typeof adminClient>, r
   }).catch((e) => console.error('notifyUser failed:', e));
   return hit;
 }
+
+// ---- wallet ---------------------------------------------------------------
+// A GCash source can also fund a wallet.wallet_topups row instead of a
+// booking. Callers try findBookingByReference/markBookingPaid first (see
+// paymongo-webhook and sync-payment-status) and fall back to these when that
+// comes back empty.
+export async function creditWallet(
+  admin: ReturnType<typeof adminClient>,
+  customerId: string,
+  amount: number,
+  opts: { type: string; bookingType?: string; bookingId?: string; note?: string }
+) {
+  const { error } = await admin.rpc('adjust_wallet_balance', { p_customer_id: customerId, p_delta: amount });
+  if (error) throw error;
+  await admin.from('wallet_transactions').insert({
+    customer_id: customerId,
+    type: opts.type,
+    amount,
+    booking_type: opts.bookingType ?? null,
+    booking_id: opts.bookingId ?? null,
+    note: opts.note ?? null,
+  });
+}
+
+export async function markWalletTopupPaid(admin: ReturnType<typeof adminClient>, reference: string) {
+  const { data: topup } = await admin.from('wallet_topups').select('*').eq('paymongo_reference', reference).maybeSingle();
+  if (!topup) return null;
+  if (topup.status === 'paid') return topup; // idempotent
+  await admin.from('wallet_topups').update({ status: 'paid' }).eq('id', topup.id);
+  await creditWallet(admin, topup.customer_id, Number(topup.amount), { type: 'topup', note: 'GCash top-up' });
+  await notifyUser(admin, topup.customer_id, {
+    title: 'Wallet topped up',
+    message: `₱${Number(topup.amount).toFixed(2)} was added to your iTULOD wallet.`,
+  }).catch((e) => console.error('notifyUser failed:', e));
+  return topup;
+}
+
+export async function markWalletTopupFailed(admin: ReturnType<typeof adminClient>, reference: string) {
+  const { data: topup } = await admin.from('wallet_topups').select('*').eq('paymongo_reference', reference).maybeSingle();
+  if (!topup) return null;
+  if (topup.status === 'paid') return topup; // never downgrade an already-credited topup
+  await admin.from('wallet_topups').update({ status: 'failed' }).eq('id', topup.id);
+  return topup;
+}

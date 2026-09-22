@@ -48,6 +48,18 @@ function openGcashConfirm({ bookingType, bookingId, amount, rows = [] }) {
   // handlers and open several PayMongo sources per click.
   btn.onclick = submitGcashPayment;
 
+  const walletBtn = document.getElementById('pay-wallet-btn');
+  if (walletBtn) {
+    const balance = Number(window.WALLET_BALANCE || 0);
+    if (balance >= Number(amount)) {
+      walletBtn.style.display = '';
+      walletBtn.innerHTML = `<i class="fa-solid fa-wallet"></i> Pay from wallet (${peso(balance)})`;
+      walletBtn.onclick = submitWalletPayment;
+    } else {
+      walletBtn.style.display = 'none';
+    }
+  }
+
   overlay.classList.add('open');
 }
 
@@ -88,6 +100,29 @@ async function payWithGcash(bookingType, bookingId) {
   toast('Redirecting to GCash…', 'info');
   window.location.href = data.checkout_url;
   return true;
+}
+
+async function submitWalletPayment() {
+  if (!PENDING_PAYMENT) return;
+  const { bookingType, bookingId } = PENDING_PAYMENT;
+  const walletBtn = document.getElementById('pay-wallet-btn');
+  setLoading(walletBtn, true);
+
+  const { data, error } = await supabase.functions.invoke('create-payment', {
+    body: { booking_type: bookingType, booking_id: bookingId, method: 'wallet' }
+  });
+
+  setLoading(walletBtn, false);
+  if (error || data?.error) {
+    toast(await gcashErrorMessage(error, data), 'error');
+    return;
+  }
+
+  toast('Paid from your wallet.', 'success');
+  closePayModal();
+  if (typeof window.loadWalletBalance === 'function') window.loadWalletBalance();
+  if (typeof window.loadHome === 'function') window.loadHome();
+  if (typeof window.loadHistory === 'function') window.loadHistory();
 }
 
 // functions.invoke() reports failures three different ways, and only one of
