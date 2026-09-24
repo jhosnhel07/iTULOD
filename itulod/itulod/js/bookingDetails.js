@@ -19,7 +19,7 @@
   }
 
   function paymentMethodLabel(method) {
-    return { cash: '💵 Cash', gcash: '📱 GCash', card: '💳 Card' }[method] || method || '—';
+    return { cash: '💵 Cash', gcash: '📱 GCash', wallet: '👛 Wallet', card: '💳 Card' }[method] || method || '—';
   }
 
   function paymentStatusBadge(status) {

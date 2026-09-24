@@ -1069,7 +1069,7 @@ function renderHistoryCard(b, kind) {
 function paymentBadge(b) {
   if (b.payment_method === 'cash') return '';
   // 'card' can still appear on bookings made before card checkout was removed.
-  const label = b.payment_method === 'gcash' ? 'GCash' : 'Card';
+  const label = { gcash: 'GCash', wallet: 'Wallet', card: 'Card' }[b.payment_method] || b.payment_method;
   const cls = { paid: 'badge--completed', failed: 'badge--cancelled', pending: 'badge--pending' }[b.payment_status] || 'badge--pending';
   return `<span class="badge ${cls}">${label} · ${b.payment_status}</span>`;
 }

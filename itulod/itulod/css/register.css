@@ -663,7 +663,8 @@
       .email-status.available {
         color: #1a9d63;
       }
-      .email-status.taken {
+      .email-status.taken,
+      .email-status.invalid {
         color: #e0455f;
       }
       .email-status a {

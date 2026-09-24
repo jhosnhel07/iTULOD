@@ -514,6 +514,10 @@
       }
 
       const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // iTULOD accounts are Gmail-only by policy — keeps account recovery
+      // and support simple (one predictable mailbox provider) and matches
+      // how most of the target user base already has a Google account.
+      const GMAIL_RE = /^[^\s@]+@gmail\.com$/i;
 
       async function checkEmailAvailability(value) {
         try {
@@ -546,8 +550,12 @@
         input.addEventListener("input", () => {
           const value = input.value.trim();
           clearTimeout(emailCheckTimer);
-          if (!EMAIL_RE.test(value)) {
+          if (!value || !EMAIL_RE.test(value)) {
             setEmailStatus(null);
+            return;
+          }
+          if (!GMAIL_RE.test(value)) {
+            setEmailStatus("invalid", "Only Gmail addresses (name@gmail.com) are accepted.");
             return;
           }
           setEmailStatus("checking", "Checking…");
@@ -571,6 +579,12 @@
           if (typeof toast === "function")
             toast("Please fill in all required fields.", "error");
           else alert("Please fill in all required fields.");
+          return;
+        }
+        if (!GMAIL_RE.test(email)) {
+          const msg = "Only Gmail addresses (name@gmail.com) are accepted.";
+          if (typeof toast === "function") toast(msg, "error");
+          else alert(msg);
           return;
         }
         // The live check (wireEmailAvailabilityCheck) already flagged this
@@ -657,6 +671,9 @@
 
           if (!email || !password || !full_name || !phone) {
             throw new Error("Please fill in all required fields.");
+          }
+          if (!GMAIL_RE.test(email)) {
+            throw new Error("Only Gmail addresses (name@gmail.com) are accepted.");
           }
           if (!isValidPhoneMobile(phone)) {
             throw new Error(
@@ -749,6 +766,9 @@
 
           if (!email || !password || !full_name || !phone) {
             throw new Error("Please fill in all required fields.");
+          }
+          if (!GMAIL_RE.test(email)) {
+            throw new Error("Only Gmail addresses (name@gmail.com) are accepted.");
           }
           if (!isValidPhoneMobile(phone)) {
             throw new Error(
@@ -1085,12 +1105,10 @@
           document.getElementById("license_number"),
           formatLicenseNumber,
         );
-
-        // Full name mask
-        const nameInput = document.getElementById("full_name");
-        if (nameInput && typeof IMask !== "undefined") {
-          IMask(nameInput, { mask: /^[a-zA-ZÀ-ÖØ-öø-ÿ .'"-]{0,60}$/ });
-        }
+        // Same mask formatName() applies everywhere else a person's name is
+        // entered (Profile, parcel sender/receiver) — keeps registration
+        // consistent with those instead of enforcing a different rule set.
+        attachInputMask(document.getElementById("full_name"), formatName);
 
         wireEmailAvailabilityCheck();
 
