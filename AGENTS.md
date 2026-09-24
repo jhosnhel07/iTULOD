@@ -2,36 +2,32 @@
 
 ## Repo layout gotcha
 
-- The real app lives at **`itulod/itulod/`** (doubled nesting). Root-level files are mostly wrappers. Root `vercel.json` rewrites every path not starting with `/itulod/` to `/itulod/itulod/<path>`, so deploy URLs hide the nesting. **Edit files under `itulod/itulod/`, not the root.**
+- The real app lives at **`itulod/itulod/`** (doubled nesting). Root-level `schema.sql`/`vercel.json`/`README.md` are an older, unused copy — don't confuse them with the ones under `itulod/itulod/`. Root `vercel.json` rewrites every path not starting with `/itulod/` to `/itulod/itulod/<path>`, so deploy URLs hide the nesting. **Edit files under `itulod/itulod/`, not the root.**
 - The inner `vercel.json` redirects `/` → `/login.html`.
+- **Git gotcha:** there is a second, stray `.git` at `itulod/.git` (one level below this repo's root) with its own disconnected single-commit history — not the real repo, not linked to GitHub. If a git command run from inside `itulod/` or `itulod/itulod/` shows unfamiliar history (e.g. just "Initial commit"), that's this stray repo shadowing the real one. Always run git commands from this repo's actual root (where this file lives) to be sure you're on the real, GitHub-connected history.
 
 ## Architecture
 
-Vanilla HTML/CSS/JS frontend (no build step, no bundler, no tests/lint config). Two backends:
+Vanilla HTML/CSS/JS frontend (no build step, no bundler). Single backend: **Supabase** (Postgres + Auth + Storage + Realtime + Edge Functions). There is no Express/Node API server — an earlier one under `itulod/itulod/server/` was removed and money/authorization moved server-side into Postgres RLS + triggers + Edge Functions instead.
 
-1. **Express API** — `itulod/itulod/server/` (only package.json in repo)
-   - `npm run dev` (node --watch, port 3000). Serves the frontend statically *and* `/api/*` routes, so running it alone is enough for local dev.
-   - Uses the Supabase **service-role key** from `server/.env` — it bypasses RLS. Route guards are app-level: `middleware.js` `requireAuth`/`requireRole`; riders additionally need an approved `rider_applications` row.
-   - Frontend calls it via `js/api.js` (JWT kept in `sessionStorage`).
-2. **Supabase Edge Functions (Deno)** — `supabase/functions/` — PayMongo payment flow only (`create-payment`, `attach-card-payment`, `paymongo-webhook`). Secrets via `secrets.env` + `supabase secrets set --env-file secrets.env`. Deploy webhook with `--no-verify-jwt` (it verifies PayMongo's signature instead).
+- **Edge Functions (Deno)** — `itulod/itulod/supabase/functions/`: `create-payment`, `paymongo-webhook`, `sync-payment-status`, `finalize-fare`, `on-booking-change`, `expire-bookings`, `check-email`, `redeem-promo`, `wallet-topup`, `apply-referral-code`, plus `_shared/` (helpers.ts, notify.ts, payments.ts). Secrets via `secrets.env` + `supabase secrets set --env-file secrets.env`. `paymongo-webhook`, `on-booking-change`, `expire-bookings`, and `check-email` deploy with `--no-verify-jwt` (see `supabase/config.toml`).
+- Frontend talks to Supabase directly for everything — auth/session, Realtime, and RPC/Edge Function calls — via `js/supabaseClient.js`. There is no separate `js/api.js`; that file was removed along with the Express server.
 
-Frontend also talks to Supabase directly for auth/session (`js/supabaseClient.js`) and Realtime (`js/api.js` keeps a separate anon-only client).
+## Config
 
-## Config duplication
-
-Supabase URL/anon key are hardcoded in **two places**: `js/config.js` AND `js/api.js` (~line 66). Changing the Supabase project requires editing both.
+Supabase URL/anon key live in exactly one place now: `itulod/itulod/js/config.js`. (No more two-file duplication — the old `js/api.js` copy is gone.)
 
 ## Database
 
-- Canonical schema: `itulod/itulod/sql/schema.sql` (tables + RLS + storage buckets + seeds). Migrations are numbered (`002_…`, `003_…`, `004_…`) and must run in order after schema; `fix_rls_customer_read_rider.sql` is unnumbered/ad-hoc.
-- The root-level `schema.sql` is a different (older) copy — don't confuse them.
-- Schema changes are applied by pasting SQL into the Supabase SQL Editor; there is no migration runner.
+- Canonical schema: `itulod/itulod/sql/schema.sql` (tables + RLS + storage buckets + seeds). Migrations are numbered (`002_…` through `018_…` and counting) and must run in order after schema; `fix_rls_customer_read_rider.sql` is unnumbered/ad-hoc.
+- Apply migrations with the Supabase CLI: `npx supabase@latest db query --project-ref <ref> --linked --file sql/0NN_name.sql` (from `itulod/itulod/`). The Supabase Dashboard SQL Editor also works if you prefer pasting SQL by hand.
+- `DEPLOYMENT.md` (in `itulod/itulod/`) has the full migration table, Edge Function deploy list, and a post-deploy smoke-test checklist — check it before assuming something isn't wired up.
 
 ## Secrets
 
-- `server/.env` and `secrets.env` exist locally and contain live-looking service-role/secret keys; gitignored, never commit or move into `js/`. PayMongo secret keys belong only in Edge Function secrets. Per the inner README, keys were leaked in a prior export — assume rotation is required before production.
+- `secrets.env` exists locally and contains live-looking service-role/secret keys; gitignored, never commit it or move its contents into `js/`. PayMongo secret keys belong only in Edge Function secrets.
 
 ## Misc
 
-- Directory is not currently a git repository.
-- The two READMEs differ: `itulod/itulod/README.md` is current (payments wired); root `README.md` is older and says payments are placeholder.
+- This directory **is** a git repository, with a GitHub remote (`origin` → `jhosnhel07/iTULOD.git`) — see the git gotcha above before trusting `git log` output from a subdirectory.
+- `itulod/itulod/README.md` is current and describes the actual feature set; the root-level `README.md` is an older, unused copy (see the repo layout gotcha above).
