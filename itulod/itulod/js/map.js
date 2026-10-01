@@ -228,6 +228,11 @@ const _maps = {
     hintId: 'parcel-map-mode-hint', btnPickupId: 'parcel-map-mode-pickup', btnDropoffId: 'parcel-map-mode-dropoff',
     routeSource: 'parcel-route', routeLayer: 'parcel-route-line', routeColor: '#1a9d63',
   },
+  saved: {
+    map: null, markers: {}, mode: 'address',
+    addressInputId: 'saved-address-text',
+    hintId: 'saved-map-mode-hint', btnPickupId: null, btnDropoffId: null,
+  },
 };
 
 function setMapMode(mode, tab) {
@@ -268,11 +273,16 @@ async function _setStop(tab, lngLat, address) {
     if (cfg.markers.pickup) cfg.markers.pickup.remove();
     cfg.markers.pickup = _makeMarker(cfg.map, lngLat, '#22c55e', 'Pickup');
     setMapMode('dropoff', tab);
-  } else {
+  } else if (cfg.mode === 'dropoff') {
     const input = document.getElementById(cfg.dropoffInputId);
     if (input) { input.value = address; input.dispatchEvent(new Event('input')); }
     if (cfg.markers.dropoff) cfg.markers.dropoff.remove();
     cfg.markers.dropoff = _makeMarker(cfg.map, lngLat, '#ef4444', 'Drop-off');
+  } else if (cfg.mode === 'address') {
+    const input = document.getElementById(cfg.addressInputId);
+    if (input) { input.value = address; input.dispatchEvent(new Event('input')); }
+    if (cfg.markers.address) cfg.markers.address.remove();
+    cfg.markers.address = _makeMarker(cfg.map, lngLat, '#f59e0b', 'Address');
   }
   if (cfg.markers.pickup && cfg.markers.dropoff) {
     const p = cfg.markers.pickup.getLngLat().toArray();
@@ -365,6 +375,14 @@ function initParcelMap(containerId) {
   return _maps.parcel.map;
 }
 
+function initSavedMap(containerId) {
+  _maps.saved.map = _initMap(containerId);
+  _maps.saved.map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  _addGeocoder('saved');
+  _wireMapClick('saved');
+  return _maps.saved.map;
+}
+
 // The food and parcel maps are created while their tab is hidden (display:none),
 // so Mapbox sizes their canvas to 0x0 and they render tiny. Call this once the
 // tab becomes visible so the map fills its 420px container like the ride map.
@@ -388,6 +406,7 @@ function ensureBookingMaps() {
       if (document.getElementById('tracking-map')) initTrackingMap('tracking-map');
       if (document.getElementById('food-map')) initFoodMap('food-map');
       if (document.getElementById('parcel-map')) initParcelMap('parcel-map');
+      if (document.getElementById('saved-map')) initSavedMap('saved-map');
     })
     .catch((err) => {
       _bookingMapsPromise = null; // let a later attempt retry
