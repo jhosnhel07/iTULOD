@@ -1048,7 +1048,7 @@ async function loadHistory() {
 // once the rider confirms the real price at pickup (final_fare).
 function paymentDue(b, kind) {
   const payable = kind === 'transport' ? b.estimated_fare : b.final_fare;
-  const needsPay = b.payment_method === 'gcash'
+  const needsPay = ['gcash', 'wallet'].includes(b.payment_method)
     && ['pending', 'failed'].includes(b.payment_status)
     && !['cancelled', 'expired', 'no_show'].includes(b.status)
     && Number(payable) > 0;
