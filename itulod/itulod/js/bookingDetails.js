@@ -150,11 +150,21 @@
             ${mapSection}
           </div>`;
       } else if (kind === 'food') {
-        const itemsRows = orderItems.map(it => `
+        const itemsRows = orderItems.map(it => {
+          const oosStyle = it.is_out_of_stock ? 'text-decoration: line-through; color: var(--text-muted);' : '';
+          const oosBadge = it.is_out_of_stock ? ' <span class="badge badge--cancelled" style="transform:scale(0.8)">Out of stock</span>' : '';
+          
+          let actionBtn = '';
+          if (CURRENT_PROFILE.role === 'rider' && booking.status === 'ongoing' && !it.is_out_of_stock) {
+            actionBtn = ` <button class="btn btn-outline btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="markItemOutOfStock('${it.id}', '${booking.id}', event)">OOS</button>`;
+          }
+
+          return `
           <div class="bd-row">
-            <span>${it.quantity} × ${escapeHtml(it.name)}</span>
-            <strong>${peso(it.subtotal)}</strong>
-          </div>`).join('');
+            <span style="${oosStyle}">${it.quantity} × ${escapeHtml(it.name)}${oosBadge}${actionBtn}</span>
+            <strong style="${oosStyle}">${peso(it.subtotal)}</strong>
+          </div>`;
+        }).join('');
         routeSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-utensils"></i> Food Delivery Details</h4>
@@ -533,4 +543,19 @@
 
   window.openBookingDetails  = openBookingDetails;
   window.closeBookingDetails = closeBookingDetails;
+
+  window.markItemOutOfStock = async function(itemId, bookingId, e) {
+    if (e) e.stopPropagation();
+    if (!confirm('Mark this item as out of stock?')) return;
+    try {
+      toast('Updating...', 'info');
+      const { error } = await supabase.from('food_order_items').update({ is_out_of_stock: true }).eq('id', itemId);
+      if (error) throw error;
+      toast('Item marked out of stock.', 'success');
+      // refresh booking details
+      openBookingDetails({ kind: 'food', id: bookingId });
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
 })();

@@ -25,6 +25,7 @@ const PAGE_SIZE = 6;
   wireProfileForm();
   wireChangePasswordForm();
   wireProofUpload();
+  wireReceiptUpload();
   wireOnlineToggle();
   populateProfileForm();
 
@@ -131,13 +132,14 @@ function wireTabNav() {
 
 // ---- home / overview -------------------------------------------------
 async function loadRiderHome() {
-  const [payRes, revRes, acc0, acc1, acc2] = await Promise.all([
+  const [payRes, revRes, acc0, acc1, acc2, profileRes] = await Promise.all([
     supabase.from('payments').select('rider_payout, created_at').eq('rider_id', CURRENT_PROFILE.id),
     supabase.from('reviews').select('rating').eq('rider_id', CURRENT_PROFILE.id),
     ...Object.keys(TABLE_BY_KIND).map(k =>
       supabase.from(TABLE_BY_KIND[k]).select('*').eq('rider_id', CURRENT_PROFILE.id)
         .in('status', ['accepted', 'ongoing']).then(r => ({ k, rows: r.data || [] }))
     ),
+    supabase.from('profiles').select('float_amount').eq('id', CURRENT_PROFILE.id).single(),
   ]);
   const pendCounts = await Promise.all(Object.keys(TABLE_BY_KIND).map(k =>
     supabase.from(TABLE_BY_KIND[k]).select('id', { count: 'exact', head: true }).is('rider_id', null).eq('status', 'pending')
@@ -155,6 +157,14 @@ async function loadRiderHome() {
     ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) + ' ★'
     : '—';
   document.getElementById('home-open-requests').textContent = openCount;
+
+  // -- Float card --
+  const floatAmount = profileRes.data?.float_amount ?? 0;
+  CURRENT_PROFILE.float_amount = floatAmount;
+  const floatEl = document.getElementById('home-float-amount');
+  if (floatEl) floatEl.textContent = peso(floatAmount);
+  const floatInput = document.getElementById('float-input');
+  if (floatInput && !floatInput.value) floatInput.value = floatAmount || '';
 
   const active = [acc0, acc1, acc2].flatMap(r => r.rows.map(row => ({ ...row, _kind: r.k })));
   renderRiderHomeActive(active, openCount);
@@ -338,7 +348,7 @@ function renderAcceptedCard(b, kind) {
          <input type="number" inputmode="decimal" min="1" step="0.5" id="ff-${b.id}"
                 placeholder="₱ final fare" value="${b.estimated_fare || ''}"
                 onclick="event.stopPropagation()" class="fare-set__input">
-         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); setFinalFare('${kind}','${b.id}')">Set fare</button>
+         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); ${kind === 'food' ? `adjustFoodBill('${b.id}')` : `setFinalFare('${kind}','${b.id}')`}">Set fare</button>
        </span>`
     : '';
 
@@ -440,6 +450,50 @@ function wireProofUpload() {
   });
 }
 
+// ---- receipt photo upload (food) ---------------------------------------
+let _receiptTarget = null;
+function adjustFoodBill(id) {
+  const input = document.getElementById('ff-' + id);
+  const amount = parseFloat(input?.value);
+  if (!amount || amount <= 0) { toast('Enter the final fare first.', 'error'); return; }
+  
+  _receiptTarget = { id, amount };
+  const fileInput = document.getElementById('receipt-upload-input');
+  if (!fileInput) { setFinalFare('food', id, amount); return; }
+  fileInput.value = '';
+  fileInput.click();
+}
+
+function wireReceiptUpload() {
+  const input = document.getElementById('receipt-upload-input');
+  if (!input) return;
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    const target = _receiptTarget;
+    _receiptTarget = null;
+    if (!file || !target) return;
+    if (!file.type.startsWith('image/')) { toast('Please choose an image file.', 'error'); return; }
+    
+    toast('Uploading receipt…', 'info');
+    const path = `${CURRENT_PROFILE.id}/receipt-${target.id}-${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from('receipts').upload(path, file, { upsert: true });
+    if (upErr) {
+      console.error('Receipt upload failed:', upErr.message);
+      if (!confirm("Couldn't upload the receipt. Confirm fare without one?")) return;
+      await setFinalFare('food', target.id, target.amount);
+      return;
+    }
+    
+    const receipt_photo_url = supabase.storage.from('receipts').getPublicUrl(path).data.publicUrl;
+    await supabase.from('food_deliveries').update({
+      actual_food_cost: target.amount, // simplified mapping for web
+      receipt_photo_url: receipt_photo_url
+    }).eq('id', target.id);
+    
+    await setFinalFare('food', target.id, target.amount);
+  });
+}
+
 // ---- "riders near you" presence toggle -------------------------------------
 function setOnlineUI(isOnline) {
   RIDER_ONLINE = isOnline;
@@ -452,6 +506,27 @@ function setOnlineUI(isOnline) {
       : '<i class="fa-solid fa-power-off"></i> Go online';
     btn.classList.toggle('btn-primary', isOnline);
     btn.classList.toggle('btn-outline', !isOnline);
+  }
+}
+
+// ---- Float card ----------------------------------------------------------
+async function updateFloat() {
+  const input = document.getElementById('float-input');
+  const amount = parseFloat(input?.value);
+  if (isNaN(amount) || amount < 0) { toast('Enter a valid amount (0 or more).', 'error'); return; }
+  const btn = document.getElementById('float-update-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const { error } = await supabase.from('profiles').update({ float_amount: amount }).eq('id', CURRENT_PROFILE.id);
+    if (error) throw error;
+    CURRENT_PROFILE.float_amount = amount;
+    const floatEl = document.getElementById('home-float-amount');
+    if (floatEl) floatEl.textContent = peso(amount);
+    toast('Float updated to ' + peso(amount) + '.', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update'; }
   }
 }
 
@@ -484,9 +559,9 @@ function wireOnlineToggle() {
   });
 }
 
-async function setFinalFare(kind, id) {
+async function setFinalFare(kind, id, amountOverride) {
   const input = document.getElementById('ff-' + id);
-  const amount = parseFloat(input?.value);
+  const amount = amountOverride || parseFloat(input?.value);
   if (!amount || amount <= 0) { toast('Enter the final fare.', 'error'); return; }
   const { data, error } = await supabase.functions.invoke('finalize-fare', {
     body: { booking_type: kind, booking_id: id, amount },

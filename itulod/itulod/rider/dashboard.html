@@ -105,6 +105,28 @@
         </button>
       </div>
 
+      <!-- Float / Capital Card -->
+      <div class="card" id="float-card" style="margin-bottom: 14px; border: 2px solid var(--primary);">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="icon icon--blue" style="font-size:1.4rem; padding: 10px;"><i class="fa-solid fa-wallet"></i></div>
+          <div style="flex: 1; min-width: 120px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Capital on Hand (Float)</div>
+            <strong id="home-float-amount" style="font-size: 1.4rem;">₱0.00</strong>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="number" id="float-input" min="0" step="50" placeholder="New amount"
+              style="width: 130px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); color: var(--text);" />
+            <button class="btn btn-primary btn-sm" id="float-update-btn" onclick="updateFloat()">
+              <i class="fa-solid fa-floppy-disk"></i> Update
+            </button>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0;">
+          <i class="fa-solid fa-circle-info"></i>
+          Your float determines which food orders you can accept. Orders where the estimated food cost exceeds your float will be hidden.
+        </p>
+      </div>
+
       <div id="home-active" class="home-active-slot"></div>
 
       <div class="stat-grid">
@@ -392,6 +414,7 @@
      complete" was tapped (food/parcel only). See completeWithProof() /
      wireProofUpload() in js/rider.js. -->
 <input type="file" id="proof-upload-input" accept="image/*" capture="environment" hidden>
+<input type="file" id="receipt-upload-input" accept="image/*" capture="environment" hidden>
 
 <script src="../js/pwa.js"></script>
 <script src="../js/config.js"></script>

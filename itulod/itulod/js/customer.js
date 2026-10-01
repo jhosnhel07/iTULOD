@@ -132,21 +132,23 @@ function wireTabNav() {
 
 // ---- fare estimator: real OSRM road distance when we can get it, the
 //      deterministic placeholder otherwise --------------------------------
-function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops }) {
+function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops, getMultiplier }) {
   let route = null;        // { km, pickup:[lng,lat], dropoff:[lng,lat] } once a real route is known
   let lastKey = '';
   let timer = null;
   const vehicle = () => VEHICLES.find(v => v.id === vehicleSel.value);
   const stopsList = () => (typeof getStops === 'function' ? getStops() : []).filter(Boolean);
-  const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + stopsList().join(',').toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase();
+  const multiplier = () => (typeof getMultiplier === 'function' ? getMultiplier() : 1);
+  const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + stopsList().join(',').toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase() + '|' + multiplier();
 
   function render(km, isReal) {
-    distanceEl.textContent = km ? km.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
+    const effectiveKm = (km || 0) * multiplier();
+    distanceEl.textContent = km ? effectiveKm.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
     const v = vehicle();
-    fareEl.textContent = km ? peso(estimateFare(v, km)) : '₱0.00';
+    fareEl.textContent = km ? peso(estimateFare(v, effectiveKm)) : '₱0.00';
     if (breakdownEl) {
       breakdownEl.textContent = (km && v)
-        ? `${peso(v.base_fare)} base + ${Math.max(km, 1).toFixed(1)} km × ${peso(v.per_km_rate)}/km`
+        ? `${peso(v.base_fare)} base + ${Math.max(effectiveKm, 1).toFixed(1)} km × ${peso(v.per_km_rate)}/km`
         : '';
     }
   }
@@ -201,7 +203,8 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
         (pickupEl.value || '').trim().toLowerCase(),
         (dropoffEl.value || '').trim().toLowerCase(),
       );
-      return { km, coords: route ? { pickup: route.pickup, dropoff: route.dropoff } : null };
+      const effectiveKm = (km || 0) * multiplier();
+      return { km: effectiveKm, coords: route ? { pickup: route.pickup, dropoff: route.dropoff } : null };
     },
   };
 }
@@ -785,12 +788,23 @@ function wireParcelForm() {
   const fareEl = document.getElementById('parcel-fare');
   const breakdownEl = document.getElementById('parcel-fare-breakdown');
 
-  const est = createFareEstimator({ tab: 'parcel', pickupEl: senderAddr, dropoffEl: receiverAddr, vehicleSel, distanceEl, fareEl, breakdownEl });
+  const roundTripToggle = document.getElementById('parcel-is-round-trip');
+  const getMultiplier = () => roundTripToggle?.checked ? 2 : 1;
+  const est = createFareEstimator({ tab: 'parcel', pickupEl: senderAddr, dropoffEl: receiverAddr, vehicleSel, distanceEl, fareEl, breakdownEl, getMultiplier });
+  if (roundTripToggle) roundTripToggle.addEventListener('change', () => est.recalc());
+
   const masks = [
     attachInputMask(document.getElementById('parcel-sender-name'), formatName),
     attachInputMask(document.getElementById('parcel-receiver-name'), formatName),
     attachInputMask(document.getElementById('parcel-sender-phone'), formatPhoneMobile),
     attachInputMask(document.getElementById('parcel-receiver-phone'), formatPhoneMobile),
+    attachInputMask(document.getElementById('parcel-cod-amount'), val => {
+      // Just keep numeric with decimal
+      let v = val.replace(/[^\d.]/g, '');
+      const parts = v.split('.');
+      if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+      return v;
+    }),
   ];
   form.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', () => saveFormDraft('itulod-customer-parcel', form));
@@ -822,6 +836,8 @@ function wireParcelForm() {
       vehicle_id: vehicle?.id || null,
       estimated_fare: fare,
       distance_km: Number(km.toFixed(2)),
+      is_round_trip: roundTripToggle?.checked ?? false,
+      cod_amount: parseFloat(document.getElementById('parcel-cod-amount')?.value) || 0.0,
       status: 'pending',
       payment_method: paymentMethod,
     };
