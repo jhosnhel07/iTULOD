@@ -248,9 +248,19 @@ function wireSavedAddressForm() {
     const address = document.getElementById('saved-address-text').value.trim();
     if (!requireFields({ Label: label, Address: address })) return;
 
+    let lng = null, lat = null;
+    if (typeof getMapMarkerLngLat === 'function') {
+      const ll = getMapMarkerLngLat('saved', 'address');
+      if (ll) { lng = ll[0]; lat = ll[1]; }
+    }
+    if (!lng && typeof _geocodeAddress === 'function') {
+      const ll = await _geocodeAddress(address);
+      if (ll) { lng = ll[0]; lat = ll[1]; }
+    }
+
     setLoading(btn, true);
     const { error } = await supabase.from('saved_addresses').insert({
-      customer_id: CURRENT_PROFILE.id, label, address,
+      customer_id: CURRENT_PROFILE.id, label, address, lng, lat
     });
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
@@ -298,11 +308,32 @@ function toggleSavedAddressPicker(btn, inputId) {
   _addrPicker = picker;
 
   picker.querySelectorAll('.saved-addr-picker__item').forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', async () => {
       const addr = SAVED_ADDRESSES.find(a => a.id === item.dataset.id);
       const input = document.getElementById(inputId);
       if (addr && input) {
         input.value = addr.address;
+        
+        let tab = null;
+        let mode = null;
+        if (inputId.startsWith('ride-')) tab = 'ride';
+        else if (inputId.startsWith('food-')) tab = 'food';
+        else if (inputId.startsWith('parcel-')) tab = 'parcel';
+        
+        if (inputId.includes('pickup') || inputId.includes('sender')) mode = 'pickup';
+        else mode = 'dropoff';
+        
+        if (tab && typeof _setStop === 'function') {
+           let lngLat = (addr.lng && addr.lat) ? [addr.lng, addr.lat] : null;
+           if (!lngLat && typeof _geocodeAddress === 'function') {
+               lngLat = await _geocodeAddress(addr.address);
+           }
+           if (lngLat) {
+               if (typeof setMapMode === 'function') setMapMode(mode, tab);
+               _setStop(tab, lngLat, addr.address);
+           }
+        }
+
         input.dispatchEvent(new Event('input', { bubbles: true })); // recalculates the fare estimate
       }
       closeSavedAddressPicker();

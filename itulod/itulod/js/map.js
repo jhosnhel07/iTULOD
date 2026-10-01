@@ -265,6 +265,13 @@ function setMapMode(mode, tab) {
   }
 }
 
+function getMapMarkerLngLat(tab, mode) {
+  const cfg = _maps[tab];
+  if (!cfg || !cfg.markers[mode]) return null;
+  const ll = cfg.markers[mode].getLngLat();
+  return [ll.lng, ll.lat];
+}
+
 // Apply a chosen location (from a map click or a search result) to the tab's
 // current mode: fill the matching address input, (re)drop the marker, and draw
 // the route once both ends are set.
