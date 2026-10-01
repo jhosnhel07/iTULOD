@@ -1048,18 +1048,15 @@
               <p id="saved-map-mode-hint" style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 14px">
                 <i class="fa-solid fa-circle-info"></i> Click on the map to set address.
               </p>
-              <div class="map-wrap" style="height: 200px">
-                <div id="saved-map" class="map-canvas"></div>
-              </div>
-              <div class="map-sheet-actions" style="margin-top: 14px">
-                <button
-                  type="button"
-                  class="btn btn-primary btn-block map-sheet-done"
-                  onclick="closeMapSheet('saved')"
-                >
-                  Done
-                </button>
-              </div>
+              <div id="saved-map" class="map-canvas"></div>
+              <button
+                type="button"
+                class="btn btn-primary btn-block map-sheet-done"
+                onclick="closeMapSheet('saved')"
+                style="margin-top: 14px"
+              >
+                Done
+              </button>
             </div>
 
             <div id="saved-address-list"></div>

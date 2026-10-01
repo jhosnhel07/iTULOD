@@ -243,9 +243,13 @@ function setMapMode(mode, tab) {
   const btnD = document.getElementById(cfg.btnDropoffId);
 
   if (hint) {
-    hint.textContent = mode === 'pickup'
-      ? 'Click on the map to set pickup location.'
-      : 'Click on the map to set drop-off location.';
+    if (mode === 'address') {
+      hint.textContent = 'Click on the map to set address.';
+    } else {
+      hint.textContent = mode === 'pickup'
+        ? 'Click on the map to set pickup location.'
+        : 'Click on the map to set drop-off location.';
+    }
   }
 
   if (btnP) {
