@@ -1236,17 +1236,17 @@
          "Edit items" on the Food tab, driven by js/customer.js. Shows the
          restaurant list first; picking one swaps the body to its menu. -->
     <div class="modal-overlay" id="restaurant-browse-modal">
-      <div class="modal" style="max-width: 560px; width: 100%">
+      <div class="modal rb-modal">
         <div class="modal-head">
           <h3 id="restaurant-browse-title">Choose a restaurant</h3>
-          <button class="modal-close" onclick="closeRestaurantBrowseModal()">&times;</button>
+          <button class="modal-close" onclick="closeRestaurantBrowseModal()" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body" id="restaurant-browse-body"></div>
-        <div class="modal-foot" id="restaurant-browse-foot" style="display: none">
+        <div class="modal-foot rb-foot" id="restaurant-browse-foot" style="display: none">
           <button class="btn btn-outline-gray btn-sm" onclick="backToRestaurantList()">
-            <i class="fa-solid fa-arrow-left"></i> Back to restaurants
+            <i class="fa-solid fa-arrow-left"></i> Restaurants
           </button>
-          <button class="btn btn-primary btn-sm" onclick="closeRestaurantBrowseModal()">
+          <button class="btn btn-primary" id="restaurant-browse-done" onclick="closeRestaurantBrowseModal()">
             <i class="fa-solid fa-check"></i> Done
           </button>
         </div>

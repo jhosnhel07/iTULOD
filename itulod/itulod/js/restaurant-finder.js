@@ -147,6 +147,60 @@ function _deliveryFeeFrom(km) {
 }
 
 // ---- render -----------------------------------------------------------------
+// ---- presentation helpers (also used by the menu view in customer.js) -------
+// Category → tile colours. Brand blue / rose families plus a few warm and
+// green tints so a long list scans easily; never the red/amber status colours.
+const CATEGORY_VISUAL = {
+  fastfood: { bg: 'var(--blue-50)', fg: 'var(--blue)' },
+  ilocano: { bg: 'var(--rose-50)', fg: 'var(--rose-deep)' },
+  empanada: { bg: '#fbf1e1', fg: '#a8661b' },
+  coffee: { bg: '#f3ebe6', fg: '#7a5340' },
+  bakery: { bg: '#fbf1e1', fg: '#a8661b' },
+  pizza: { bg: 'var(--rose-100)', fg: 'var(--rose-deep)' },
+  chicken: { bg: 'var(--blue-100)', fg: 'var(--blue-dark)' },
+  asian: { bg: 'var(--blue-50)', fg: 'var(--blue-dark)' },
+  chinese: { bg: 'var(--rose-50)', fg: 'var(--rose-deep)' },
+  grill: { bg: 'var(--green-tint)', fg: 'var(--green-dark)' },
+  meals: { bg: 'var(--green-tint)', fg: 'var(--green-dark)' },
+};
+
+function restaurantVisual(r) {
+  const cats = r._cats || restaurantCategories(r);
+  const id = cats[0];
+  const cat = FOOD_CATEGORIES.find(c => c.id === id);
+  return { icon: cat ? cat.icon : 'fa-store', ...(CATEGORY_VISUAL[id] || { bg: 'var(--slate-50)', fg: 'var(--slate-500)' }) };
+}
+
+/** Distance + cheapest delivery fee from the current "Deliver to", if any. */
+function restaurantDistance(r) {
+  const here = FINDER.deliverTo;
+  if (!here || r.lat == null || r.lng == null) return { km: null, fee: null };
+  const km = _haversineKm(here, r) * ROAD_FACTOR;
+  return { km, fee: _deliveryFeeFrom(km) };
+}
+
+function restaurantLogoTile(r, size = '') {
+  const v = restaurantVisual(r);
+  return `<div class="rf-logo ${size}" style="--tile-bg:${v.bg};--tile-fg:${v.fg}"><i class="fa-solid ${v.icon}"></i></div>`;
+}
+
+/** Name without a trailing "(Town)" — the town is already shown as a tag.
+ *  Branch details like "(Marcos Ave., Batac City)" are kept. */
+function restaurantDisplayName(r) {
+  const town = r._town || restaurantTown(r);
+  const suffix = ` (${town})`;
+  const name = r.name || '';
+  return name.endsWith(suffix) ? name.slice(0, -suffix.length) : name;
+}
+
+function _deliverShortLabel(place) {
+  if (!place) return '';
+  if (place.key === 'gps') return 'your location';
+  if (place.key === 'pin') return 'your delivery pin';
+  return place.label.split(' — ')[0];
+}
+
+// ---- render -----------------------------------------------------------------
 function renderRestaurantFinder(body, restaurants) {
   FINDER.restaurants = restaurants.map(r => ({ ...r, _town: restaurantTown(r), _cats: restaurantCategories(r) }));
 
@@ -160,24 +214,37 @@ function renderRestaurantFinder(body, restaurants) {
   const towns = Object.keys(townCounts).sort((a, b) => townCounts[b] - townCounts[a]);
 
   body.innerHTML = `
-    <div class="rf-controls">
-      <label class="rf-field"><span><i class="fa-solid fa-location-dot"></i> Deliver to</span>
-        <select id="rf-deliver">
-          ${opts.map(o => `<option value="${escapeHtml(o.key)}" ${FINDER.deliverTo?.key === o.key ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}
-        </select>
-      </label>
-      <label class="rf-field"><span><i class="fa-solid fa-map"></i> Town</span>
-        <select id="rf-town">
-          <option value="all">All towns</option>
-          ${towns.map(t => `<option value="${escapeHtml(t)}" ${FINDER.town === t ? 'selected' : ''}>${escapeHtml(t)} (${townCounts[t]})</option>`).join('')}
-        </select>
-      </label>
+    <div class="rf-panel">
+      <div class="rf-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" id="restaurant-search" value="${escapeHtml(FINDER.query)}"
+               placeholder="Search a restaurant or dish — bagnet, milk tea, Jollibee…" autocomplete="off">
+      </div>
+      <div class="rf-controls">
+        <label class="rf-select">
+          <i class="fa-solid fa-location-dot"></i>
+          <span class="rf-select__body">
+            <span class="rf-select__label">Deliver to</span>
+            <select id="rf-deliver">
+              ${opts.map(o => `<option value="${escapeHtml(o.key)}" ${FINDER.deliverTo?.key === o.key ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}
+            </select>
+          </span>
+        </label>
+        <label class="rf-select">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span class="rf-select__body">
+            <span class="rf-select__label">Town</span>
+            <select id="rf-town">
+              <option value="all">All of Ilocos Norte</option>
+              ${towns.map(t => `<option value="${escapeHtml(t)}" ${FINDER.town === t ? 'selected' : ''}>${escapeHtml(t)} (${townCounts[t]})</option>`).join('')}
+            </select>
+          </span>
+        </label>
+      </div>
+      <div class="rf-chips" id="rf-chips" role="tablist" aria-label="Food categories"></div>
     </div>
-    <div class="rf-chips" id="rf-chips"></div>
-    <input type="search" id="restaurant-search" class="restaurant-search" value="${escapeHtml(FINDER.query)}"
-           placeholder="Search restaurant or dish (e.g. bagnet, milk tea, Jollibee)" autocomplete="off">
-    <p class="rf-count" id="rf-count"></p>
-    <div id="restaurant-results"></div>`;
+    <div class="rf-summary" id="rf-count"></div>
+    <div class="rf-list" id="restaurant-results"></div>`;
 
   document.getElementById('rf-deliver').addEventListener('change', async (e) => {
     const key = e.target.value;
@@ -199,6 +266,12 @@ function renderRestaurantFinder(body, restaurants) {
   });
   document.getElementById('rf-town').addEventListener('change', (e) => { FINDER.town = e.target.value; _renderResults(); });
   document.getElementById('restaurant-search').addEventListener('input', (e) => { FINDER.query = e.target.value; _renderResults(); });
+  document.getElementById('restaurant-results').addEventListener('click', (e) => {
+    const card = e.target.closest('[data-restaurant-id]');
+    if (!card) return;
+    const r = FINDER.restaurants.find(x => x.id === card.dataset.restaurantId);
+    if (r) selectRestaurantForMenu(_stripFinderFields(r));
+  });
 
   _renderResults();
   _loadDishIndex().then(() => { if (FINDER.query) _renderResults(); });
@@ -210,20 +283,23 @@ function _renderResults() {
   const words = FINDER.query.toLowerCase().split(/\s+/).filter(Boolean);
   const inTown = FINDER.restaurants.filter(r => FINDER.town === 'all' || r._town === FINDER.town);
 
-  // Chips only for categories that exist in the selected town.
+  // Chips only for categories that exist in the selected town, with counts.
   const chips = document.getElementById('rf-chips');
-  const present = FOOD_CATEGORIES.filter(c => inTown.some(r => r._cats.includes(c.id)));
+  const present = FOOD_CATEGORIES
+    .map(c => ({ ...c, count: inTown.filter(r => r._cats.includes(c.id)).length }))
+    .filter(c => c.count > 0);
   if (FINDER.category !== 'all' && !present.some(c => c.id === FINDER.category)) FINDER.category = 'all';
-  chips.innerHTML = [{ id: 'all', label: 'All', icon: 'fa-store' }, ...present].map(c => `
-    <button type="button" class="rf-chip ${FINDER.category === c.id ? 'active' : ''}" data-cat="${c.id}">
-      <i class="fa-solid ${c.icon}"></i> ${escapeHtml(c.label)}
+  chips.innerHTML = [{ id: 'all', label: 'All', icon: 'fa-store', count: inTown.length }, ...present].map(c => `
+    <button type="button" role="tab" aria-selected="${FINDER.category === c.id}"
+            class="rf-chip ${FINDER.category === c.id ? 'active' : ''}" data-cat="${c.id}">
+      <i class="fa-solid ${c.icon}"></i><span>${escapeHtml(c.label)}</span><span class="rf-chip__count">${c.count}</span>
     </button>`).join('');
   chips.querySelectorAll('.rf-chip').forEach(b => b.addEventListener('click', () => {
     FINDER.category = b.dataset.cat; _renderResults();
   }));
 
   const here = FINDER.deliverTo;
-  let list = inTown
+  const list = inTown
     .filter(r => FINDER.category === 'all' || r._cats.includes(FINDER.category))
     .map(r => {
       const dishes = FINDER.dishes?.[r.id] || [];
@@ -233,34 +309,39 @@ function _renderResults() {
         dishHits = dishes.filter(d => words.every(w => d.toLowerCase().includes(w)));
         if (!words.every(w => hay.includes(w)) && dishHits.length === 0) return null;
       }
-      const km = (here && r.lat != null && r.lng != null) ? _haversineKm(here, r) * ROAD_FACTOR : null;
-      return { r, km, dishHits };
+      return { r, ...restaurantDistance(r), dishHits };
     })
     .filter(Boolean);
 
   list.sort((a, b) => (a.km != null && b.km != null) ? a.km - b.km : a.r.name.localeCompare(b.r.name));
 
-  document.getElementById('rf-count').textContent =
-    `${list.length} place${list.length === 1 ? '' : 's'}${here ? ' · nearest first' : ''}`;
+  document.getElementById('rf-count').innerHTML = `
+    <strong>${list.length} place${list.length === 1 ? '' : 's'}</strong>
+    <span>${here ? `<i class="fa-solid fa-arrow-down-short-wide"></i> Nearest to ${escapeHtml(_deliverShortLabel(here))}` : 'Sorted A–Z'}</span>`;
 
   results.innerHTML = list.length
-    ? list.map(({ r, km, dishHits }) => {
-        const fee = km != null ? _deliveryFeeFrom(km) : null;
-        const meta = [r.cuisine_type || 'Restaurant', r._town];
-        if (km != null) meta.push(`~${km.toFixed(1)} km`);
-        if (fee != null) meta.push(`from ${peso(fee)} delivery`);
-        return `
-        <div class="booking-card" style="cursor:pointer" onclick='selectRestaurantForMenu(${JSON.stringify(_stripFinderFields(r)).replace(/'/g, "&#39;")})'>
-          <div class="kind-icon" style="background:var(--blue)"><i class="fa-solid fa-store"></i></div>
-          <div class="info"><div>
-            <h4>${escapeHtml(r.name)}</h4>
-            <p>${escapeHtml(meta.join(' · '))}</p>
-            ${dishHits.length ? `<p class="rf-dish-hit"><i class="fa-solid fa-utensils"></i> Has: ${escapeHtml(dishHits.slice(0, 3).join(', '))}</p>` : ''}
-          </div></div>
-          <div class="meta"><i class="fa-solid fa-chevron-right"></i></div>
-        </div>`;
-      }).join('')
-    : emptyState({ icon: 'fa-magnifying-glass', title: 'No matches', body: 'Try another town, category or dish.' });
+    ? list.map(({ r, km, fee, dishHits }) => `
+        <button type="button" class="rf-card" data-restaurant-id="${escapeHtml(r.id)}">
+          ${restaurantLogoTile(r)}
+          <span class="rf-card__main">
+            <span class="rf-card__name">${escapeHtml(restaurantDisplayName(r))}</span>
+            <span class="rf-card__tags">
+              <span class="rf-tag">${escapeHtml(r.cuisine_type || 'Restaurant')}</span>
+              <span class="rf-card__town"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(r._town)}</span>
+            </span>
+            ${dishHits.length ? `<span class="rf-card__dishes"><i class="fa-solid fa-utensils"></i> ${escapeHtml(dishHits.slice(0, 3).join(' · '))}</span>` : ''}
+          </span>
+          <span class="rf-card__side">
+            ${km != null ? `<span class="rf-card__km">${km < 10 ? km.toFixed(1) : Math.round(km)} km</span>` : ''}
+            ${fee != null ? `<span class="rf-card__fee">${peso(fee)} delivery</span>` : ''}
+          </span>
+          <i class="fa-solid fa-chevron-right rf-card__chev" aria-hidden="true"></i>
+        </button>`).join('')
+    : `<div class="rf-empty">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <strong>No matches</strong>
+        <span>Try another town, category or dish.</span>
+       </div>`;
 }
 
 function _stripFinderFields(r) {

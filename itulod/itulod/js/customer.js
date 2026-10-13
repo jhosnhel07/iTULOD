@@ -759,40 +759,73 @@ async function showRestaurantMenu(restaurant) {
   FOOD_CART.restaurantName = restaurant.name;
   FOOD_CART.restaurantAddress = restaurant.address;
 
-  document.getElementById('restaurant-browse-title').textContent = restaurant.name;
+  document.getElementById('restaurant-browse-title').textContent = 'Menu';
   document.getElementById('restaurant-browse-foot').style.display = '';
+  updateMenuDoneButton();
   const body = document.getElementById('restaurant-browse-body');
   body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading menu…</div>`;
 
   const { data, error } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurant.id).eq('is_available', true).order('name');
   if (error) { body.innerHTML = `<p class="muted">Could not load the menu: ${escapeHtml(error.message)}</p>`; return; }
-  renderMenuItems(data || []);
+  renderMenuItems(data || [], restaurant);
 }
 
-function renderMenuItems(items) {
+// Seeded menus for places without a published menu end their descriptions
+// with this note (sql/021) — shown as a small badge instead of the raw text.
+const TYPICAL_ITEM_NOTE = ' · typical item, availability may vary';
+
+let MENU_ITEMS_BY_ID = {};
+
+function renderMenuItems(items, restaurant) {
   const body = document.getElementById('restaurant-browse-body');
+  MENU_ITEMS_BY_ID = Object.fromEntries(items.map(m => [m.id, m]));
+
+  const r = restaurant || RESTAURANT_BROWSE_RESTAURANT || {};
+  const town = typeof restaurantTown === 'function' ? restaurantTown(r) : '';
+  const { km, fee } = typeof restaurantDistance === 'function' ? restaurantDistance(r) : { km: null, fee: null };
+  const header = `
+    <div class="rm-header">
+      ${typeof restaurantLogoTile === 'function' ? restaurantLogoTile(r, 'rf-logo--lg') : ''}
+      <div class="rm-header__text">
+        <h4>${escapeHtml(typeof restaurantDisplayName === 'function' ? restaurantDisplayName(r) : (r.name || ''))}</h4>
+        <div class="rf-card__tags">
+          <span class="rf-tag">${escapeHtml(r.cuisine_type || 'Restaurant')}</span>
+          ${town ? `<span class="rf-card__town"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(town)}</span>` : ''}
+          ${km != null ? `<span class="rf-card__town"><i class="fa-solid fa-route"></i> ${km.toFixed(1)} km${fee != null ? ' · ' + peso(fee) + ' delivery' : ''}</span>` : ''}
+        </div>
+        <p class="rm-header__address">${escapeHtml(r.address || '')}</p>
+      </div>
+    </div>`;
+
   if (items.length === 0) {
-    body.innerHTML = emptyState({ icon: 'fa-utensils', title: 'No items available', body: 'This restaurant has nothing listed right now.' });
+    body.innerHTML = header + emptyState({ icon: 'fa-utensils', title: 'No items available', body: 'This restaurant has nothing listed right now.' });
     return;
   }
-  body.innerHTML = items.map(m => {
-    const qty = FOOD_CART.items[m.id]?.qty || 0;
-    return `
-      <div class="bd-row" data-menu-item="${m.id}">
-        <span>
-          <strong>${escapeHtml(m.name)}</strong><br>
-          <span style="color:var(--text-muted);font-size:0.82rem">${peso(m.price)}${m.description ? ' · ' + escapeHtml(m.description) : ''}</span>
-        </span>
-        <span style="display:flex;align-items:center;gap:8px">
-          <button type="button" class="icon-btn" onclick='changeCartQty(${JSON.stringify(m).replace(/'/g, "&#39;")}, -1)'><i class="fa-solid fa-minus"></i></button>
-          <span class="menu-item-qty" style="min-width:1.2em;text-align:center">${qty}</span>
-          <button type="button" class="icon-btn" onclick='changeCartQty(${JSON.stringify(m).replace(/'/g, "&#39;")}, 1)'><i class="fa-solid fa-plus"></i></button>
-        </span>
+  const hasTypical = items.some(m => (m.description || '').endsWith(TYPICAL_ITEM_NOTE));
+  body.innerHTML = header
+    + (hasTypical ? `<p class="rm-note"><i class="fa-solid fa-circle-info"></i><span>Items marked <span class="rm-badge">Typical</span> are what this kind of place usually serves — your rider confirms availability and the final price at pickup.</span></p>` : '')
+    + `<div class="rm-list">${items.map(m => {
+      const qty = FOOD_CART.items[m.id]?.qty || 0;
+      const typical = (m.description || '').endsWith(TYPICAL_ITEM_NOTE);
+      const desc = typical ? m.description.slice(0, -TYPICAL_ITEM_NOTE.length) : (m.description || '');
+      return `
+      <div class="rm-item ${qty ? 'has-qty' : ''}" data-menu-item="${m.id}">
+        <div class="rm-item__text">
+          <strong>${escapeHtml(m.name)}</strong>${typical ? ' <span class="rm-badge">Typical</span>' : ''}
+          ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
+          <span class="rm-item__price">${peso(m.price)}</span>
+        </div>
+        <div class="rm-stepper">
+          <button type="button" aria-label="Remove one" onclick="changeCartQty(MENU_ITEMS_BY_ID['${m.id}'], -1)"><i class="fa-solid fa-minus"></i></button>
+          <span class="menu-item-qty">${qty}</span>
+          <button type="button" aria-label="Add one" onclick="changeCartQty(MENU_ITEMS_BY_ID['${m.id}'], 1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
       </div>`;
-  }).join('');
+    }).join('')}</div>`;
 }
 
 function changeCartQty(menuItem, delta) {
+  if (!menuItem) return;
   const existing = FOOD_CART.items[menuItem.id];
   const nextQty = (existing?.qty || 0) + delta;
   if (nextQty <= 0) {
@@ -800,8 +833,23 @@ function changeCartQty(menuItem, delta) {
   } else {
     FOOD_CART.items[menuItem.id] = { id: menuItem.id, name: menuItem.name, price: Number(menuItem.price), qty: nextQty };
   }
-  const qtyEl = document.querySelector(`.bd-row[data-menu-item="${menuItem.id}"] .menu-item-qty`);
-  if (qtyEl) qtyEl.textContent = nextQty > 0 ? nextQty : 0;
+  const row = document.querySelector(`[data-menu-item="${menuItem.id}"]`);
+  if (row) {
+    row.classList.toggle('has-qty', nextQty > 0);
+    const qtyEl = row.querySelector('.menu-item-qty');
+    if (qtyEl) qtyEl.textContent = Math.max(nextQty, 0);
+  }
+  updateMenuDoneButton();
+}
+
+/** "Done" shows the running order: "Done · 3 items · ₱250.00". */
+function updateMenuDoneButton() {
+  const btn = document.getElementById('restaurant-browse-done');
+  if (!btn) return;
+  const count = Object.values(FOOD_CART.items).reduce((n, it) => n + it.qty, 0);
+  btn.innerHTML = count
+    ? `<i class="fa-solid fa-basket-shopping"></i> Done · ${count} item${count === 1 ? '' : 's'} · ${peso(foodCartSubtotal())}`
+    : `<i class="fa-solid fa-check"></i> Done`;
 }
 
 function wireParcelForm() {
