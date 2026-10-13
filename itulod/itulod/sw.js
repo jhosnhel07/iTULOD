@@ -1,11 +1,14 @@
 /* iTULOD service worker
    - web push display (unchanged)
-   - offline app shell: network-first for pages, stale-while-revalidate for
-     same-origin static assets, an offline fallback page when both miss.
+   - offline app shell: network-first for pages and JS/CSS,
+     stale-while-revalidate for images/fonts, an offline fallback page when
+     both miss.
 
    Bump CACHE_VERSION whenever the offline behaviour needs to change; old
    caches are dropped on activate. */
-const CACHE_VERSION = 'itulod-v1';
+// v2: JS/CSS moved to network-first — under stale-while-revalidate a
+// deploy kept running the previous code until a second reload.
+const CACHE_VERSION = 'itulod-v2';
 const PRECACHE = ['/offline.html', '/assets/logo.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -22,8 +25,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// App code must always be current, so it's fetched first; images and fonts
+// rarely change and are served from cache.
+function isCodeAsset(url) {
+  return /\.(?:css|js)$/i.test(url.pathname);
+}
+
 function isStaticAsset(url) {
-  return /\.(?:css|js|png|jpg|jpeg|svg|webp|woff2?|ico)$/i.test(url.pathname);
+  return /\.(?:png|jpg|jpeg|svg|webp|woff2?|ico)$/i.test(url.pathname);
 }
 
 self.addEventListener('fetch', (event) => {
@@ -49,7 +58,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin static assets: serve cache, refresh in the background.
+  // Same-origin JS/CSS: network-first (keeps a copy for offline use).
+  if (sameOrigin && isCodeAsset(url)) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_VERSION).then((c) => c.put(request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  // Same-origin images/fonts: serve cache, refresh in the background.
   if (sameOrigin && isStaticAsset(url)) {
     event.respondWith(
       caches.open(CACHE_VERSION).then((cache) =>
