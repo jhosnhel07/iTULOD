@@ -54,13 +54,18 @@
     subEl.textContent = sub;
   }
 
-  // Only transport bookings are charged up front, so only they have a route
-  // worth printing on the receipt. Wallet top-ups use their own status/amount
-  // column names (status/amount instead of payment_status/estimated_fare).
+  // Wallet top-ups use their own status/amount column names (status/amount
+  // instead of payment_status/estimated_fare). Food/parcel are charged the
+  // rider-confirmed final_fare, so the receipt needs it too.
+  const ROUTE_COLUMNS = {
+    transport: ', pickup_address, destination_address',
+    food: ', restaurant_name, delivery_address',
+    parcel: ', sender_address, receiver_address',
+  };
   const COLUMNS = isWallet
     ? 'status, paymongo_reference, amount, created_at'
-    : 'payment_status, payment_method, paymongo_reference, estimated_fare, created_at'
-      + (type === 'transport' ? ', pickup_address, destination_address' : '');
+    : 'payment_status, payment_method, paymongo_reference, estimated_fare, final_fare, created_at'
+      + (ROUTE_COLUMNS[type] || '');
 
   async function fetchBooking() {
     const { data, error } = await supabase.from(table).select(COLUMNS).eq('id', id).single();
@@ -80,9 +85,11 @@
     const rows = [];
     if (b.paymongo_reference) rows.push(['Reference', escapeHtml(b.paymongo_reference)]);
     rows.push([isWallet ? 'Top-up' : 'Booking', escapeHtml('#' + id.slice(0, 8))]);
-    if (type === 'transport' && b.pickup_address) {
-      rows.push(['Route', escapeHtml(`${b.pickup_address} → ${b.destination_address}`)]);
-    }
+    const route = type === 'transport' ? [b.pickup_address, b.destination_address]
+      : type === 'food' ? [b.restaurant_name, b.delivery_address]
+      : type === 'parcel' ? [b.sender_address, b.receiver_address]
+      : [];
+    if (route[0] && route[1]) rows.push(['Route', escapeHtml(`${route[0]} → ${route[1]}`)]);
     rows.push(['Booked', escapeHtml(formatDate(b.created_at))]);
     rows.push(['Method', b.payment_method === 'gcash' ? 'GCash' : escapeHtml(b.payment_method || '—')]);
     rows.push(['Status', statusCell(b.payment_status)]);
@@ -90,7 +97,7 @@
     receiptEl.innerHTML = rows
       .map(([label, value]) => `<div class="receipt-row"><dt>${label}</dt><dd>${value}</dd></div>`)
       .join('')
-      + `<div class="receipt-row receipt-row--total"><dt>Amount</dt><dd>${escapeHtml(peso(b.estimated_fare))}</dd></div>`;
+      + `<div class="receipt-row receipt-row--total"><dt>Amount</dt><dd>${escapeHtml(peso(b.final_fare ?? b.estimated_fare))}</dd></div>`;
     receiptEl.style.display = '';
   }
 

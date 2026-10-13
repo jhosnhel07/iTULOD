@@ -93,7 +93,7 @@ const TAB_TITLES = {
   requests: ['Booking requests', 'New bookings waiting for a rider.'],
   accepted: ['Accepted bookings', 'Your current rides and deliveries.'],
   earnings: ['Earnings', 'Track your daily, weekly, and monthly income.'],
-  history: ['History', 'Completed and cancelled bookings.'],
+  history: ['History', 'Completed, cancelled, expired and no-show bookings.'],
   vehicle: ['Vehicle info', 'Your application and vehicle details.'],
   profile: ['Profile', 'Manage your account details.'],
 };
@@ -191,9 +191,14 @@ function renderRiderHomeActive(list, openCount) {
   const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
     : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
     : `${b.sender_address} → ${b.receiver_address}`;
+  // Food/parcel completion needs the confirmed fare and a proof-of-delivery
+  // photo, both of which live on the Accepted bookings card — send the rider
+  // there instead of completing straight from Home.
   const next = b.status === 'accepted'
     ? `<button type="button" class="btn btn-outline btn-sm" onclick="updateStatus('${kind}','${b.id}','ongoing')">Start trip</button>`
-    : `<button type="button" class="btn btn-primary btn-sm" onclick="updateStatus('${kind}','${b.id}','completed')">Mark complete</button>`;
+    : kind === 'transport'
+      ? `<button type="button" class="btn btn-primary btn-sm" onclick="updateStatus('${kind}','${b.id}','completed')">Mark complete</button>`
+      : `<button type="button" class="btn btn-primary btn-sm" onclick="activateTab('accepted')">Finish delivery</button>`;
   el.innerHTML = `
     <div class="home-active card">
       <div class="home-active__head">
@@ -253,9 +258,16 @@ function renderRequestCard(b, kind) {
   const sub = b.scheduled_for
     ? `Scheduled · ${formatDate(b.scheduled_for)}`
     : `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`;
+  // The rider buys a food order with their own cash on hand (float) — flag
+  // orders that cost more than that, but still let them accept.
+  const float = Number(CURRENT_PROFILE.float_amount || 0);
+  const floatWarning = kind === 'food' && Number(b.item_subtotal || 0) > float
+    ? `<span class="float-warning"><i class="fa-solid fa-triangle-exclamation"></i> Order costs ${peso(b.item_subtotal)} — more than your ${peso(float)} float</span>`
+    : '';
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub,
+    footLeft: floatWarning,
     fare: b.estimated_fare,
     actions: `<button class="btn btn-primary btn-sm" ${disabledReason} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
   });
@@ -374,6 +386,18 @@ function renderAcceptedCard(b, kind) {
       ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); ${completeAction}"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`
       : '';
 
+  // Turn-by-turn in Google Maps: to the pickup until the trip starts, then
+  // to the drop-off.
+  const navTarget = b.status === 'ongoing'
+    ? (kind === 'transport' ? b.destination_address : kind === 'food' ? b.delivery_address : b.receiver_address)
+    : (kind === 'parcel' ? b.sender_address : b.pickup_address);
+  const navigateAction = navTarget
+    ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
+          href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(navTarget)}">
+         <i class="fa-solid fa-diamond-turn-right"></i> Navigate
+       </a>`
+    : '';
+
   const paidBadge = b.payment_method === 'gcash'
     ? `<span class="badge ${b.payment_status === 'paid' ? 'badge--completed' : 'badge--pending'}">GCash · ${b.payment_status}</span>`
     : '';
@@ -383,7 +407,7 @@ function renderAcceptedCard(b, kind) {
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
     footLeft: paidBadge,
-    actions: setFareAction + noShowAction + releaseAction + nextAction,
+    actions: setFareAction + navigateAction + noShowAction + releaseAction + nextAction,
   });
 }
 
@@ -523,6 +547,7 @@ async function updateFloat() {
     const floatEl = document.getElementById('home-float-amount');
     if (floatEl) floatEl.textContent = peso(amount);
     toast('Float updated to ' + peso(amount) + '.', 'success');
+    loadRequests(); // re-check the "more than your float" warnings
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -643,7 +668,7 @@ async function loadHistory() {
   const table = TABLE_BY_KIND[HISTORY_KIND];
   const list = document.getElementById('history-list');
   showSkeleton(list, skeletonList(3), HISTORY_KIND);
-  const { data, error } = await supabase.from(table).select('*').eq('rider_id', CURRENT_PROFILE.id).in('status', ['completed', 'cancelled']).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from(table).select('*').eq('rider_id', CURRENT_PROFILE.id).in('status', ['completed', 'cancelled', 'expired', 'no_show']).order('created_at', { ascending: false });
   if (error || !data || data.length === 0) {
     list.innerHTML = error
       ? emptyState({
@@ -655,7 +680,7 @@ async function loadHistory() {
       : emptyState({
           icon: 'fa-inbox',
           title: 'Nothing completed yet',
-          body: 'Finished and cancelled bookings in this category will be listed here.'
+          body: 'Finished, cancelled, expired and no-show bookings in this category will be listed here.'
         });
     document.getElementById('history-pagination').innerHTML = '';
     return;

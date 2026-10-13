@@ -66,6 +66,7 @@ once:
 | 16 | `sql/016_multi_stop_rides.sql` | Multi-stop rides: `ride_stops` (up to 3 stops between pickup and destination, set once at booking time, the rider marks each arrived in order). |
 | 17 | `sql/017_nearby_riders.sql` | "Riders near you" live map: `is_online` on `rider_locations`; `get_nearby_riders()` returns coarse (rounded, ~110m) coordinates for online, approved, not-currently-on-a-job riders only — the only way this data reaches a customer. |
 | 18 | `sql/018_restaurant_menu_cart.sql` | Restaurant + menu data model (part 1 of the restaurant/menu/cart feature): `restaurants`, `menu_items` (admin-managed, browsable by any signed-in user), `food_order_items` (order line items, customer-insertable only at checkout time); `restaurant_id`/`item_subtotal`/`delivery_fee` on `food_deliveries`. Part 2 (this commit) is the customer-facing browse/cart/checkout UI — no further migration needed. |
+| 19 | `sql/019_food_parcel_vehicle_receipts_oos.sql` | `vehicle_id` on `food_deliveries`/`parcel_deliveries` (food and parcel inserts failed without it); `receipts` storage bucket for the rider's food receipt photo; rider UPDATE policy + column grant so the assigned rider can flag a `food_order_items` row out of stock; adds bookings, `notifications`, `booking_messages`, `ride_stops` and `food_order_items` to the `supabase_realtime` publication (previously only `rider_locations` was published, so live updates never fired). |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.

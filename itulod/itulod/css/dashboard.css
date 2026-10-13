@@ -3289,3 +3289,17 @@ body {
     width: 100%;
   }
 }
+
+/* Rider request card: food order costs more than the rider's float. */
+.float-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--red-dark);
+  line-height: 1.3;
+}
+
+/* Booking details: tap-to-call the assigned rider. */
+.bd-rider-card { flex-wrap: wrap; }
+.bd-call-btn { margin-left: auto; flex-shrink: 0; }

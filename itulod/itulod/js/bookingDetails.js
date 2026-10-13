@@ -240,6 +240,12 @@
           : `<div class="bd-avatar bd-avatar--initials">${(riderProfile.full_name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}</div>`;
 
         const appStatus = riderApplication?.status;
+        // A tap-to-call button for the customer — not shown to the rider
+        // looking at their own job.
+        const telHref = riderProfile.phone ? 'tel:' + riderProfile.phone.replace(/[^\d+]/g, '') : '';
+        const callBtn = telHref && CURRENT_PROFILE?.id !== riderId
+          ? `<a class="btn btn-outline btn-sm bd-call-btn" href="${telHref}"><i class="fa-solid fa-phone"></i> Call rider</a>`
+          : '';
         riderSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-motorcycle"></i> Rider</h4>
@@ -247,9 +253,10 @@
               ${avatarHtml}
               <div class="bd-rider-info">
                 <strong>${escapeHtml(riderProfile.full_name || '—')}</strong>
-                ${riderProfile.phone ? `<span><i class="fa-solid fa-phone"></i> ${escapeHtml(riderProfile.phone)}</span>` : ''}
+                ${riderProfile.phone ? `<span><i class="fa-solid fa-phone"></i> <a href="${telHref}">${escapeHtml(riderProfile.phone)}</a></span>` : ''}
                 ${appStatus ? `<span>${statusBadge(appStatus)}</span>` : ''}
               </div>
+              ${callBtn}
             </div>
           </div>`;
       } else if (riderId && !riderProfile) {
