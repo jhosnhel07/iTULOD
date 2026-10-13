@@ -739,15 +739,9 @@ async function showRestaurantList() {
     body.innerHTML = emptyState({ icon: 'fa-store', title: 'No restaurants yet', body: 'Check back soon.' });
     return;
   }
-  body.innerHTML = data.map(r => `
-    <div class="booking-card" style="cursor:pointer" onclick='selectRestaurantForMenu(${JSON.stringify(r).replace(/'/g, "&#39;")})'>
-      <div class="kind-icon" style="background:var(--blue)"><i class="fa-solid fa-store"></i></div>
-      <div class="info"><div>
-        <h4>${escapeHtml(r.name)}</h4>
-        <p>${escapeHtml(r.cuisine_type || 'Restaurant')} · ${escapeHtml(r.address)}</p>
-      </div></div>
-      <div class="meta"><i class="fa-solid fa-chevron-right"></i></div>
-    </div>`).join('');
+  // 200+ places across Ilocos Norte — nearest first, category chips, town
+  // filter and dish search live in js/restaurant-finder.js.
+  renderRestaurantFinder(body, data);
 }
 
 async function selectRestaurantForMenu(restaurant) {

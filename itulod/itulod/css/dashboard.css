@@ -3303,3 +3303,44 @@ body {
 /* Booking details: tap-to-call the assigned rider. */
 .bd-rider-card { flex-wrap: wrap; }
 .bd-call-btn { margin-left: auto; flex-shrink: 0; }
+
+/* Restaurant picker (js/restaurant-finder.js): deliver-to + town filters,
+   category chips, search that also matches dishes. */
+.rf-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.rf-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rf-field span { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+.rf-field select { width: 100%; min-width: 0; }
+.rf-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  scrollbar-width: thin;
+}
+.rf-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rf-chip.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.restaurant-search { width: 100%; margin-bottom: 6px; }
+.rf-count { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 8px; }
+.rf-dish-hit { font-size: 0.78rem; color: var(--blue); margin-top: 2px; }
+@media (max-width: 480px) {
+  .rf-controls { grid-template-columns: 1fr; }
+}
