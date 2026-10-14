@@ -2,7 +2,7 @@
 // iTULOD Edge Function: on-booking-change
 // -----------------------------------------------------------------------------
 // Fired by a Supabase Database Webhook on UPDATE of transport_bookings /
-// food_deliveries / parcel_deliveries. Turns a status/assignment change into
+// food_deliveries / parcel_deliveries / hauling_bookings. Turns a status/assignment change into
 // the right notification (in-app + SMS + push via notifyUser).
 //
 // Set up (Dashboard -> Database -> Webhooks): one webhook per booking table,
@@ -19,6 +19,7 @@ const KIND_BY_TABLE: Record<string, string> = {
   transport_bookings: 'ride',
   food_deliveries: 'food delivery',
   parcel_deliveries: 'parcel delivery',
+  hauling_bookings: 'hauling job',
 };
 
 Deno.serve(async (req: Request) => {

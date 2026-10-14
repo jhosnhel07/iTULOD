@@ -282,6 +282,30 @@ function bookingCardHTML({ kind, id, iconBg, icon, title, sub, fare, status = ''
     </div>`;
 }
 
+// ---- Booking kinds: ride (transport) / food / parcel / hauling ----------
+// One place for each kind's label and address columns, so every dashboard
+// renders a new kind the same way.
+const KIND_LABEL = { transport: 'Ride', food: 'Food', parcel: 'Parcel', hauling: 'Hauling' };
+
+function bookingPickup(b, kind) {
+  return kind === 'parcel' ? b.sender_address : b.pickup_address;
+}
+
+function bookingDropoff(b, kind) {
+  return { transport: b.destination_address, food: b.delivery_address, parcel: b.receiver_address, hauling: b.dropoff_address }[kind];
+}
+
+function bookingTitle(b, kind) {
+  return kind === 'food'
+    ? `${b.restaurant_name} → ${b.delivery_address}`
+    : `${bookingPickup(b, kind)} → ${bookingDropoff(b, kind)}`;
+}
+
+const HAULING_CATEGORY_LABEL = {
+  furniture: 'Furniture', appliances: 'Appliances', moving: 'House / office moving',
+  construction: 'Construction materials', goods: 'Business goods / sacks', other: 'Other items',
+};
+
 // ---- Fare estimation (base fare + per-km rate; distance is simulated
 // from the two typed addresses since no live map/geocoding is wired in) --
 function estimateFare(vehicle, distanceKm) {

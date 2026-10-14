@@ -6,7 +6,7 @@
 // platform_config, writes final_fare (service role -> bypasses the client
 // guard trigger), and notifies the customer.
 //
-//   POST { booking_type: 'food'|'parcel', booking_id, amount }
+//   POST { booking_type: 'food'|'parcel'|'hauling', booking_id, amount }
 //
 // Deploy: supabase functions deploy finalize-fare
 // =============================================================================
@@ -23,7 +23,7 @@ Deno.serve(async (req: Request) => {
     const { booking_type, booking_id, amount } = await req.json();
     const table = TABLE_BY_KIND[booking_type];
     if (!table || booking_type === 'transport') {
-      return json({ error: 'finalize-fare is for food / parcel deliveries only.' }, 400);
+      return json({ error: 'finalize-fare is for food, parcel and hauling bookings only.' }, 400);
     }
     const value = Math.round(Number(amount) * 100) / 100;
     if (!Number.isFinite(value) || value <= 0) return json({ error: 'Enter a valid amount.' }, 400);

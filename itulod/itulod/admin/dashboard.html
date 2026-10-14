@@ -383,6 +383,9 @@
             <button class="tab-btn" data-booking-kind="parcel">
               Parcel delivery
             </button>
+            <button class="tab-btn" data-booking-kind="hauling">
+              Hauling
+            </button>
           </div>
           <div class="card">
             <div class="table-wrap">
@@ -631,6 +634,13 @@
             <div class="field">
               <label>Icon (Font Awesome class)</label>
               <input type="text" id="vehicle-icon" placeholder="fa-motorcycle" />
+            </div>
+            <div class="field">
+              <label>Service</label>
+              <select id="vehicle-service">
+                <option value="standard">Rides, food &amp; parcel</option>
+                <option value="hauling">Hauling (big / heavy loads)</option>
+              </select>
             </div>
             <div class="field-row">
               <div class="field">

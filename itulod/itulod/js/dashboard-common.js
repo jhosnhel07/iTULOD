@@ -6,9 +6,9 @@
    Page-specific things — TAB_TITLES, activateTab, the maps — stay in each
    dashboard's own file. */
 
-const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' };
-const ICON_BY_KIND = { transport: 'fa-car', food: 'fa-utensils', parcel: 'fa-box' };
-const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel: 'var(--green)' };
+const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries', hauling: 'hauling_bookings' };
+const ICON_BY_KIND = { transport: 'fa-car', food: 'fa-utensils', parcel: 'fa-box', hauling: 'fa-truck-moving' };
+const COLOR_BY_KIND = { transport: 'var(--blue)', food: 'var(--orange)', parcel: 'var(--green)', hauling: 'var(--blue-dark)' };
 
 function initials(name) {
   return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();

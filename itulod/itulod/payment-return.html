@@ -40,7 +40,7 @@
   const id = params.get('id');
   const result = params.get('result'); // success | failed
   const isWallet = type === 'wallet';
-  const table = isWallet ? 'wallet_topups' : { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' }[type];
+  const table = isWallet ? 'wallet_topups' : { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries', hauling: 'hauling_bookings' }[type];
 
   const iconEl = document.getElementById('return-icon');
   const titleEl = document.getElementById('return-title');
@@ -61,6 +61,7 @@
     transport: ', pickup_address, destination_address',
     food: ', restaurant_name, delivery_address',
     parcel: ', sender_address, receiver_address',
+    hauling: ', pickup_address, dropoff_address',
   };
   const COLUMNS = isWallet
     ? 'status, paymongo_reference, amount, created_at'
@@ -88,6 +89,7 @@
     const route = type === 'transport' ? [b.pickup_address, b.destination_address]
       : type === 'food' ? [b.restaurant_name, b.delivery_address]
       : type === 'parcel' ? [b.sender_address, b.receiver_address]
+      : type === 'hauling' ? [b.pickup_address, b.dropoff_address]
       : [];
     if (route[0] && route[1]) rows.push(['Route', escapeHtml(`${route[0]} → ${route[1]}`)]);
     rows.push(['Booked', escapeHtml(formatDate(b.created_at))]);

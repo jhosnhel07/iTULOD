@@ -29,6 +29,7 @@ const PAGE_SIZE = 6;
   wireOnlineToggle();
   populateProfileForm();
 
+  await loadHaulingVehicleNames();
   await initOnlineStatus();
   await loadAccepted(); // sets RIDER_HAS_ACTIVE_BOOKING before requests render
   await loadRequests();
@@ -188,9 +189,7 @@ function renderRiderHomeActive(list, openCount) {
   }
   const b = list.find(x => x.status === 'ongoing') || list[0];
   const kind = b._kind;
-  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-    : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
-    : `${b.sender_address} → ${b.receiver_address}`;
+  const title = bookingTitle(b, kind);
   // Food/parcel completion needs the confirmed fare and a proof-of-delivery
   // photo, both of which live on the Accepted bookings card — send the rider
   // there instead of completing straight from Home.
@@ -202,7 +201,7 @@ function renderRiderHomeActive(list, openCount) {
   el.innerHTML = `
     <div class="home-active card">
       <div class="home-active__head">
-        <span class="home-active__tag"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i> ${kind === 'transport' ? 'Ride' : kind === 'food' ? 'Food' : 'Parcel'}</span>
+        <span class="home-active__tag"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i> ${KIND_LABEL[kind]}</span>
         ${statusBadge(b.status)}
       </div>
       <h3>${escapeHtml(title)}</h3>
@@ -225,12 +224,12 @@ async function loadRequests() {
   showSkeleton(list, skeletonList(3));
   // A ride scheduled for later stays out of sight here until its pickup time
   // is close — no point showing a rider a job they'd have to remember about
-  // for hours. food/parcel have no scheduled_for column, so the filter is a
-  // no-op for them.
+  // for hours. Rides and hauling can be scheduled; food/parcel can't. Hauling
+  // requests only reach riders with a Van/Pickup/Truck (RLS: is_hauling_rider()).
   const visibleBy = new Date(Date.now() + 30 * 60 * 1000).toISOString();
   const results = await Promise.all(Object.keys(TABLE_BY_KIND).map(kind => {
     let q = supabase.from(TABLE_BY_KIND[kind]).select('*').is('rider_id', null).eq('status', 'pending');
-    if (kind === 'transport') q = q.or(`scheduled_for.is.null,scheduled_for.lte.${visibleBy}`);
+    if (kind === 'transport' || kind === 'hauling') q = q.or(`scheduled_for.is.null,scheduled_for.lte.${visibleBy}`);
     return q.order('created_at', { ascending: false }).then(r => ({ kind, rows: r.data || [] }));
   }));
   const merged = results.flatMap(r => r.rows.map(row => ({ ...row, _kind: r.kind }))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -246,10 +245,25 @@ async function loadRequests() {
   list.innerHTML = merged.map(b => renderRequestCard(b, b._kind)).join('');
 }
 
+// Hauling vehicle names by id, so cards can say which vehicle a job needs.
+let HAULING_VEHICLE_NAMES = {};
+async function loadHaulingVehicleNames() {
+  const { data } = await supabase.from('vehicles').select('id, name').eq('service', 'hauling');
+  HAULING_VEHICLE_NAMES = Object.fromEntries((data || []).map(v => [v.id, v.name]));
+}
+
+/** Hauling: what the job needs, shown on the card so the rider knows before accepting. */
+function haulingNeeds(b, kind) {
+  if (kind !== 'hauling') return '';
+  const parts = [HAULING_CATEGORY_LABEL[b.item_category] || 'Items'];
+  if (b.helpers) parts.push(`${b.helpers} helper${b.helpers === 1 ? '' : 's'}`);
+  if (b.estimated_weight_kg) parts.push(`~${b.estimated_weight_kg} kg`);
+  const vehicle = HAULING_VEHICLE_NAMES[b.vehicle_id] || '';
+  return `<span class="hauling-needs"><i class="fa-solid fa-truck-moving"></i> ${escapeHtml((vehicle ? vehicle + ' · ' : '') + parts.join(' · '))}</span>`;
+}
+
 function renderRequestCard(b, kind) {
-  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-    : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
-    : `${b.sender_address} → ${b.receiver_address}`;
+  const title = bookingTitle(b, kind);
   const disabledReason = !RIDER_APPROVED
     ? 'disabled title="Wait for admin approval"'
     : RIDER_HAS_ACTIVE_BOOKING
@@ -257,7 +271,7 @@ function renderRequestCard(b, kind) {
       : '';
   const sub = b.scheduled_for
     ? `Scheduled · ${formatDate(b.scheduled_for)}`
-    : `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`;
+    : `${KIND_LABEL[kind]} · ${formatDate(b.created_at)}`;
   // The rider buys a food order with their own cash on hand (float) — flag
   // orders that cost more than that, but still let them accept.
   const float = Number(CURRENT_PROFILE.float_amount || 0);
@@ -267,7 +281,7 @@ function renderRequestCard(b, kind) {
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub,
-    footLeft: floatWarning,
+    footLeft: floatWarning || haulingNeeds(b, kind),
     fare: b.estimated_fare,
     actions: `<button class="btn btn-primary btn-sm" ${disabledReason} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
   });
@@ -343,15 +357,13 @@ function updateNavMapForAccepted(merged) {
   // always reflects the booking actively in progress right now.
   const active = merged.find(b => b.status === 'ongoing') || merged[0];
   const kind = active._kind;
-  const pickup = kind === 'transport' ? active.pickup_address : kind === 'food' ? active.pickup_address : active.sender_address;
-  const dropoff = kind === 'transport' ? active.destination_address : kind === 'food' ? active.delivery_address : active.receiver_address;
+  const pickup = bookingPickup(active, kind);
+  const dropoff = bookingDropoff(active, kind);
   if (pickup && dropoff && typeof showRiderRoute === 'function') showRiderRoute(pickup, dropoff);
 }
 
 function renderAcceptedCard(b, kind) {
-  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-    : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
-    : `${b.sender_address} → ${b.receiver_address}`;
+  const title = bookingTitle(b, kind);
 
   // Food / parcel: the rider confirms the real fare at pickup before completing.
   const needsFinalFare = kind !== 'transport' && b.final_fare == null;
@@ -389,8 +401,8 @@ function renderAcceptedCard(b, kind) {
   // Turn-by-turn in Google Maps: to the pickup until the trip starts, then
   // to the drop-off.
   const navTarget = b.status === 'ongoing'
-    ? (kind === 'transport' ? b.destination_address : kind === 'food' ? b.delivery_address : b.receiver_address)
-    : (kind === 'parcel' ? b.sender_address : b.pickup_address);
+    ? bookingDropoff(b, kind)
+    : bookingPickup(b, kind);
   const navigateAction = navTarget
     ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
           href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(navTarget)}">
@@ -406,7 +418,7 @@ function renderAcceptedCard(b, kind) {
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
-    footLeft: paidBadge,
+    footLeft: [paidBadge, haulingNeeds(b, kind)].filter(Boolean).join(' '),
     actions: setFareAction + navigateAction + noShowAction + releaseAction + nextAction,
   });
 }
@@ -687,8 +699,9 @@ async function loadHistory() {
   }
   const { slice, totalPages } = paginate(data, HISTORY_PAGE, PAGE_SIZE);
   list.innerHTML = slice.map(b => {
-    const title = HISTORY_KIND === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-      : HISTORY_KIND === 'food' ? b.restaurant_name : `${b.sender_name} → ${b.receiver_name}`;
+    const title = HISTORY_KIND === 'food' ? b.restaurant_name
+      : HISTORY_KIND === 'parcel' ? `${b.sender_name} → ${b.receiver_name}`
+      : bookingTitle(b, HISTORY_KIND);
     return `
       <div class="booking-card" role="button" tabindex="0" onclick="openBookingDetails({ kind: '${HISTORY_KIND}', id: '${b.id}' })" onkeydown="if(event.key==='Enter'||event.key===' '){ openBookingDetails({ kind: '${HISTORY_KIND}', id: '${b.id}' }); }">
         <div class="kind-icon" style="background:${COLOR_BY_KIND[HISTORY_KIND]}"><i class="fa-solid ${ICON_BY_KIND[HISTORY_KIND]}"></i></div>
@@ -742,5 +755,6 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, refresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, refresh)
     .subscribe();
 }

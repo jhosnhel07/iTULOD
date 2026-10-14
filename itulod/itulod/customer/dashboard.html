@@ -6,7 +6,7 @@
     <title>Customer Dashboard — iTULOD</title>
     <meta
       name="description"
-      content="Book rides, food delivery, and parcel delivery with iTULOD."
+      content="Book rides, food delivery, parcel delivery, and hauling with iTULOD."
     />
     <link
       rel="stylesheet"
@@ -155,6 +155,9 @@
             </button>
             <button type="button" class="seg-btn" data-service="parcel">
               <i class="fa-solid fa-box"></i> Parcel
+            </button>
+            <button type="button" class="seg-btn" data-service="hauling">
+              <i class="fa-solid fa-truck-moving"></i> Hauling
             </button>
           </div>
 
@@ -798,6 +801,192 @@
             </div>
           </div>
           </div><!-- /#view-parcel -->
+
+          <!-- ===================== HAULING ===================== -->
+          <!-- Big / heavy items with a hauling vehicle + optional helpers.
+               Driven by wireHaulingForm() in js/customer.js. -->
+          <div class="booking-view" id="view-hauling">
+          <div class="grid-2 grid-2--aside">
+            <div class="card">
+              <div class="card-head"><h3>Hauling request</h3></div>
+              <form id="hauling-form">
+                <div class="field-group">
+                  <div class="field-group__title"><i class="fa-solid fa-location-dot"></i> Pickup</div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Contact name</label>
+                      <input type="text" id="hauling-sender-name" required />
+                    </div>
+                    <div class="field">
+                      <label>Contact phone</label>
+                      <input type="tel" id="hauling-sender-phone" inputmode="numeric" maxlength="13" placeholder="09XX XXX XXXX" />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Pickup address</label>
+                    <div class="input-map">
+                      <input type="text" id="hauling-pickup-address" required placeholder="e.g. Brgy. 1, San Nicolas" />
+                      <button type="button" class="saved-addr-btn" onclick="toggleSavedAddressPicker(this, 'hauling-pickup-address')" aria-label="Use a saved address" title="Saved addresses">
+                        <i class="fa-solid fa-bookmark"></i>
+                      </button>
+                      <button type="button" class="map-pin-btn" onclick="pinOnMap('hauling', 'pickup')" aria-label="Set pickup on map" title="Set on map">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <div class="field-group__title"><i class="fa-solid fa-flag-checkered"></i> Drop-off</div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Receiver name</label>
+                      <input type="text" id="hauling-receiver-name" required />
+                    </div>
+                    <div class="field">
+                      <label>Receiver phone</label>
+                      <input type="tel" id="hauling-receiver-phone" inputmode="numeric" maxlength="13" placeholder="09XX XXX XXXX" />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Drop-off address</label>
+                    <div class="input-map">
+                      <input type="text" id="hauling-dropoff-address" required placeholder="e.g. Brgy. 5, Batac City" />
+                      <button type="button" class="saved-addr-btn" onclick="toggleSavedAddressPicker(this, 'hauling-dropoff-address')" aria-label="Use a saved address" title="Saved addresses">
+                        <i class="fa-solid fa-bookmark"></i>
+                      </button>
+                      <button type="button" class="map-pin-btn" onclick="pinOnMap('hauling', 'dropoff')" aria-label="Set drop-off on map" title="Set on map">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <div class="field-group__title"><i class="fa-solid fa-boxes-stacked"></i> What are we moving?</div>
+                  <div class="field">
+                    <label>Category</label>
+                    <div class="size-chip-row size-chip-row--wrap">
+                      <div class="size-chip"><input type="radio" name="hauling-category" id="hc-furniture" value="furniture" checked /><label for="hc-furniture"><i class="fa-solid fa-couch"></i> Furniture</label></div>
+                      <div class="size-chip"><input type="radio" name="hauling-category" id="hc-appliances" value="appliances" /><label for="hc-appliances"><i class="fa-solid fa-blender"></i> Appliances</label></div>
+                      <div class="size-chip"><input type="radio" name="hauling-category" id="hc-moving" value="moving" /><label for="hc-moving"><i class="fa-solid fa-house-chimney"></i> House moving</label></div>
+                      <div class="size-chip"><input type="radio" name="hauling-category" id="hc-construction" value="construction" /><label for="hc-construction"><i class="fa-solid fa-trowel-bricks"></i> Construction</label></div>
+                      <div class="size-chip"><input type="radio" name="hauling-category" id="hc-goods" value="goods" /><label for="hc-goods"><i class="fa-solid fa-wheat-awn"></i> Goods / sacks</label></div>
+                      <div class="size-chip"><input type="radio" name="hauling-category" id="hc-other" value="other" /><label for="hc-other"><i class="fa-solid fa-box-open"></i> Other</label></div>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Items to move</label>
+                    <textarea id="hauling-description" rows="2" required placeholder="e.g. 1 refrigerator, 1 queen bed, 6 boxes of clothes"></textarea>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Approx. total weight (kg)</label>
+                      <input type="number" step="1" min="0" id="hauling-weight" placeholder="e.g. 300" />
+                    </div>
+                    <div class="field">
+                      <label>Helpers to load &amp; unload</label>
+                      <select id="hauling-helpers">
+                        <option value="0">No helpers (driver only)</option>
+                        <option value="1">1 helper</option>
+                        <option value="2">2 helpers</option>
+                        <option value="3">3 helpers</option>
+                        <option value="4">4 helpers</option>
+                      </select>
+                      <small class="field-hint" id="hauling-helper-note"></small>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Instructions for the driver</label>
+                    <textarea id="hauling-instructions" rows="2" placeholder="e.g. 2nd floor, narrow stairs; gate code 1234"></textarea>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Vehicle</label>
+                  <select id="hauling-vehicle" required></select>
+                </div>
+
+                <div class="field" style="display: flex; align-items: center; gap: 8px">
+                  <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-weight: normal; cursor: pointer">
+                    <input type="checkbox" id="hauling-schedule-toggle" style="width: auto" />
+                    Schedule for later instead of now
+                  </label>
+                </div>
+                <div class="field" id="hauling-schedule-field" style="display: none">
+                  <label>Pickup date &amp; time</label>
+                  <input type="datetime-local" id="hauling-schedule-time" />
+                </div>
+
+                <div class="fare-estimate-card">
+                  <div class="fare-row">
+                    <span>Estimated distance</span>
+                    <span id="hauling-distance">—</span>
+                  </div>
+                  <div class="fare-row">
+                    <span>Vehicle fare</span>
+                    <span id="hauling-vehicle-fare">₱0.00</span>
+                  </div>
+                  <div class="fare-row">
+                    <span>Helpers</span>
+                    <span id="hauling-helpers-fare">₱0.00</span>
+                  </div>
+                  <div class="fare-row fare-row--total">
+                    <span>Estimated total</span>
+                    <strong id="hauling-fare">₱0.00</strong>
+                  </div>
+                  <div class="fare-row fare-row--breakdown">
+                    <small id="hauling-fare-breakdown" class="fare-breakdown"></small>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Payment method</label>
+                  <select id="hauling-payment">
+                    <option value="cash">Cash on delivery</option>
+                    <option value="gcash">GCash</option>
+                    <option value="wallet">Wallet</option>
+                  </select>
+                  <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
+                    <i class="fa-solid fa-lock"></i> The driver confirms the
+                    final fare after seeing the load; you'll only be charged the
+                    confirmed amount.
+                  </p>
+                </div>
+
+                <button class="btn btn-primary btn-block" id="hauling-submit" type="submit">
+                  <i class="fa-solid fa-truck-moving"></i> Book hauling
+                </button>
+              </form>
+            </div>
+
+            <div class="card map-card map-card--picker" id="hauling-map-card">
+              <div class="card-head">
+                <h3>Set location on map</h3>
+                <button type="button" class="map-sheet-close" onclick="closeMapSheet('hauling')" aria-label="Close map">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="map-step-indicator">
+                <button type="button" class="map-step active" id="hauling-map-mode-pickup" onclick="setMapMode('pickup', 'hauling')">
+                  <span class="step-num">1</span>
+                  <span><i class="fa-solid fa-location-dot"></i> Set Pickup</span>
+                </button>
+                <button type="button" class="map-step" id="hauling-map-mode-dropoff" onclick="setMapMode('dropoff', 'hauling')">
+                  <span class="step-num">2</span>
+                  <span><i class="fa-solid fa-flag-checkered"></i> Set Drop-off</span>
+                </button>
+              </div>
+              <p id="hauling-map-mode-hint" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px">
+                <i class="fa-solid fa-circle-info"></i> Click on the map to set pickup location.
+              </p>
+              <div id="hauling-map" class="map-canvas"></div>
+              <button type="button" class="btn btn-primary btn-block map-sheet-done" onclick="closeMapSheet('hauling')">
+                <i class="fa-solid fa-check"></i> Done
+              </button>
+            </div>
+          </div>
+          </div><!-- /#view-hauling -->
         </section>
 
         <!-- ===================== HISTORY ===================== -->
@@ -813,6 +1002,9 @@
               </button>
               <button class="tab-btn" data-history="parcel">
                 <i class="fa-solid fa-box" style="margin-right: 6px"></i>Parcels
+              </button>
+              <button class="tab-btn" data-history="hauling">
+                <i class="fa-solid fa-truck-moving" style="margin-right: 6px"></i>Hauling
               </button>
             </div>
             <div id="history-list"></div>

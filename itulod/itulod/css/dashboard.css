@@ -3737,3 +3737,16 @@ body {
   .rf-logo { width: 44px; height: 44px; border-radius: 12px; font-size: 1.05rem; }
   .rm-header { padding: 12px; gap: 12px; }
 }
+
+/* Hauling: vehicle / items / helpers a job needs (rider request + accepted cards). */
+.hauling-needs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--blue-dark);
+  background: var(--blue-50);
+  padding: 3px 10px;
+  border-radius: 999px;
+}

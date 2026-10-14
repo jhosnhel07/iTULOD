@@ -20,7 +20,8 @@ export function json(body: unknown, status = 200) {
 export const TABLE_BY_KIND: Record<string, string> = {
   transport: 'transport_bookings',
   food: 'food_deliveries',
-  parcel: 'parcel_deliveries'
+  parcel: 'parcel_deliveries',
+  hauling: 'hauling_bookings'
 };
 
 // Service-role client — bypasses RLS. Only ever used inside Edge Functions,

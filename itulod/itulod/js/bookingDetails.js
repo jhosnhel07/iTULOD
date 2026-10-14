@@ -9,8 +9,10 @@
   /* Helpers                                                              */
   /* ------------------------------------------------------------------ */
 
+  const ICON_BY_KIND_DETAILS = { transport: 'fa-car', food: 'fa-utensils', parcel: 'fa-box', hauling: 'fa-truck-moving' };
+
   function kindTable(kind) {
-    return { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' }[kind];
+    return { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries', hauling: 'hauling_bookings' }[kind];
   }
 
   function ratingStars(n) {
@@ -106,19 +108,13 @@
         : [];
 
       /* ---- 3. Build title ---- */
-      const title = kind === 'transport'
-        ? `${booking.pickup_address} → ${booking.destination_address}`
-        : kind === 'food'
-          ? `${booking.restaurant_name} → ${booking.delivery_address}`
-          : `${booking.sender_name} → ${booking.receiver_name}`;
+      const title = kind === 'parcel'
+        ? `${booking.sender_name} → ${booking.receiver_name}`
+        : bookingTitle(booking, kind);
 
       /* ---- 4. Route / booking details section ---- */
-      const routePickup  = kind === 'transport' ? booking.pickup_address
-        : kind === 'food' ? booking.pickup_address
-        : booking.sender_address;
-      const routeDropoff = kind === 'transport' ? booking.destination_address
-        : kind === 'food' ? booking.delivery_address
-        : booking.receiver_address;
+      const routePickup  = bookingPickup(booking, kind);
+      const routeDropoff = bookingDropoff(booking, kind);
 
       const liveTrackable = booking.rider_id && ['accepted', 'ongoing'].includes(booking.status);
       const mapSection = (routePickup && routeDropoff) ? `
@@ -177,6 +173,22 @@
                 <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Order</div>
                 <div class="bd-stops-list">${itemsRows}</div>
               </div>` : ''}
+            ${mapSection}
+          </div>`;
+      } else if (kind === 'hauling') {
+        routeSection = `
+          <div class="bd-section">
+            <h4><i class="fa-solid fa-truck-moving"></i> Hauling Details</h4>
+            ${row('<i class="fa-solid fa-user"></i> Pickup contact', escapeHtml(booking.sender_name || '—') + (booking.sender_phone ? ' · ' + escapeHtml(booking.sender_phone) : ''))}
+            ${row('<i class="fa-solid fa-location-dot"></i> Pickup address', escapeHtml(booking.pickup_address || '—'))}
+            ${row('<i class="fa-solid fa-user-check"></i> Receiver', escapeHtml(booking.receiver_name || '—') + (booking.receiver_phone ? ' · ' + escapeHtml(booking.receiver_phone) : ''))}
+            ${row('<i class="fa-solid fa-flag-checkered"></i> Drop-off address', escapeHtml(booking.dropoff_address || '—'))}
+            ${row('<i class="fa-solid fa-boxes-stacked"></i> Items', escapeHtml(HAULING_CATEGORY_LABEL[booking.item_category] || 'Other items') + ' — ' + escapeHtml(booking.item_description || ''))}
+            ${booking.estimated_weight_kg ? row('<i class="fa-solid fa-weight-hanging"></i> Approx. weight', booking.estimated_weight_kg + ' kg') : ''}
+            ${row('<i class="fa-solid fa-people-carry-box"></i> Helpers', booking.helpers ? `${booking.helpers} × ${peso(booking.helper_fee)}` : 'None — driver only')}
+            ${booking.scheduled_for ? row('<i class="fa-regular fa-calendar"></i> Scheduled for', formatDate(booking.scheduled_for)) : ''}
+            ${booking.instructions ? row('<i class="fa-solid fa-note-sticky"></i> Instructions', escapeHtml(booking.instructions)) : ''}
+            ${booking.distance_km ? row('<i class="fa-solid fa-road"></i> Distance', booking.distance_km + ' km') : ''}
             ${mapSection}
           </div>`;
       } else {
@@ -346,8 +358,8 @@
       body.innerHTML = `
         <div class="bd-header">
           <div class="bd-kind-pill">
-            <i class="fa-solid ${kind === 'transport' ? 'fa-car' : kind === 'food' ? 'fa-utensils' : 'fa-box'}"></i>
-            ${kind.charAt(0).toUpperCase() + kind.slice(1)}
+            <i class="fa-solid ${ICON_BY_KIND_DETAILS[kind] || 'fa-box'}"></i>
+            ${KIND_LABEL[kind] || kind}
           </div>
           <h2>${escapeHtml(title)}</h2>
           <div class="bd-sub">

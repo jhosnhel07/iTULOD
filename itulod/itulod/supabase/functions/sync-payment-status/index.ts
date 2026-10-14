@@ -14,7 +14,7 @@
 // charges anything). That stays paymongo-webhook's job exclusively, so there
 // is no way this function can cause a double charge.
 //
-//   POST { booking_type: 'transport'|'food'|'parcel', booking_id }
+//   POST { booking_type: 'transport'|'food'|'parcel'|'hauling', booking_id }
 //
 // Deploy: supabase functions deploy sync-payment-status
 // =============================================================================

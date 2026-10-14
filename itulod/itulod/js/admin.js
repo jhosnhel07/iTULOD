@@ -9,7 +9,7 @@ let BOOKINGS_PAGE = 1;
 let PAYMENTS_PAGE = 1;
 let ALL_PAYMENTS = [];
 const ADMIN_PAGE_SIZE = 10;
-const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries' };
+const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries', hauling: 'hauling_bookings' };
 
 (async function init() {
   CURRENT_PROFILE = await requireSession(['admin']);
@@ -520,7 +520,7 @@ async function loadVehicles() {
   }
   tbody.innerHTML = ALL_VEHICLES.map(v => `
     <tr>
-      <td><i class="fa-solid ${v.icon}" style="margin-right:8px;color:var(--blue)"></i>${escapeHtml(v.name)}</td>
+      <td><i class="fa-solid ${v.icon}" style="margin-right:8px;color:var(--blue)"></i>${escapeHtml(v.name)}${v.service === 'hauling' ? ' <span class="badge badge--pending">Hauling</span>' : ''}</td>
       <td>${v.capacity}</td><td>${peso(v.base_fare)}</td><td>${peso(v.per_km_rate)}</td>
       <td>${v.is_available ? '<span class="badge badge--completed">Yes</span>' : '<span class="badge badge--cancelled">No</span>'}</td>
       <td><div class="row-actions">
@@ -549,6 +549,7 @@ function openVehicleModal(v) {
   document.getElementById('vehicle-available').value = String(v?.is_available ?? true);
   document.getElementById('vehicle-base').value = v?.base_fare || '';
   document.getElementById('vehicle-rate').value = v?.per_km_rate || '';
+  document.getElementById('vehicle-service').value = v?.service || 'standard';
   document.getElementById('vehicle-modal').classList.add('open');
 }
 function closeVehicleModal() { document.getElementById('vehicle-modal').classList.remove('open'); }
@@ -562,6 +563,7 @@ function wireVehicleForm() {
       is_available: document.getElementById('vehicle-available').value === 'true',
       base_fare: Number(document.getElementById('vehicle-base').value),
       per_km_rate: Number(document.getElementById('vehicle-rate').value),
+      service: document.getElementById('vehicle-service').value || 'standard',
     };
     if (!requireFields({ 'Name': payload.name, 'Base fare': payload.base_fare, 'Per-km rate': payload.per_km_rate })) return;
 
@@ -759,8 +761,9 @@ async function loadBookings() {
   }
   const { slice, totalPages } = paginate(data, BOOKINGS_PAGE, ADMIN_PAGE_SIZE);
   tbody.innerHTML = slice.map(b => {
-    const title = BOOKING_KIND === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-      : BOOKING_KIND === 'food' ? b.restaurant_name : `${b.sender_name} → ${b.receiver_name}`;
+    const title = BOOKING_KIND === 'food' ? b.restaurant_name
+      : BOOKING_KIND === 'parcel' ? `${b.sender_name} → ${b.receiver_name}`
+      : bookingTitle(b, BOOKING_KIND);
     return `<tr>
       <td>${escapeHtml(title)}</td>
       <td>${escapeHtml(b.customer?.full_name || '—')}</td>
@@ -881,6 +884,7 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => debouncedReload([loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'support_requests' }, () => debouncedReload([loadSupportRequests]))
     .subscribe();
@@ -1055,7 +1059,7 @@ async function resolveSupportRequest() {
 // restore isn't offered as an in-app action) --------------------------------
 const BACKUP_TABLES = [
   'profiles', 'rider_applications', 'vehicles',
-  'transport_bookings', 'food_deliveries', 'parcel_deliveries',
+  'transport_bookings', 'food_deliveries', 'parcel_deliveries', 'hauling_bookings',
   'payments', 'reviews', 'notifications', 'announcements', 'platform_config',
   'saved_addresses', 'promo_codes', 'promo_redemptions', 'support_requests',
   'wallets', 'wallet_transactions', 'wallet_topups', 'referral_events',

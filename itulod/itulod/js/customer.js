@@ -24,6 +24,7 @@ let RATING_TARGET = null; // { kind, id }
   wireRideForm();
   wireFoodForm();
   wireParcelForm();
+  wireHaulingForm();
   wireHistoryTabs();
   wireProfileForm();
   wireChangePasswordForm();
@@ -75,6 +76,7 @@ const BOOKING_SUBTITLES = {
   ride: 'Choose your pickup, destination, and vehicle.',
   food: 'Order from any restaurant or store.',
   parcel: 'Send a parcel across Ilocos Norte.',
+  hauling: 'Move furniture, appliances and other big loads.',
 };
 function currentBookingService() {
   return document.querySelector('#booking-switch .seg-btn.active')?.dataset.service || 'ride';
@@ -132,11 +134,11 @@ function wireTabNav() {
 
 // ---- fare estimator: real OSRM road distance when we can get it, the
 //      deterministic placeholder otherwise --------------------------------
-function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops, getMultiplier }) {
+function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops, getMultiplier, getVehicles, onRender }) {
   let route = null;        // { km, pickup:[lng,lat], dropoff:[lng,lat] } once a real route is known
   let lastKey = '';
   let timer = null;
-  const vehicle = () => VEHICLES.find(v => v.id === vehicleSel.value);
+  const vehicle = () => (typeof getVehicles === 'function' ? getVehicles() : VEHICLES).find(v => v.id === vehicleSel.value);
   const stopsList = () => (typeof getStops === 'function' ? getStops() : []).filter(Boolean);
   const multiplier = () => (typeof getMultiplier === 'function' ? getMultiplier() : 1);
   const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + stopsList().join(',').toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase() + '|' + multiplier();
@@ -151,6 +153,7 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
         ? `${peso(v.base_fare)} base + ${Math.max(effectiveKm, 1).toFixed(1)} km × ${peso(v.per_km_rate)}/km`
         : '';
     }
+    if (typeof onRender === 'function') onRender(km ? effectiveKm : null, isReal, v);
   }
 
   function recalc() {
@@ -371,7 +374,15 @@ async function applyPromoIfEntered(kind, bookingId, promoInputId) {
 // ---- vehicle select + fare estimate -------------------------------------
 async function loadVehicleOptions() {
   const { data, error } = await supabase.from('vehicles').select('*').eq('is_available', true).order('base_fare');
-  VEHICLES = data || [];
+  VEHICLES = (data || []).filter(v => (v.service || 'standard') !== 'hauling');
+  HAULING_VEHICLES = (data || []).filter(v => v.service === 'hauling');
+  const haulSel = document.getElementById('hauling-vehicle');
+  if (haulSel) {
+    haulSel.innerHTML = HAULING_VEHICLES.length
+      ? HAULING_VEHICLES.map(v => `<option value="${v.id}">${v.name} — from ${peso(v.base_fare)} + ${peso(v.per_km_rate)}/km</option>`).join('')
+      : '<option value="">No hauling vehicles yet</option>';
+  }
+  if (typeof loadHaulingHelperFee === 'function') await loadHaulingHelperFee();
   const opts = error || VEHICLES.length === 0
     ? `<option value="">No vehicles configured yet</option>`
     : VEHICLES.map(v => `<option value="${v.id}">${v.name} — from ${peso(v.base_fare)}</option>`).join('');
@@ -952,8 +963,141 @@ function wireParcelForm() {
   });
 }
 
+
+// ---- hauling: big / heavy items with a hauling vehicle + helpers ---------
+// Same lifecycle as a parcel: the estimate is vehicle fare + helpers, the
+// driver confirms the real fare at pickup (finalize-fare), and GCash/wallet
+// is only charged after that. Only riders with a Van/Pickup/Truck see these
+// jobs (RLS is_hauling_rider(), sql/022).
+let HAULING_VEHICLES = [];
+let HAULING_HELPER_FEE = 250;
+
+async function loadHaulingHelperFee() {
+  const { data } = await supabase.from('platform_config').select('hauling_helper_fee').maybeSingle();
+  if (data?.hauling_helper_fee != null) HAULING_HELPER_FEE = Number(data.hauling_helper_fee);
+}
+
+function wireHaulingForm() {
+  const form = document.getElementById('hauling-form');
+  if (!form) return;
+  const pickup = document.getElementById('hauling-pickup-address');
+  const dropoff = document.getElementById('hauling-dropoff-address');
+  const vehicleSel = document.getElementById('hauling-vehicle');
+  const helpersSel = document.getElementById('hauling-helpers');
+  const totalEl = document.getElementById('hauling-fare');
+  const helpersFareEl = document.getElementById('hauling-helpers-fare');
+  const helperNote = document.getElementById('hauling-helper-note');
+  const helpers = () => Number(helpersSel.value || 0);
+
+  const est = createFareEstimator({
+    tab: 'hauling', pickupEl: pickup, dropoffEl: dropoff, vehicleSel,
+    distanceEl: document.getElementById('hauling-distance'),
+    fareEl: document.getElementById('hauling-vehicle-fare'),
+    breakdownEl: document.getElementById('hauling-fare-breakdown'),
+    getVehicles: () => HAULING_VEHICLES,
+    onRender: (km, _isReal, v) => {
+      const helpersFare = helpers() * HAULING_HELPER_FEE;
+      helpersFareEl.textContent = peso(helpersFare);
+      totalEl.textContent = km ? peso(estimateFare(v, km) + helpersFare) : '₱0.00';
+      helperNote.textContent = `${peso(HAULING_HELPER_FEE)} per helper`;
+    },
+  });
+  helpersSel.addEventListener('change', () => est.recalc());
+
+  const masks = [
+    attachInputMask(document.getElementById('hauling-sender-name'), formatName),
+    attachInputMask(document.getElementById('hauling-receiver-name'), formatName),
+    attachInputMask(document.getElementById('hauling-sender-phone'), formatPhoneMobile),
+    attachInputMask(document.getElementById('hauling-receiver-phone'), formatPhoneMobile),
+  ];
+  form.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', () => saveFormDraft('itulod-customer-hauling', form));
+    el.addEventListener('change', () => saveFormDraft('itulod-customer-hauling', form));
+  });
+  restoreFormDraft('itulod-customer-hauling', form);
+  masks.forEach(reformat => reformat && reformat());
+  est.recalc();
+
+  const scheduleToggle = document.getElementById('hauling-schedule-toggle');
+  const scheduleField = document.getElementById('hauling-schedule-field');
+  const scheduleInput = document.getElementById('hauling-schedule-time');
+  scheduleToggle.addEventListener('change', () => {
+    scheduleField.style.display = scheduleToggle.checked ? '' : 'none';
+    if (!scheduleToggle.checked) scheduleInput.value = '';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('hauling-submit');
+    const vehicle = HAULING_VEHICLES.find(v => v.id === vehicleSel.value);
+    const payload = {
+      customer_id: CURRENT_PROFILE.id,
+      sender_name: document.getElementById('hauling-sender-name').value.trim(),
+      sender_phone: normalizePhoneMobile(document.getElementById('hauling-sender-phone').value),
+      pickup_address: pickup.value.trim(),
+      receiver_name: document.getElementById('hauling-receiver-name').value.trim(),
+      receiver_phone: normalizePhoneMobile(document.getElementById('hauling-receiver-phone').value),
+      dropoff_address: dropoff.value.trim(),
+      item_category: document.querySelector('input[name="hauling-category"]:checked')?.value || 'other',
+      item_description: document.getElementById('hauling-description').value.trim(),
+      estimated_weight_kg: parseFloat(document.getElementById('hauling-weight').value) || null,
+      helpers: helpers(),
+      helper_fee: HAULING_HELPER_FEE,
+      instructions: document.getElementById('hauling-instructions').value.trim(),
+      vehicle_id: vehicle?.id || null,
+      payment_method: document.getElementById('hauling-payment').value || 'cash',
+      status: 'pending',
+    };
+    if (!requireFields({
+      'Contact name': payload.sender_name, 'Pickup address': payload.pickup_address,
+      'Receiver name': payload.receiver_name, 'Drop-off address': payload.dropoff_address,
+      'Items to move': payload.item_description, 'Vehicle': vehicle,
+    })) return;
+    for (const [label, val] of [['Contact name', payload.sender_name], ['Receiver name', payload.receiver_name]]) {
+      if (!isValidName(val)) { toast(`${label} should be letters only.`, 'error'); return; }
+    }
+    for (const [label, val] of [['Contact phone', payload.sender_phone], ['Receiver phone', payload.receiver_phone]]) {
+      if (val && !isValidPhoneMobile(val)) { toast(`${label} must be a valid mobile number (09XX XXX XXXX).`, 'error'); return; }
+    }
+    if (scheduleToggle.checked) {
+      if (!scheduleInput.value) { toast('Pick a pickup date and time, or turn off scheduling.', 'error'); return; }
+      const when = new Date(scheduleInput.value);
+      if (when < new Date(Date.now() + 30 * 60 * 1000)) { toast('Scheduled pickup must be at least 30 minutes from now.', 'error'); return; }
+      if (when > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) { toast('Scheduled pickup can be at most 14 days from now.', 'error'); return; }
+      payload.scheduled_for = when.toISOString();
+    }
+
+    const { km, coords } = est.current();
+    payload.distance_km = Number(km.toFixed(2));
+    payload.estimated_fare = Math.round((estimateFare(vehicle, km) + payload.helpers * HAULING_HELPER_FEE) * 100) / 100;
+    payload.pickup_lng = coords?.pickup?.[0] ?? null;
+    payload.pickup_lat = coords?.pickup?.[1] ?? null;
+    payload.dropoff_lng = coords?.dropoff?.[0] ?? null;
+    payload.dropoff_lat = coords?.dropoff?.[1] ?? null;
+
+    setLoading(btn, true);
+    const { error } = await supabase.from('hauling_bookings').insert(payload);
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+
+    toast(
+      payload.scheduled_for
+        ? `Hauling scheduled for ${formatDate(payload.scheduled_for)}. We'll find a driver closer to the time.`
+        : payload.payment_method === 'cash'
+          ? 'Hauling booked! Waiting for a driver to accept.'
+          : "Hauling booked! We'll ask you to pay once the driver confirms the fare at pickup.",
+      'success'
+    );
+    clearFormDraft('itulod-customer-hauling');
+    e.target.reset();
+    scheduleField.style.display = 'none';
+    est.recalc();
+    HISTORY_KIND = 'hauling'; await loadHistory(); await loadHome();
+  });
+}
+
 // ---- home / overview ---------------------------------------------------
-const HOME_KIND_LABEL = { transport: 'Ride', food: 'Food delivery', parcel: 'Parcel delivery' };
+const HOME_KIND_LABEL = { transport: 'Ride', food: 'Food delivery', parcel: 'Parcel delivery', hauling: 'Hauling' };
 
 // The webhook is the real source of truth, but it's pushed to us
 // asynchronously — a customer who clicks "Back to dashboard" before it lands
@@ -1024,9 +1168,7 @@ function renderHomeActive(b, rider) {
     return;
   }
   const kind = b._kind;
-  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-    : kind === 'food' ? `${b.restaurant_name} → ${b.delivery_address}`
-    : `${b.sender_address} → ${b.receiver_address}`;
+  const title = bookingTitle(b, kind);
   const stage = b.status === 'pending' ? 'Finding you a rider…'
     : b.status === 'accepted' ? 'Rider is on the way to pickup'
     : 'Trip in progress';
@@ -1129,13 +1271,15 @@ function paymentDue(b, kind) {
 }
 
 function renderHistoryCard(b, kind) {
-  const title = kind === 'transport' ? `${b.pickup_address} → ${b.destination_address}`
-    : kind === 'food' ? b.restaurant_name
-    : `${b.sender_name} → ${b.receiver_name}`;
-  const sub = kind === 'transport'
-    ? (b.scheduled_for && b.status === 'pending' ? `Scheduled for ${formatDate(b.scheduled_for)}` : formatDate(b.created_at))
+  const title = kind === 'food' ? b.restaurant_name
+    : kind === 'parcel' ? `${b.sender_name} → ${b.receiver_name}`
+    : bookingTitle(b, kind);
+  const sub = (kind === 'transport' || kind === 'hauling') && b.scheduled_for && b.status === 'pending'
+    ? `Scheduled for ${formatDate(b.scheduled_for)}`
     : kind === 'food' ? `${b.pickup_address} → ${b.delivery_address}`
-    : `${b.parcel_size || ''} · ${formatDate(b.created_at)}`;
+    : kind === 'parcel' ? `${b.parcel_size || ''} · ${formatDate(b.created_at)}`
+    : kind === 'hauling' ? `${HAULING_CATEGORY_LABEL[b.item_category] || 'Items'}${b.helpers ? ` · ${b.helpers} helper${b.helpers === 1 ? '' : 's'}` : ''} · ${formatDate(b.created_at)}`
+    : formatDate(b.created_at);
   const fare = b.final_fare ?? b.estimated_fare;
   const canCancel = ['pending', 'accepted'].includes(b.status);
   const canRate = b.status === 'completed' && !b.rating;
@@ -1178,7 +1322,10 @@ async function retryPayment(bookingId, kind = 'transport') {
        ['Distance', b.distance_km ? Number(b.distance_km).toFixed(1) + ' km' : '—']]
     : kind === 'food'
       ? [['Payment method', 'GCash'], ['Restaurant', b.restaurant_name], ['Deliver to', b.delivery_address]]
-      : [['Payment method', 'GCash'], ['To', b.receiver_name], ['Drop-off', b.receiver_address]];
+      : kind === 'hauling'
+        ? [['Payment method', 'GCash'], ['Pickup', b.pickup_address], ['Drop-off', b.dropoff_address],
+           ['Items', HAULING_CATEGORY_LABEL[b.item_category] || 'Items']]
+        : [['Payment method', 'GCash'], ['To', b.receiver_name], ['Drop-off', b.receiver_address]];
 
   openGcashConfirm({ bookingType: kind, bookingId, amount, rows });
 }
@@ -1440,6 +1587,7 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'transport') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'food') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'parcel') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'hauling') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => loadNotifications())
     .subscribe();
 }

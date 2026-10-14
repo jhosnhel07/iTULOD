@@ -228,6 +228,12 @@ const _maps = {
     hintId: 'parcel-map-mode-hint', btnPickupId: 'parcel-map-mode-pickup', btnDropoffId: 'parcel-map-mode-dropoff',
     routeSource: 'parcel-route', routeLayer: 'parcel-route-line', routeColor: '#1a9d63',
   },
+  hauling: {
+    map: null, markers: {}, mode: 'pickup',
+    pickupInputId: 'hauling-pickup-address', dropoffInputId: 'hauling-dropoff-address',
+    hintId: 'hauling-map-mode-hint', btnPickupId: 'hauling-map-mode-pickup', btnDropoffId: 'hauling-map-mode-dropoff',
+    routeSource: 'hauling-route', routeLayer: 'hauling-route-line', routeColor: '#0d47a1',
+  },
   saved: {
     map: null, markers: {}, mode: 'address',
     addressInputId: 'saved-address-text',
@@ -386,6 +392,14 @@ function initParcelMap(containerId) {
   return _maps.parcel.map;
 }
 
+function initHaulingMap(containerId) {
+  _maps.hauling.map = _initMap(containerId);
+  _maps.hauling.map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  _addGeocoder('hauling');
+  _wireMapClick('hauling');
+  return _maps.hauling.map;
+}
+
 function initSavedMap(containerId) {
   _maps.saved.map = _initMap(containerId);
   _maps.saved.map.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -417,6 +431,7 @@ function ensureBookingMaps() {
       if (document.getElementById('tracking-map')) initTrackingMap('tracking-map');
       if (document.getElementById('food-map')) initFoodMap('food-map');
       if (document.getElementById('parcel-map')) initParcelMap('parcel-map');
+      if (document.getElementById('hauling-map')) initHaulingMap('hauling-map');
       if (document.getElementById('saved-map')) initSavedMap('saved-map');
     })
     .catch((err) => {
