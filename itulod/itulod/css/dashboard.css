@@ -3413,14 +3413,60 @@ body {
 }
 .rf-select select:focus { outline: none; }
 
+/* Category row: scrolls sideways (arrows, wheel, drag, visible thin
+   scrollbar); edge fades + arrows appear only when there's more to see. */
+.rf-chips-wrap { position: relative; }
 .rf-chips {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
+  scroll-behavior: smooth;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-200) transparent;
 }
-.rf-chips::-webkit-scrollbar { display: none; }
+.rf-chips::-webkit-scrollbar { height: 6px; }
+.rf-chips::-webkit-scrollbar-track { background: transparent; }
+.rf-chips::-webkit-scrollbar-thumb { background: var(--blue-200); border-radius: 999px; }
+.rf-chips-wrap::before,
+.rf-chips-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 8px;
+  width: 56px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+.rf-chips-wrap::before { left: 0; background: linear-gradient(90deg, var(--white) 35%, rgba(255, 255, 255, 0)); }
+.rf-chips-wrap::after { right: 0; background: linear-gradient(270deg, var(--white) 35%, rgba(255, 255, 255, 0)); }
+.rf-chips-wrap.can-left::before,
+.rf-chips-wrap.can-right::after { opacity: 1; }
+.rf-chips-arrow {
+  position: absolute;
+  top: calc(50% - 4px);
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--blue);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.rf-chips-arrow:hover { background: var(--blue-50); border-color: var(--blue-200); }
+.rf-chips-arrow--left { left: 0; }
+.rf-chips-arrow--right { right: 0; }
+.rf-chips-wrap.can-left .rf-chips-arrow--left,
+.rf-chips-wrap.can-right .rf-chips-arrow--right { display: inline-flex; }
 .rf-chip {
   flex: 0 0 auto;
   display: inline-flex;

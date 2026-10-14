@@ -241,7 +241,11 @@ function renderRestaurantFinder(body, restaurants) {
           </span>
         </label>
       </div>
-      <div class="rf-chips" id="rf-chips" role="tablist" aria-label="Food categories"></div>
+      <div class="rf-chips-wrap" id="rf-chips-wrap">
+        <button type="button" class="rf-chips-arrow rf-chips-arrow--left" id="rf-chips-left" aria-label="Previous categories"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="rf-chips" id="rf-chips" role="tablist" aria-label="Food categories"></div>
+        <button type="button" class="rf-chips-arrow rf-chips-arrow--right" id="rf-chips-right" aria-label="More categories"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
     </div>
     <div class="rf-summary" id="rf-count"></div>
     <div class="rf-list" id="restaurant-results"></div>`;
@@ -273,8 +277,38 @@ function renderRestaurantFinder(body, restaurants) {
     if (r) selectRestaurantForMenu(_stripFinderFields(r));
   });
 
+  _wireChipScroller();
   _renderResults();
   _loadDishIndex().then(() => { if (FINDER.query) _renderResults(); });
+}
+
+/** The category row scrolls sideways: arrow buttons, mouse wheel, and the
+ *  edge fades/arrows only show when there's more to scroll to. */
+function _wireChipScroller() {
+  const row = document.getElementById('rf-chips');
+  const wrap = document.getElementById('rf-chips-wrap');
+  const left = document.getElementById('rf-chips-left');
+  const right = document.getElementById('rf-chips-right');
+  if (!row || !wrap) return;
+  const update = () => {
+    const max = row.scrollWidth - row.clientWidth;
+    wrap.classList.toggle('can-left', row.scrollLeft > 2);
+    wrap.classList.toggle('can-right', row.scrollLeft < max - 2);
+  };
+  const step = () => Math.max(160, row.clientWidth * 0.7);
+  left.addEventListener('click', () => row.scrollBy({ left: -step(), behavior: 'smooth' }));
+  right.addEventListener('click', () => row.scrollBy({ left: step(), behavior: 'smooth' }));
+  // A plain mouse wheel only scrolls vertically — turn it sideways here.
+  row.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && row.scrollWidth > row.clientWidth) {
+      e.preventDefault();
+      row.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+  row.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  FINDER._updateChipScroller = update;
+  requestAnimationFrame(update);
 }
 
 function _renderResults() {
@@ -297,6 +331,9 @@ function _renderResults() {
   chips.querySelectorAll('.rf-chip').forEach(b => b.addEventListener('click', () => {
     FINDER.category = b.dataset.cat; _renderResults();
   }));
+  // Keep the selected category in view and the arrows in sync.
+  chips.querySelector('.rf-chip.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  FINDER._updateChipScroller?.();
 
   const here = FINDER.deliverTo;
   const list = inTown
