@@ -1,6 +1,10 @@
 // =============================================================================
-// iTULOD Edge Function: on-booking-change
+// iTULOD Edge Function: on-booking-change  (SUPERSEDED — see below)
 // -----------------------------------------------------------------------------
+// Superseded by sql/023 notify_booking_change(), a database trigger that
+// writes these notifications directly (the webhook below was never set up).
+// Kept for reference only — not deployed as part of the notification path.
+//
 // Fired by a Supabase Database Webhook on UPDATE of transport_bookings /
 // food_deliveries / parcel_deliveries / hauling_bookings. Turns a status/assignment change into
 // the right notification (in-app + SMS + push via notifyUser).

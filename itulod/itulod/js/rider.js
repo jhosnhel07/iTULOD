@@ -46,6 +46,7 @@ const PAGE_SIZE = 6;
   setInterval(() => { if (!RIDER_HAS_ACTIVE_BOOKING) loadRequests(); }, 60 * 1000);
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
+  if (typeof renderPushPrompt === 'function') renderPushPrompt('push-prompt');
 
   // The navigation map (Mapbox GL, ~200 KB) loads the first time the Accepted
   // bookings tab is opened — see ensureNavMap() / activateTab(). A rider with a
@@ -636,7 +637,44 @@ async function updateStatus(kind, id, status) {
 }
 
 // ---- earnings ----------------------------------------------------------
+// Balance with iTULOD (sql/024 rider_balance): GCash/wallet fares iTULOD
+// owes you, minus commission you owe on cash trips, less what's been settled.
+async function loadRiderBalance() {
+  const el = document.getElementById('rider-balance');
+  if (!el) return;
+  const { data, error } = await supabase.rpc('rider_balance');
+  if (error || !data || !data.length) { el.innerHTML = ''; return; }
+  const b = data[0];
+  const net = Number(b.net);
+  const tone = net > 0 ? 'owed' : net < 0 ? 'due' : 'even';
+  const headline = net > 0 ? `iTULOD owes you ${peso(net)}`
+    : net < 0 ? `You owe iTULOD ${peso(-net)}` : 'All settled';
+  const detail = `${peso(b.online_earnings)} from GCash/wallet trips · ${peso(b.cash_commission)} commission on cash trips`
+    + (Number(b.payouts_made) ? ` · ${peso(b.payouts_made)} paid out` : '')
+    + (Number(b.collections_made) ? ` · ${peso(b.collections_made)} paid in` : '');
+  el.innerHTML = `
+    <div class="balance-card balance-card--${tone}">
+      <div class="balance-card__icon"><i class="fa-solid fa-scale-balanced"></i></div>
+      <div class="balance-card__text"><strong>${headline}</strong>${escapeHtml(detail)}</div>
+    </div>
+    ${Number(b.cod_unremitted) > 0 ? `
+    <div class="balance-card balance-card--due">
+      <div class="balance-card__icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+      <div class="balance-card__text"><strong>${peso(b.cod_unremitted)} COD to hand over</strong>Cash you collected for senders. Mark each one handed over from History → Parcels.</div>
+    </div>` : ''}`;
+}
+
+async function markCodRemitted(id) {
+  if (!confirm('Confirm you have handed the collected COD to the sender?')) return;
+  const { error } = await supabase.from('parcel_deliveries').update({ cod_remitted_at: new Date().toISOString() }).eq('id', id);
+  if (error) { toast(error.message, 'error'); return; }
+  toast('COD marked as handed over. The sender has been notified.', 'success');
+  loadHistory();
+  loadRiderBalance();
+}
+
 async function loadEarnings() {
+  loadRiderBalance();
   const { data: payments } = await supabase.from('payments').select('*').eq('rider_id', CURRENT_PROFILE.id);
   const rows = payments || [];
   const now = new Date();
@@ -706,7 +744,11 @@ async function loadHistory() {
       <div class="booking-card" role="button" tabindex="0" onclick="openBookingDetails({ kind: '${HISTORY_KIND}', id: '${b.id}' })" onkeydown="if(event.key==='Enter'||event.key===' '){ openBookingDetails({ kind: '${HISTORY_KIND}', id: '${b.id}' }); }">
         <div class="kind-icon" style="background:${COLOR_BY_KIND[HISTORY_KIND]}"><i class="fa-solid ${ICON_BY_KIND[HISTORY_KIND]}"></i></div>
         <div class="info"><div><h4>${escapeHtml(title)}</h4><p>${formatDate(b.created_at)}${b.rating ? ' · ' + '★'.repeat(b.rating) : ''}</p></div></div>
-        <div class="meta"><span class="fare">${peso(b.final_fare ?? b.estimated_fare)}</span>${b.tip_amount ? `<span class="tip-badge">+${peso(b.tip_amount)} tip</span>` : ''}${statusBadge(b.status)}</div>
+        <div class="meta"><span class="fare">${peso(b.final_fare ?? b.estimated_fare)}</span>${b.tip_amount ? `<span class="tip-badge">+${peso(b.tip_amount)} tip</span>` : ''}${statusBadge(b.status)}${HISTORY_KIND === 'parcel' && b.status === 'completed' && Number(b.cod_amount) > 0
+          ? (b.cod_remitted_at
+              ? `<span class="badge badge--completed">COD ${peso(b.cod_amount)} handed over</span>`
+              : `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); markCodRemitted('${b.id}')"><i class="fa-solid fa-hand-holding-dollar"></i> COD ${peso(b.cod_amount)} handed over</button>`)
+          : ''}</div>
       </div>`;
   }).join('');
   renderPagination(totalPages);

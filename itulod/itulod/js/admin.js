@@ -39,6 +39,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   await loadSupportRequests();
   await loadBookings();
   await loadPayments();
+  await loadRiderBalances();
   await loadAnnouncements();
   subscribeRealtime();
 })();
@@ -491,7 +492,12 @@ async function loadAllRiders() {
     const isActive = profile.is_active ?? true;
     return `<tr>
       <td>${escapeHtml(profile.full_name || '—')}</td>
-      <td>${escapeHtml(app.vehicle_type || '—')}</td>
+      <td>
+        <select class="rider-vehicle-select" onchange="changeRiderVehicle('${app.rider_id}', this.value, this)">
+          ${RIDER_VEHICLE_TYPES.map(t => `<option ${t === app.vehicle_type ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+        ${HAULING_VEHICLE_TYPES.includes(app.vehicle_type) ? '<span class="badge badge--pending" style="margin-left:6px">Hauling</span>' : ''}
+      </td>
       <td>${statusBadge('approved')}</td>
       <td>${avg !== '—' ? avg + ' ★' : '—'}</td>
       <td>${formatDate(profile.created_at)}</td>
@@ -881,10 +887,10 @@ function debouncedReload(fns, delay = 1500) {
 function subscribeRealtime() {
   supabase.channel('admin-updates')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'rider_applications' }, () => debouncedReload([loadPendingApplications, loadAllRiders, loadAnalytics]))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments]))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => debouncedReload([loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'support_requests' }, () => debouncedReload([loadSupportRequests]))
     .subscribe();
@@ -1023,6 +1029,14 @@ function openSupportModal(req) {
     </div>
     ${req.booking_id ? `<div style="margin-bottom:14px;font-size:0.85rem;color:var(--text-muted)">Booking: ${escapeHtml(req.booking_type || '')} · ${escapeHtml(req.booking_id)}</div>` : ''}
     ${req.admin_response ? `<div style="margin-bottom:14px"><div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Your previous reply</div><p>${escapeHtml(req.admin_response)}</p></div>` : ''}
+    ${req.booking_id || req.category === 'refund' ? `
+      <div class="field">
+        <label>Refund to customer's iTULOD wallet (optional)</label>
+        <div style="display:flex;gap:8px">
+          <input type="number" step="0.01" min="0" id="support-refund-amount" placeholder="₱ amount" style="flex:1">
+          <button type="button" class="btn btn-outline btn-sm" onclick="refundFromSupport()"><i class="fa-solid fa-rotate-left"></i> Refund</button>
+        </div>
+      </div>` : ''}
     ${req.status !== 'resolved' ? `
       <div class="field" style="margin-bottom:0">
         <label>Reply to customer</label>
@@ -1031,6 +1045,22 @@ function openSupportModal(req) {
   `;
   document.getElementById('support-resolve-btn').style.display = req.status === 'resolved' ? 'none' : '';
   document.getElementById('support-modal').classList.add('open');
+}
+async function refundFromSupport() {
+  if (!ACTIVE_SUPPORT) return;
+  const amount = parseFloat(document.getElementById('support-refund-amount')?.value);
+  if (!(amount > 0)) { toast('Enter the refund amount.', 'error'); return; }
+  if (!confirm(`Add ${peso(amount)} to ${ACTIVE_SUPPORT.customer?.full_name || 'this customer'}'s iTULOD wallet?`)) return;
+  const { error } = await supabase.rpc('admin_refund_to_wallet', {
+    p_customer: ACTIVE_SUPPORT.customer_id,
+    p_amount: amount,
+    p_note: `Refund for support request: ${ACTIVE_SUPPORT.subject || ''}`.trim(),
+    p_booking_type: ACTIVE_SUPPORT.booking_type || null,
+    p_booking_id: ACTIVE_SUPPORT.booking_id || null,
+  });
+  if (error) { toast(error.message, 'error'); return; }
+  toast(`${peso(amount)} refunded to the customer's wallet.`, 'success');
+  document.getElementById('support-refund-amount').value = '';
 }
 function closeSupportModal() { document.getElementById('support-modal').classList.remove('open'); }
 
@@ -1053,6 +1083,105 @@ async function resolveSupportRequest() {
   toast('Reply sent and marked resolved.', 'success');
   closeSupportModal();
   await loadSupportRequests();
+}
+
+
+// ---- rider balances & settlement (sql/024) --------------------------------
+// Riders keep cash fares and owe iTULOD the commission; iTULOD holds GCash /
+// wallet fares and owes the rider their payout. Positive net = iTULOD pays
+// the rider; negative = collect from the rider. COD is owed to senders.
+let ACTIVE_SETTLEMENT = null;
+
+async function loadRiderBalances() {
+  const tbody = document.querySelector('#rider-balances-table tbody');
+  if (!tbody) return;
+  showSkeleton(tbody, skeletonRows(4, 6));
+  const { data, error } = await supabase.rpc('admin_rider_balances');
+  if (error) { tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`; return; }
+  const rows = (data || []).filter(r => Number(r.net) !== 0 || Number(r.cod_unremitted) > 0 || Number(r.online_earnings) > 0 || Number(r.cash_commission) > 0);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6">${emptyState({ icon: 'fa-scale-balanced', title: 'All settled', body: 'No rider has an open balance.' })}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const net = Number(r.net);
+    const netCell = net > 0
+      ? `<span class="badge badge--pending">Pay rider ${peso(net)}</span>`
+      : net < 0
+        ? `<span class="badge badge--cancelled">Collect ${peso(-net)}</span>`
+        : '<span class="badge badge--completed">Settled</span>';
+    return `<tr>
+      <td><strong>${escapeHtml(r.full_name || '—')}</strong><div style="color:var(--text-muted);font-size:0.78rem">${escapeHtml(r.phone || '')}</div></td>
+      <td>${peso(r.online_earnings)}</td>
+      <td>${peso(r.cash_commission)}</td>
+      <td>${netCell}</td>
+      <td>${Number(r.cod_unremitted) > 0 ? `<span class="badge badge--pending">${peso(r.cod_unremitted)}</span>` : '—'}</td>
+      <td>${net !== 0 ? `<button class="btn btn-outline btn-sm" onclick='openSettlementModal(${JSON.stringify({ id: r.rider_id, name: r.full_name, net })})'>Record ${net > 0 ? 'payout' : 'payment'}</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openSettlementModal(r) {
+  ACTIVE_SETTLEMENT = r;
+  const payout = r.net > 0;
+  document.getElementById('settlement-modal-title').textContent = payout ? `Pay ${r.name}` : `Collect from ${r.name}`;
+  document.getElementById('settlement-direction').value = payout ? 'payout' : 'collection';
+  document.getElementById('settlement-amount').value = Math.abs(r.net).toFixed(2);
+  document.getElementById('settlement-method').value = 'gcash';
+  document.getElementById('settlement-reference').value = '';
+  document.getElementById('settlement-note').value = '';
+  document.getElementById('settlement-hint').textContent = payout
+    ? 'Send this amount to the rider first (GCash / bank / cash), then record it here.'
+    : 'Record the commission the rider paid you for their cash trips.';
+  document.getElementById('settlement-modal').classList.add('open');
+}
+function closeSettlementModal() { document.getElementById('settlement-modal').classList.remove('open'); }
+
+async function saveSettlement() {
+  if (!ACTIVE_SETTLEMENT) return;
+  const amount = parseFloat(document.getElementById('settlement-amount').value);
+  if (!(amount > 0)) { toast('Enter an amount greater than zero.', 'error'); return; }
+  const btn = document.getElementById('settlement-save');
+  setLoading(btn, true);
+  const { error } = await supabase.rpc('admin_record_settlement', {
+    p_rider: ACTIVE_SETTLEMENT.id,
+    p_direction: document.getElementById('settlement-direction').value,
+    p_amount: amount,
+    p_method: document.getElementById('settlement-method').value,
+    p_reference: document.getElementById('settlement-reference').value.trim(),
+    p_note: document.getElementById('settlement-note').value.trim(),
+  });
+  setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  toast('Recorded — the rider has been notified.', 'success');
+  closeSettlementModal();
+  loadRiderBalances();
+}
+
+// ---- rider vehicle type (lets an admin move a rider onto hauling once
+// they've checked the new vehicle's papers) --------------------------------
+const RIDER_VEHICLE_TYPES = ['Motorcycle', 'Tricycle', 'Car', 'SUV', 'Van', 'Pickup', 'Truck'];
+const HAULING_VEHICLE_TYPES = ['Van', 'Pickup', 'Truck'];
+
+async function changeRiderVehicle(riderId, vehicleType, selectEl) {
+  if (!confirm(`Change this rider's vehicle to ${vehicleType}? Make sure you've checked the vehicle's OR/CR.`)) {
+    loadAllRiders();
+    return;
+  }
+  if (selectEl) selectEl.disabled = true;
+  const { error } = await supabase.from('rider_applications')
+    .update({ vehicle_type: vehicleType })
+    .eq('rider_id', riderId).eq('status', 'approved');
+  if (error) { toast(error.message, 'error'); loadAllRiders(); return; }
+  await supabase.from('notifications').insert({
+    user_id: riderId,
+    title: 'Vehicle updated',
+    message: HAULING_VEHICLE_TYPES.includes(vehicleType)
+      ? `Your vehicle is now listed as ${vehicleType} — you'll receive hauling jobs too.`
+      : `Your vehicle is now listed as ${vehicleType}.`,
+  });
+  toast('Vehicle updated.', 'success');
+  loadAllRiders();
 }
 
 // ---- database backup (export only — see admin/dashboard.html for why

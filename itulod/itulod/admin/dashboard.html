@@ -355,6 +355,47 @@
         </section>
 
         <!-- support request modal -->
+        <div class="modal-overlay" id="settlement-modal">
+          <div class="modal">
+            <div class="modal-head">
+              <h3 id="settlement-modal-title">Record settlement</h3>
+              <button class="modal-close" onclick="closeSettlementModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p id="settlement-hint" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px"></p>
+              <input type="hidden" id="settlement-direction" />
+              <div class="field-row">
+                <div class="field">
+                  <label>Amount (₱)</label>
+                  <input type="number" step="0.01" min="0" id="settlement-amount" />
+                </div>
+                <div class="field">
+                  <label>Method</label>
+                  <select id="settlement-method">
+                    <option value="gcash">GCash</option>
+                    <option value="bank">Bank transfer</option>
+                    <option value="cash">Cash</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label>Reference no. (optional)</label>
+                <input type="text" id="settlement-reference" placeholder="e.g. GCash ref 1234567890" />
+              </div>
+              <div class="field" style="margin-bottom: 0">
+                <label>Note (optional)</label>
+                <input type="text" id="settlement-note" />
+              </div>
+            </div>
+            <div class="modal-foot">
+              <button class="btn btn-outline-gray btn-sm" onclick="closeSettlementModal()">Cancel</button>
+              <button class="btn btn-primary btn-sm" id="settlement-save" onclick="saveSettlement()">
+                <i class="fa-solid fa-check"></i> Record
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-overlay" id="support-modal">
           <div class="modal">
             <div class="modal-head">
@@ -409,6 +450,21 @@
 
         <!-- ===================== PAYMENTS ===================== -->
         <section class="tab-panel" id="tab-payments">
+          <!-- Rider balances (sql/024): who iTULOD must pay, who owes commission -->
+          <div class="card" style="margin-bottom: 20px">
+            <div class="card-head">
+              <h3>Rider balances</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted)">GCash/wallet fares owed to riders minus commission owed on cash trips</span>
+            </div>
+            <div class="table-wrap">
+              <table id="rider-balances-table">
+                <thead>
+                  <tr><th>Rider</th><th>Online earnings</th><th>Cash commission</th><th>Balance</th><th>COD to hand over</th><th></th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
           <div class="stat-grid" id="payment-stats">
             <div class="stat-card">
               <div class="top">

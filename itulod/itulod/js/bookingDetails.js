@@ -203,6 +203,7 @@
             ${booking.parcel_weight      ? row('<i class="fa-solid fa-weight-hanging"></i> Weight', booking.parcel_weight + ' kg') : ''}
             ${booking.parcel_description ? row('<i class="fa-solid fa-tag"></i> Description',     escapeHtml(booking.parcel_description)) : ''}
             ${booking.instructions       ? row('<i class="fa-solid fa-note-sticky"></i> Instructions', escapeHtml(booking.instructions)) : ''}
+            ${Number(booking.cod_amount) > 0 ? row('<i class="fa-solid fa-hand-holding-dollar"></i> Cash on delivery', peso(booking.cod_amount) + (booking.cod_remitted_at ? ' · handed to sender ' + formatDate(booking.cod_remitted_at) : booking.status === 'completed' ? ' · collected, not yet handed over' : '')) : ''}
             ${mapSection}
           </div>`;
       }
@@ -221,7 +222,9 @@
           ${booking.payment_method ? row('Payment method', paymentMethodLabel(booking.payment_method)) : ''}
           ${booking.payment_status ? row('Payment status', paymentStatusBadge(booking.payment_status)) : ''}
           ${booking.tip_amount        ? row('Tip',                peso(booking.tip_amount))        : ''}
-          ${booking.cancellation_fee  ? row('Cancellation fee',   peso(booking.cancellation_fee))   : ''}
+          ${booking.cancellation_fee  ? row(booking.status === 'no_show' ? 'No-show fee' : 'Cancellation fee',
+                peso(booking.cancellation_fee) + (booking.cancellation_fee_paid === true ? ' · paid' : booking.cancellation_fee_paid === false ? ' · unpaid (top up your wallet)' : '')) : ''}
+          ${booking.payment_status === 'refunded' ? row('Refund', peso(Math.max(0, Number(booking.final_fare ?? booking.estimated_fare ?? 0) - Number(booking.cancellation_fee || 0))) + ' to your iTULOD wallet') : ''}
           ${booking.rating         ? row('Your rating',    ratingStars(booking.rating))  : ''}
           ${booking.review         ? row('Your review',    escapeHtml(booking.review))    : ''}
         </div>`;

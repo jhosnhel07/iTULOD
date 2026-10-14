@@ -22,7 +22,7 @@ const CONFIG = {
   // push entirely — SMS still works. Generate a pair with:
   //   npx web-push generate-vapid-keys
   // put the public key here and the private key in the Edge Function secrets.
-  VAPID_PUBLIC_KEY: '',
+  VAPID_PUBLIC_KEY: 'BIJljbze7YM2-tWLw2vE-STvdm9xoO6bCDmO4x7EKyTWab7-jtZBfevYsbsPYPJ4g1cMW3A6JjVwfS2BnQpQvHs',
 
   // Default admin account (seeded via sql/schema.sql)
   ADMIN_USERNAME: 'admin',

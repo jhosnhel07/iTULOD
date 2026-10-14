@@ -70,6 +70,9 @@ once:
 | 20 | `sql/020_seed_ilocos_norte_restaurants.sql` | Seed data: 17 Ilocos Norte restaurants (Laoag, San Nicolas/Robinsons Place Ilocos, Batac, Paoay, Pagudpud) with 102 menu items. Prices are estimates and no logos/photos are included; review in the admin Restaurants tab. Idempotent — skips restaurants that already exist by name. |
 | 21 | `sql/021_seed_more_ilocos_norte_restaurants.sql` | Seed data: 206 more food businesses in 18 Ilocos Norte towns, from OpenStreetMap (names + coordinates). Chains get their standard menus; local places get a typical menu for their type, each item labelled "typical item, availability may vary". Prices are estimates; no logos/photos. Idempotent by restaurant name. |
 | 22 | `sql/022_hauling.sql` | Hauling service: `hauling_bookings` (same lifecycle as parcel — `booking_before_update`, referral bonus, `updated_at` triggers; RLS where open jobs are visible only to approved riders with a Van/Pickup/Truck via `is_hauling_rider()`), `vehicles.service` + 4 hauling vehicles, `platform_config.hauling_helper_fee`, `hauling` added to every `booking_type` check, the expiry / nearby-riders / chat-notification / referral functions, the cross-table policies (rider profile, rider application, live tracking, reviews, chat) and realtime. Redeploy `create-payment`, `finalize-fare`, `sync-payment-status`, `redeem-promo`, `paymongo-webhook`, `on-booking-change` (shared `TABLE_BY_KIND` now includes `hauling`). |
+| 23 | `sql/023_booking_notifications_push.sql` | Booking-status notifications from the database (replaces the old `on-booking-change` webhooks): `notify_booking_change()` AFTER UPDATE on all four booking tables (accepted, released, on the way, completed, cancelled, expired, no-show, paid, tip); `notify_hauling_riders()` tells approved Van/Pickup/Truck riders about each new hauling job; `push_new_notification()` forwards every new `notifications` row to the `send-push` Edge Function via `pg_net`. Needs the two Vault secrets in §4a — without them notifications still appear in-app, just no push. |
+| 24 | `sql/024_refunds_fees_settlements.sql` | Money settlement: `cancellation_fee_paid` on all four booking tables; parcel `cod_remitted_at`/`cod_remit_note`; `booking_before_update()` now refunds a paid GCash/wallet booking (minus any fee) to the customer's wallet when it's cancelled/expired/no-show, and collects an unpaid booking's fee from the wallet when it can; `rider_settlements` + `rider_balance()`, `admin_rider_balances()`, `admin_record_settlement()`, `admin_refund_to_wallet()` (admin Payments tab → Rider balances). |
+| 25 | `sql/025_hauling_availability.sql` | `hauling_availability()` — how many hauling drivers exist / are online, shown on the Hauling booking form. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
 so re-running one is safe.
@@ -163,7 +166,7 @@ Install the CLI once: `npm i -g supabase` (or use `npx supabase@latest`).
 supabase login
 supabase link --project-ref <your-project-ref>
 
-# deploy all eleven
+# deploy all twelve
 supabase functions deploy create-payment       --project-ref <ref>
 supabase functions deploy paymongo-webhook     --project-ref <ref>
 supabase functions deploy finalize-fare        --project-ref <ref>
@@ -174,9 +177,10 @@ supabase functions deploy check-email          --project-ref <ref>
 supabase functions deploy redeem-promo         --project-ref <ref>
 supabase functions deploy wallet-topup         --project-ref <ref>
 supabase functions deploy apply-referral-code  --project-ref <ref>
+supabase functions deploy send-push            --project-ref <ref> --no-verify-jwt
 ```
 
-`paymongo-webhook`, `on-booking-change`, `expire-bookings`, and `check-email`
+`paymongo-webhook`, `on-booking-change`, `expire-bookings`, `check-email`, and `send-push`
 must **not** require a Supabase JWT (they authenticate themselves, need no
 auth at all, or — for `check-email` — are called by visitors who don't have
 an account yet): the repo's `supabase/config.toml`
@@ -209,9 +213,24 @@ npx web-push generate-vapid-keys
 supabase secrets set \
   VAPID_PUBLIC_KEY=<public> \
   VAPID_PRIVATE_KEY=<private> \
-  VAPID_SUBJECT=mailto:you@example.com \
+  VAPID_SUBJECT=https://<your-site> \
+  PUSH_HOOK_SECRET=<random string> \
   --project-ref <ref>
 ```
+
+### 4a. Push hook (Vault secrets for sql/023)
+
+`push_new_notification()` reads two Vault secrets to call `send-push`. Run
+once in the SQL editor (same `PUSH_HOOK_SECRET` value as above):
+
+```sql
+select vault.create_secret('https://<ref>.functions.supabase.co/send-push', 'push_hook_url');
+select vault.create_secret('<PUSH_HOOK_SECRET>', 'push_hook_secret');
+```
+
+Check it: insert a test row into `notifications`, then
+`select status_code, content from net._http_response order by id desc limit 1;`
+should show `200 {"ok":true,...}`.
 
 ---
 
@@ -242,7 +261,11 @@ anyone — it only syncs `payment_status` to match what PayMongo already says.
 
 ---
 
-## 6. Database webhooks for `on-booking-change`
+## 6. Database webhooks for `on-booking-change` (superseded — skip)
+
+`sql/023` now sends booking notifications from inside the database. Don't
+add these webhooks on a project that has 023 applied, or customers get every
+notification twice. Kept below for reference only.
 
 Dashboard → **Database → Webhooks → Create**. Make **one webhook per booking
 table** (`transport_bookings`, `food_deliveries`, `parcel_deliveries`):

@@ -47,3 +47,25 @@ async function enablePushNotifications() {
     console.warn('Push setup skipped:', e && e.message);
   }
 }
+
+/* "Turn on notifications" banner — some browsers (Safari / iOS) only show the
+   permission prompt after a tap, so offer one instead of relying on the
+   automatic request above. Shown only while permission is still undecided. */
+function renderPushPrompt(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const vapid = (typeof CONFIG !== 'undefined' && CONFIG.VAPID_PUBLIC_KEY) || '';
+  if (!supported || !vapid || Notification.permission !== 'default') { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="push-prompt">
+      <i class="fa-solid fa-bell"></i>
+      <span><strong>Get booking updates on this device</strong>
+        Know the moment a rider accepts, arrives or messages you — even with iTULOD closed.</span>
+      <button type="button" class="btn btn-primary btn-sm" id="${containerId}-btn">Turn on</button>
+    </div>`;
+  document.getElementById(`${containerId}-btn`).addEventListener('click', async () => {
+    await enablePushNotifications();
+    renderPushPrompt(containerId);
+  });
+}

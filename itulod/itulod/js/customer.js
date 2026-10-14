@@ -45,6 +45,7 @@ let RATING_TARGET = null; // { kind, id }
   startBookingExpiryWatch();
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
+  if (typeof renderPushPrompt === 'function') renderPushPrompt('push-prompt');
 
   // Mapbox GL is ~200 KB and no map is visible on the Home tab — it loads the
   // first time the New booking tab is opened (see activateTab / pinOnMap).
@@ -383,6 +384,7 @@ async function loadVehicleOptions() {
       : '<option value="">No hauling vehicles yet</option>';
   }
   if (typeof loadHaulingHelperFee === 'function') await loadHaulingHelperFee();
+  if (typeof loadHaulingAvailability === 'function') loadHaulingAvailability();
   const opts = error || VEHICLES.length === 0
     ? `<option value="">No vehicles configured yet</option>`
     : VEHICLES.map(v => `<option value="${v.id}">${v.name} — from ${peso(v.base_fare)}</option>`).join('');
@@ -971,6 +973,21 @@ function wireParcelForm() {
 // jobs (RLS is_hauling_rider(), sql/022).
 let HAULING_VEHICLES = [];
 let HAULING_HELPER_FEE = 250;
+
+/** How many hauling drivers exist / are online (sql/025) — warns the customer
+ *  when nobody could take the job right now. */
+async function loadHaulingAvailability() {
+  const el = document.getElementById('hauling-availability');
+  if (!el) return;
+  const { data } = await supabase.rpc('hauling_availability');
+  const a = data?.[0];
+  if (!a) { el.innerHTML = ''; return; }
+  el.innerHTML = a.drivers === 0
+    ? '<p class="hauling-availability hauling-availability--none"><i class="fa-solid fa-triangle-exclamation"></i> No hauling drivers have joined iTULOD yet, so this request may not be accepted. We\'re onboarding Van / Pickup / Truck drivers now.</p>'
+    : a.online_now === 0
+      ? `<p class="hauling-availability hauling-availability--none"><i class="fa-solid fa-clock"></i> ${a.drivers} hauling driver${a.drivers === 1 ? '' : 's'} on iTULOD, none online right now — they're notified of your request, or schedule it for later.</p>`
+      : `<p class="hauling-availability"><i class="fa-solid fa-truck-moving"></i> ${a.online_now} hauling driver${a.online_now === 1 ? '' : 's'} online now.</p>`;
+}
 
 async function loadHaulingHelperFee() {
   const { data } = await supabase.from('platform_config').select('hauling_helper_fee').maybeSingle();

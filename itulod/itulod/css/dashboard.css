@@ -3750,3 +3750,56 @@ body {
   padding: 3px 10px;
   border-radius: 999px;
 }
+
+/* "Turn on notifications" prompt (js/push.js renderPushPrompt). */
+.push-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--blue-200);
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+}
+.push-prompt > i { color: var(--blue); font-size: 1.1rem; }
+.push-prompt span { flex: 1; font-size: 0.84rem; color: var(--text-body); }
+.push-prompt strong { display: block; color: var(--ink); }
+
+/* Admin riders table: inline vehicle type picker. */
+.rider-vehicle-select {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  background: var(--white);
+}
+
+/* Rider balance card (earnings tab) + COD action. */
+.balance-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+.balance-card__icon {
+  width: 46px; height: 46px; border-radius: 14px;
+  display: grid; place-items: center; font-size: 1.15rem;
+}
+.balance-card--owed .balance-card__icon { background: var(--green-tint); color: var(--green-dark); }
+.balance-card--due .balance-card__icon { background: var(--rose-50); color: var(--rose-deep); }
+.balance-card--even .balance-card__icon { background: var(--blue-50); color: var(--blue); }
+.balance-card__text { flex: 1; font-size: 0.84rem; color: var(--text-muted); }
+.balance-card__text strong { display: block; font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); }
+.hauling-availability {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 12px; padding: 10px 12px;
+  border-radius: var(--radius-sm); font-size: 0.82rem;
+  background: var(--blue-50); color: var(--blue-dark);
+}
+.hauling-availability--none { background: var(--rose-50); color: var(--rose-deep); }
