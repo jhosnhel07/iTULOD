@@ -4193,20 +4193,6 @@ body {
   }
   .bottom-nav button:active i { transform: scale(0.92); }
 
-  /* Customer "Book" — the main action — is a raised round button */
-  .bottom-nav button[data-tab="book"] i {
-    width: 52px;
-    height: 52px;
-    margin-top: -24px;
-    border-radius: 50%;
-    color: var(--white);
-    font-size: var(--fs-xl);
-    background: var(--grad-blue);
-    box-shadow: 0 10px 22px rgba(33, 150, 243, 0.38), 0 0 0 5px var(--surface);
-  }
-  .bottom-nav button[data-tab="book"].active i { background: var(--grad-blue); }
-  .bottom-nav button[data-tab="book"] { color: var(--blue-ink); }
-
   /* Bigger touch targets */
   .btn { min-height: 46px; }
   .btn-sm { min-height: 38px; }
@@ -4215,7 +4201,7 @@ body {
   /* The booking form's main button stays in reach above the bottom bar */
   #tab-book form > button[type="submit"].btn-block {
     position: sticky;
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(94px + env(safe-area-inset-bottom, 0px)); /* above the floating glass bar */
     z-index: 5;
     box-shadow: 0 12px 28px rgba(13, 71, 161, 0.3), 0 0 0 6px var(--bg);
   }
@@ -4302,7 +4288,6 @@ body {
 
 :root[data-theme="dark"] .bottom-nav { background: rgba(19, 28, 41, 0.9); border-top-color: rgba(36, 50, 70, 0.9); }
 
-:root[data-theme="dark"] .bottom-nav button[data-tab="book"] i { box-shadow: 0 10px 22px rgba(33, 150, 243, 0.35), 0 0 0 5px var(--surface); }
 
 
 /* Toast sat on --ink (now light) — give it its own dark slate. */
@@ -4491,9 +4476,6 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
     z-index: 0;
   }
 
-  /* Customer "Book": the raised round button still sits above the glass. */
-  .bottom-nav button[data-tab="book"] i { margin-top: -26px; }
-
   /* Compact while scrolling: narrower, labels tucked away. */
   .bottom-nav button span:not(.bn-badge) {
     max-height: 16px;
@@ -4507,7 +4489,6 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
   .bottom-nav--compact button { min-height: 44px; }
   .bottom-nav--compact button span:not(.bn-badge) { max-height: 0; opacity: 0; overflow: hidden; }
   .bottom-nav--compact .bn-blob { top: 4px; bottom: 4px; }
-  .bottom-nav--compact button[data-tab="book"] i { margin-top: -14px; width: 44px; height: 44px; }
 
   /* Room for the floating bar at the end of each page. */
   .main { padding-bottom: 112px; }
