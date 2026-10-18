@@ -16,12 +16,76 @@
   }
 
   function ratingStars(n) {
-    if (!n) return '<span style="color:var(--text-muted)">Not yet rated</span>';
-    return '<span style="color:#e0a200">' + '★'.repeat(n) + '☆'.repeat(5 - n) + '</span>';
+    if (!n) return '<span class="muted">Not yet rated</span>';
+    return '<span class="bd-stars">' + '★'.repeat(n) + '<span class="bd-stars__off">' + '★'.repeat(5 - n) + '</span></span>';
   }
 
+  const PAYMENT_METHOD = {
+    cash:   { icon: 'fa-money-bill-wave', label: 'Cash' },
+    gcash:  { icon: 'fa-mobile-screen-button', label: 'GCash' },
+    wallet: { icon: 'fa-wallet', label: 'Wallet' },
+    card:   { icon: 'fa-credit-card', label: 'Card' },
+  };
   function paymentMethodLabel(method) {
-    return { cash: '💵 Cash', gcash: '📱 GCash', wallet: '👛 Wallet', card: '💳 Card' }[method] || method || '—';
+    const m = PAYMENT_METHOD[method];
+    return m ? `<i class="fa-solid ${m.icon}"></i> ${m.label}` : escapeHtml(method || '—');
+  }
+
+  // Pickup → (stops) → drop-off drawn as a vertical route line.
+  function routeBlock(fromLabel, from, toLabel, to, stopsHtml = '') {
+    return `
+      <div class="bd-route">
+        <div class="bd-route__pt bd-route__pt--from">
+          <span class="bd-route__label">${fromLabel}</span>
+          <span class="bd-route__addr">${escapeHtml(from || '—')}</span>
+        </div>
+        ${stopsHtml ? `<div class="bd-route__stops">${stopsHtml}</div>` : ''}
+        <div class="bd-route__pt bd-route__pt--to">
+          <span class="bd-route__label">${toLabel}</span>
+          <span class="bd-route__addr">${escapeHtml(to || '—')}</span>
+        </div>
+      </div>`;
+  }
+
+  // Booked → Accepted → In progress → Done, with the times we know.
+  // A cancelled / expired / no-show booking ends in a red step where it stopped.
+  const PROGRESS_LABEL = {
+    transport: ['Trip started', 'Arrived'],
+    food:      ['Order picked up', 'Delivered'],
+    parcel:    ['Parcel picked up', 'Delivered'],
+    hauling:   ['Loaded, on the way', 'Delivered'],
+  };
+  const ENDED_LABEL = { cancelled: 'Cancelled', expired: 'Expired', no_show: 'No-show' };
+  function timeOnly(iso) {
+    return iso ? new Date(iso).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }) : '';
+  }
+  function timelineHTML(b, kind) {
+    const [startLabel, doneLabel] = PROGRESS_LABEL[kind] || PROGRESS_LABEL.transport;
+    const steps = [
+      { label: 'Booked', time: timeOnly(b.created_at) },
+      { label: 'Rider accepted', time: timeOnly(b.accepted_at) },
+      { label: startLabel, time: '' },
+      { label: doneLabel, time: b.status === 'completed' ? timeOnly(b.updated_at) : '' },
+    ];
+    const reachedByStatus = { pending: 0, accepted: 1, ongoing: 2, completed: 3 };
+    let reached = reachedByStatus[b.status];
+    const ended = ENDED_LABEL[b.status];
+    if (ended) {
+      reached = b.accepted_at ? 1 : 0;
+      steps.splice(reached + 1, steps.length, { label: ended, time: timeOnly(b.updated_at), ended: true });
+    }
+    if (reached == null) reached = 0;
+    return `
+      <ol class="bd-timeline" aria-label="Booking progress" style="grid-template-columns:repeat(${steps.length}, 1fr)">
+        ${steps.map((s, i) => {
+          const state = s.ended ? 'ended' : (i < reached || (i === reached && (ended || b.status === 'completed'))) ? 'done' : i === reached ? 'current' : 'todo';
+          return `<li class="bd-step bd-step--${state}">
+            <span class="bd-step__dot">${state === 'done' ? '<i class="fa-solid fa-check"></i>' : state === 'ended' ? '<i class="fa-solid fa-xmark"></i>' : ''}</span>
+            <span class="bd-step__label">${s.label}</span>
+            ${s.time ? `<span class="bd-step__time">${s.time}</span>` : ''}
+          </li>`;
+        }).join('')}
+      </ol>`;
   }
 
   function paymentStatusBadge(status) {
@@ -68,7 +132,7 @@
       const vehicleId = booking.vehicle_id || null;
 
       /* ---- 2. Fetch rider profile, rider application, and vehicle in parallel ---- */
-      const [profileResult, appResult, vehicleResult] = await Promise.all([
+      const [profileResult, appResult, vehicleResult, reviewsResult] = await Promise.all([
         riderId
           ? supabase.from('profiles')
               .select('id, full_name, phone, avatar_url')
@@ -91,11 +155,19 @@
               .eq('id', vehicleId)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+
+        // Rider's average rating for the rider card (reviews are readable by
+        // any signed-in user).
+        riderId
+          ? supabase.from('reviews').select('rating').eq('rider_id', riderId).limit(500)
+          : Promise.resolve({ data: null }),
       ]);
 
       const riderProfile     = profileResult.data  || null;
       const riderApplication = appResult.data       || null;
       const vehicle          = vehicleResult.data   || null;
+      const riderRatings     = (reviewsResult.data || []).map(r => Number(r.rating)).filter(Boolean);
+      const riderAvg         = riderRatings.length ? riderRatings.reduce((a, b) => a + b, 0) / riderRatings.length : null;
 
       /* ---- 2b. Ride stops (transport only) ---- */
       const rideStops = kind === 'transport'
@@ -139,9 +211,7 @@
         routeSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-route"></i> Trip Details</h4>
-            ${row('<i class="fa-solid fa-location-dot"></i> Pickup',      escapeHtml(booking.pickup_address || '—'))}
-            ${rideStops.length ? `<div class="bd-stops-list">${stopsRows}</div>` : ''}
-            ${row('<i class="fa-solid fa-flag-checkered"></i> Destination', escapeHtml(booking.destination_address || '—'))}
+            ${routeBlock('Pickup', booking.pickup_address, 'Destination', booking.destination_address, rideStops.length ? `<div class="bd-stops-list">${stopsRows}</div>` : '')}
             ${booking.distance_km ? row('<i class="fa-solid fa-road"></i> Distance', booking.distance_km + ' km') : ''}
             ${mapSection}
           </div>`;
@@ -152,7 +222,7 @@
           
           let actionBtn = '';
           if (CURRENT_PROFILE.role === 'rider' && booking.status === 'ongoing' && !it.is_out_of_stock) {
-            actionBtn = ` <button class="btn btn-outline btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="markItemOutOfStock('${it.id}', '${booking.id}', event)">OOS</button>`;
+            actionBtn = ` <button class="btn btn-outline btn-sm" style="padding: 2px 6px; font-size: var(--fs-2xs);" onclick="markItemOutOfStock('${it.id}', '${booking.id}', event)">OOS</button>`;
           }
 
           return `
@@ -165,12 +235,11 @@
           <div class="bd-section">
             <h4><i class="fa-solid fa-utensils"></i> Food Delivery Details</h4>
             ${row('<i class="fa-solid fa-store"></i> Restaurant',   escapeHtml(booking.restaurant_name || '—'))}
-            ${row('<i class="fa-solid fa-location-dot"></i> Pickup', escapeHtml(booking.pickup_address || '—'))}
-            ${row('<i class="fa-solid fa-flag-checkered"></i> Deliver to', escapeHtml(booking.delivery_address || '—'))}
+            ${routeBlock('Pickup', booking.pickup_address, 'Deliver to', booking.delivery_address)}
             ${booking.instructions ? row('<i class="fa-solid fa-note-sticky"></i> Instructions', escapeHtml(booking.instructions)) : ''}
             ${orderItems.length ? `
               <div style="margin-top:10px">
-                <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Order</div>
+                <div style="font-size:var(--fs-xs);color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Order</div>
                 <div class="bd-stops-list">${itemsRows}</div>
               </div>` : ''}
             ${mapSection}
@@ -180,9 +249,8 @@
           <div class="bd-section">
             <h4><i class="fa-solid fa-truck-moving"></i> Hauling Details</h4>
             ${row('<i class="fa-solid fa-user"></i> Pickup contact', escapeHtml(booking.sender_name || '—') + (booking.sender_phone ? ' · ' + escapeHtml(booking.sender_phone) : ''))}
-            ${row('<i class="fa-solid fa-location-dot"></i> Pickup address', escapeHtml(booking.pickup_address || '—'))}
             ${row('<i class="fa-solid fa-user-check"></i> Receiver', escapeHtml(booking.receiver_name || '—') + (booking.receiver_phone ? ' · ' + escapeHtml(booking.receiver_phone) : ''))}
-            ${row('<i class="fa-solid fa-flag-checkered"></i> Drop-off address', escapeHtml(booking.dropoff_address || '—'))}
+            ${routeBlock('Pickup', booking.pickup_address, 'Drop-off', booking.dropoff_address)}
             ${row('<i class="fa-solid fa-boxes-stacked"></i> Items', escapeHtml(HAULING_CATEGORY_LABEL[booking.item_category] || 'Other items') + ' — ' + escapeHtml(booking.item_description || ''))}
             ${booking.estimated_weight_kg ? row('<i class="fa-solid fa-weight-hanging"></i> Approx. weight', booking.estimated_weight_kg + ' kg') : ''}
             ${row('<i class="fa-solid fa-people-carry-box"></i> Helpers', booking.helpers ? `${booking.helpers} × ${peso(booking.helper_fee)}` : 'None — driver only')}
@@ -196,9 +264,8 @@
           <div class="bd-section">
             <h4><i class="fa-solid fa-box"></i> Parcel Details</h4>
             ${row('<i class="fa-solid fa-user"></i> Sender',    escapeHtml(booking.sender_name || '—') + (booking.sender_phone ? ' · ' + escapeHtml(booking.sender_phone) : ''))}
-            ${row('<i class="fa-solid fa-location-dot"></i> Pickup address', escapeHtml(booking.sender_address || '—'))}
             ${row('<i class="fa-solid fa-user-check"></i> Receiver', escapeHtml(booking.receiver_name || '—') + (booking.receiver_phone ? ' · ' + escapeHtml(booking.receiver_phone) : ''))}
-            ${row('<i class="fa-solid fa-flag-checkered"></i> Drop-off address', escapeHtml(booking.receiver_address || '—'))}
+            ${routeBlock('Pickup', booking.sender_address, 'Drop-off', booking.receiver_address)}
             ${booking.parcel_size        ? row('<i class="fa-solid fa-cube"></i> Parcel size',    escapeHtml(booking.parcel_size)) : ''}
             ${booking.parcel_weight      ? row('<i class="fa-solid fa-weight-hanging"></i> Weight', booking.parcel_weight + ' kg') : ''}
             ${booking.parcel_description ? row('<i class="fa-solid fa-tag"></i> Description',     escapeHtml(booking.parcel_description)) : ''}
@@ -215,8 +282,8 @@
           <h4><i class="fa-solid fa-peso-sign"></i> Fare & Payment</h4>
           ${booking.item_subtotal != null ? row('Item subtotal', peso(booking.item_subtotal)) : ''}
           ${booking.delivery_fee  != null ? row('Delivery fee',  peso(booking.delivery_fee))  : ''}
-          ${booking.estimated_fare ? row('Estimated fare', peso(booking.estimated_fare)) : ''}
-          ${booking.final_fare     ? row('Final fare',     peso(booking.final_fare))     : ''}
+          ${booking.estimated_fare && booking.final_fare ? row('Estimated fare', peso(booking.estimated_fare)) : ''}
+          ${booking.final_fare || booking.estimated_fare ? `<div class="bd-row bd-row--total"><span>${booking.final_fare ? 'Final fare' : 'Estimated fare'}</span><strong>${peso(booking.final_fare ?? booking.estimated_fare)}</strong></div>` : ''}
           ${!booking.estimated_fare && !booking.final_fare ? row('Fare', '—') : ''}
           ${booking.distance_km && kind === 'transport' ? row('Distance', booking.distance_km + ' km') : ''}
           ${booking.payment_method ? row('Payment method', paymentMethodLabel(booking.payment_method)) : ''}
@@ -236,11 +303,13 @@
       const vehiclePlate = riderApplication?.vehicle_plate || null;
       const vehicleLicense = riderApplication?.license_number || null;
 
+      // Type and plate are on the rider card once a rider is assigned.
+      const showVehicleIdentity = !(riderId && riderProfile);
       const vehicleSection = vehicleName ? `
         <div class="bd-section">
           <h4><i class="fa-solid fa-car"></i> Vehicle</h4>
           ${row('Vehicle type',  escapeHtml(vehicleName))}
-          ${vehiclePlate   ? row('Plate number',   escapeHtml(vehiclePlate))   : ''}
+          ${vehiclePlate && showVehicleIdentity ? row('Plate number', escapeHtml(vehiclePlate)) : ''}
           ${vehicleLicense ? row('License number', escapeHtml(vehicleLicense)) : ''}
           ${vehicle?.base_fare   ? row('Base fare',    peso(vehicle.base_fare)) : ''}
           ${vehicle?.per_km_rate ? row('Rate per km',  peso(vehicle.per_km_rate) + '/km') : ''}
@@ -250,28 +319,39 @@
       let riderSection = '';
       if (riderId && riderProfile) {
         // Rider profile was readable (RLS allows it)
-        const avatarHtml = riderProfile.avatar_url
-          ? `<img src="${riderProfile.avatar_url}" class="bd-avatar" alt="Rider photo">`
-          : `<div class="bd-avatar bd-avatar--initials">${(riderProfile.full_name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}</div>`;
+        const avatarHtml = safeImageUrl(riderProfile.avatar_url)
+          ? `<img src="${escapeHtml(riderProfile.avatar_url)}" class="bd-avatar" alt="Rider photo">`
+          : `<div class="bd-avatar bd-avatar--initials">${escapeHtml((riderProfile.full_name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase())}</div>`;
 
-        const appStatus = riderApplication?.status;
-        // A tap-to-call button for the customer — not shown to the rider
-        // looking at their own job.
+        // Call / message buttons are for the customer — not shown to the
+        // rider looking at their own job.
+        const isOwnJob = CURRENT_PROFILE?.id === riderId;
+        const tripActive = ['accepted', 'ongoing'].includes(booking.status);
         const telHref = riderProfile.phone ? 'tel:' + riderProfile.phone.replace(/[^\d+]/g, '') : '';
-        const callBtn = telHref && CURRENT_PROFILE?.id !== riderId
-          ? `<a class="btn btn-outline btn-sm bd-call-btn" href="${telHref}"><i class="fa-solid fa-phone"></i> Call rider</a>`
+        const callBtn = telHref && !isOwnJob && tripActive
+          ? `<a class="btn btn-primary btn-sm bd-call-btn" href="${telHref}"><i class="fa-solid fa-phone"></i> Call</a>`
+          : '';
+        const msgBtn = !isOwnJob && tripActive
+          ? `<button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('bd-chat-messages')?.scrollIntoView({ behavior: 'smooth', block: 'center' })"><i class="fa-solid fa-comment-dots"></i> Message</button>`
           : '';
         riderSection = `
           <div class="bd-section">
-            <h4><i class="fa-solid fa-motorcycle"></i> Rider</h4>
+            <h4><i class="fa-solid fa-motorcycle"></i> ${isOwnJob ? 'You' : 'Your rider'}</h4>
             <div class="bd-rider-card">
               ${avatarHtml}
               <div class="bd-rider-info">
                 <strong>${escapeHtml(riderProfile.full_name || '—')}</strong>
-                ${riderProfile.phone ? `<span><i class="fa-solid fa-phone"></i> <a href="${telHref}">${escapeHtml(riderProfile.phone)}</a></span>` : ''}
-                ${appStatus ? `<span>${statusBadge(appStatus)}</span>` : ''}
+                <span class="bd-rider-meta">
+                  ${riderAvg ? `<span class="bd-rider-rating"><i class="fa-solid fa-star"></i> ${riderAvg.toFixed(1)} <small>(${riderRatings.length})</small></span>` : '<span class="bd-rider-rating bd-rider-rating--new">New rider</span>'}
+                  ${riderProfile.phone ? `<a href="${telHref}">${escapeHtml(riderProfile.phone)}</a>` : ''}
+                </span>
               </div>
-              ${callBtn}
+              ${vehicleName || vehiclePlate ? `
+                <div class="bd-rider-vehicle">
+                  ${vehiclePlate ? `<span class="bd-plate">${escapeHtml(vehiclePlate)}</span>` : ''}
+                  ${vehicleName ? `<span class="bd-rider-vehicle__name">${escapeHtml(vehicleName)}</span>` : ''}
+                </div>` : ''}
+              ${callBtn || msgBtn ? `<div class="bd-rider-actions">${callBtn}${riderId && msgBtn ? msgBtn : ''}</div>` : ''}
             </div>
           </div>`;
       } else if (riderId && !riderProfile) {
@@ -279,16 +359,16 @@
         riderSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-motorcycle"></i> Rider</h4>
-            <p class="muted" style="font-size:0.85rem">
+            <p class="muted" style="font-size:var(--fs-sm)">
               Rider assigned — run the RLS fix SQL in Supabase to display rider details.<br>
-              <code style="font-size:0.78rem;opacity:0.7">${riderId}</code>
+              <code style="font-size:var(--fs-xs);opacity:0.7">${riderId}</code>
             </p>
           </div>`;
       } else {
         riderSection = `
           <div class="bd-section">
             <h4><i class="fa-solid fa-user-clock"></i> Rider</h4>
-            <p class="muted">No rider assigned yet — waiting for a rider to accept.</p>
+            <p class="muted">${['pending', 'accepted'].includes(booking.status) ? 'No rider assigned yet — waiting for a rider to accept.' : 'No rider was assigned to this booking.'}</p>
           </div>`;
       }
 
@@ -354,30 +434,39 @@
               <input type="text" id="bd-chat-input" placeholder="Type a message…" maxlength="1000" style="flex:1" autocomplete="off" />
               <button type="submit" class="btn btn-primary btn-sm" id="bd-chat-send"><i class="fa-solid fa-paper-plane"></i></button>
             </form>
-          ` : `<p class="muted" style="font-size:0.8rem;margin-top:8px">This thread is read-only now that the booking is ${escapeHtml(booking.status)}.</p>`}
+          ` : `<p class="muted" style="font-size:var(--fs-xs);margin-top:8px">This thread is read-only now that the booking is ${escapeHtml(booking.status)}.</p>`}
         </div>` : '';
 
       /* ---- 9. Render ---- */
       body.innerHTML = `
         <div class="bd-header">
-          <div class="bd-kind-pill">
-            <i class="fa-solid ${ICON_BY_KIND_DETAILS[kind] || 'fa-box'}"></i>
-            ${KIND_LABEL[kind] || kind}
+          <div class="bd-header__top">
+            <div class="bd-kind-pill">
+              <i class="fa-solid ${ICON_BY_KIND_DETAILS[kind] || 'fa-box'}"></i>
+              ${KIND_LABEL[kind] || kind}
+            </div>
+            ${statusBadge(booking.status)}
           </div>
           <h2>${escapeHtml(title)}</h2>
-          <div class="bd-sub">
-            ${formatDate(booking.created_at)}
-            &nbsp;·&nbsp;
-            ${statusBadge(booking.status)}
-            &nbsp;·&nbsp;
-            <strong>${peso(fare)}</strong>
+          <div class="bd-sub">${formatDate(booking.created_at)}</div>
+          <div class="bd-fare-hero">
+            <div>
+              <span class="bd-fare-hero__label">${booking.final_fare ? 'Final fare' : 'Estimated fare'}</span>
+              <strong class="bd-fare-hero__amount">${fare != null ? peso(fare) : '—'}</strong>
+            </div>
+            ${booking.payment_method ? `
+              <div class="bd-fare-hero__pay">
+                <span class="bd-pay-chip">${paymentMethodLabel(booking.payment_method)}</span>
+                ${booking.payment_status ? paymentStatusBadge(booking.payment_status) : ''}
+              </div>` : ''}
           </div>
+          ${timelineHTML(booking, kind)}
         </div>
         ${statusNote}
+        ${riderSection}
         ${routeSection}
         ${fareSection}
         ${vehicleSection}
-        ${riderSection}
         ${docsSection}
         ${proofSection}
         ${chatSection}
@@ -453,15 +542,15 @@
     const el = document.getElementById('bd-chat-messages');
     if (!el) return;
     if (!messages.length) {
-      el.innerHTML = `<p class="muted" style="font-size:0.85rem">No messages yet — say hello!</p>`;
+      el.innerHTML = `<p class="muted" style="font-size:var(--fs-sm)">No messages yet — say hello!</p>`;
       return;
     }
     el.innerHTML = messages.map(m => {
       const mine = m.sender_id === myId;
       return `<div style="display:flex;justify-content:${mine ? 'flex-end' : 'flex-start'};margin-bottom:8px">
-        <div style="max-width:75%;padding:8px 12px;border-radius:14px;font-size:0.85rem;background:${mine ? 'var(--blue)' : 'var(--bg-alt, #f1f3f5)'};color:${mine ? '#fff' : 'inherit'}">
+        <div style="max-width:75%;padding:8px 12px;border-radius:var(--radius-md);font-size:var(--fs-sm);background:${mine ? 'var(--blue)' : 'var(--bg-alt, #f1f3f5)'};color:${mine ? '#fff' : 'inherit'}">
           <div>${escapeHtml(m.body)}</div>
-          <div style="font-size:0.7rem;opacity:0.7;margin-top:2px">${formatDate(m.created_at)}</div>
+          <div style="font-size:var(--fs-2xs);opacity:0.7;margin-top:2px">${formatDate(m.created_at)}</div>
         </div>
       </div>`;
     }).join('');
@@ -481,7 +570,7 @@
       .order('created_at', { ascending: true });
     if (error) {
       const el = document.getElementById('bd-chat-messages');
-      if (el) el.innerHTML = `<p class="muted" style="font-size:0.85rem">Could not load messages.</p>`;
+      if (el) el.innerHTML = `<p class="muted" style="font-size:var(--fs-sm)">Could not load messages.</p>`;
       return;
     }
     renderChatMessages(messages || [], myId);

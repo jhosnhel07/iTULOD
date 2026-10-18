@@ -247,7 +247,7 @@ async function loadPendingApplications() {
         <div>
           <h4>${escapeHtml(name)}</h4>
           <p>${escapeHtml(app.vehicle_type)}${app.vehicle_plate ? ' · ' + escapeHtml(app.vehicle_plate) : ''}</p>
-          <p style="color:var(--text-muted);font-size:0.8rem">${escapeHtml(email)} · ${escapeHtml(phone)} · Applied ${submittedDate}</p>
+          <p style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml(email)} · ${escapeHtml(phone)} · Applied ${submittedDate}</p>
         </div>
       </div>
       <div class="meta">
@@ -271,7 +271,7 @@ function updatePendingBadge(count) {
     const badge = document.createElement('span');
     badge.className = 'pending-count';
     badge.textContent = count;
-    badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;background:var(--red,#ef4444);color:#fff;border-radius:10px;font-size:0.72rem;font-weight:700;margin-left:6px;';
+    badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;background:var(--red,#ef4444);color:#fff;border-radius:var(--radius-sm);font-size:var(--fs-xs);font-weight:700;margin-left:6px;';
     pendingBtn.appendChild(badge);
   }
 }
@@ -283,100 +283,100 @@ function openAppModal(app) {
   const initials_ = initials(name);
   const avatarHtml = rider?.avatar_url
     ? `<img src="${rider.avatar_url}" alt="Avatar" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border)">`
-    : `<div style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff">${initials_}</div>`;
+    : `<div style="width:64px;height:64px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xl);font-weight:700;color:#fff">${initials_}</div>`;
 
   document.getElementById('app-modal-body').innerHTML = `
     <!-- Rider Profile Header -->
     <div style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px">
       ${avatarHtml}
       <div>
-        <div style="font-size:1.05rem;font-weight:700;color:var(--ink)">${escapeHtml(name)}</div>
-        <div style="font-size:0.85rem;color:var(--text-muted)">${escapeHtml(rider?.email || '—')}</div>
-        <div style="font-size:0.85rem;color:var(--text-muted)">${escapeHtml(rider?.phone || 'No phone on file')}</div>
+        <div style="font-size:var(--fs-lg);font-weight:700;color:var(--ink)">${escapeHtml(name)}</div>
+        <div style="font-size:var(--fs-sm);color:var(--text-muted)">${escapeHtml(rider?.email || '—')}</div>
+        <div style="font-size:var(--fs-sm);color:var(--text-muted)">${escapeHtml(rider?.phone || 'No phone on file')}</div>
         <div style="margin-top:4px"><span class="badge badge--pending">Pending Review</span></div>
       </div>
     </div>
 
     <!-- Application Details -->
-    <div style="font-size:0.88rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vehicle Information</div>
+    <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vehicle Information</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
-        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:2px">Vehicle Type</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:2px">Vehicle Type</div>
         <div style="font-weight:600;color:var(--ink)">${escapeHtml(app.vehicle_type || '—')}</div>
       </div>
       <div style="padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
-        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:2px">Vehicle Model</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:2px">Vehicle Model</div>
         <div style="font-weight:600;color:var(--ink)">${escapeHtml(app.vehicle_model || '—')}</div>
       </div>
       <div style="padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
-        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:2px">Plate Number</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:2px">Plate Number</div>
         <div style="font-weight:600;color:var(--ink)">${escapeHtml(app.vehicle_plate || '—')}</div>
       </div>
       <div style="padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
-        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:2px">License Number</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:2px">License Number</div>
         <div style="font-weight:600;color:var(--ink)">${escapeHtml(app.license_number || '—')}</div>
       </div>
     </div>
 
     <!-- Documents -->
-    <div style="font-size:0.88rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Documents</div>
+    <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Documents</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
       ${app.license_url
         ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
              <div style="display:flex;align-items:center;gap:10px">
                <i class="fa-solid fa-id-card" style="color:var(--blue)"></i>
-               <div><div style="font-size:0.85rem;font-weight:600">Driver's License</div><div style="font-size:0.78rem;color:var(--text-muted)">Click to open in new tab</div></div>
+               <div><div style="font-size:var(--fs-sm);font-weight:600">Driver's License</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">Click to open in new tab</div></div>
              </div>
              <a href="${app.license_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>
            </div>`
-        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.85rem"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No driver's license uploaded</div>`
+        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:var(--fs-sm)"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No driver's license uploaded</div>`
       }
       ${app.or_cr_url
         ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
              <div style="display:flex;align-items:center;gap:10px">
                <i class="fa-solid fa-file-lines" style="color:var(--orange)"></i>
-               <div><div style="font-size:0.85rem;font-weight:600">OR/CR (Vehicle Registration)</div><div style="font-size:0.78rem;color:var(--text-muted)">Click to open in new tab</div></div>
+               <div><div style="font-size:var(--fs-sm);font-weight:600">OR/CR (Vehicle Registration)</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">Click to open in new tab</div></div>
              </div>
              <a href="${app.or_cr_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>
            </div>`
-        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.85rem"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No OR/CR uploaded</div>`
+        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:var(--fs-sm)"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No OR/CR uploaded</div>`
       }
       ${app.selfie_url
         ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
              <div style="display:flex;align-items:center;gap:10px">
                <i class="fa-solid fa-camera" style="color:var(--blue)"></i>
-               <div><div style="font-size:0.85rem;font-weight:600">Selfie Verification</div><div style="font-size:0.78rem;color:var(--text-muted)">Click to open in new tab</div></div>
+               <div><div style="font-size:var(--fs-sm);font-weight:600">Selfie Verification</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">Click to open in new tab</div></div>
              </div>
              <a href="${app.selfie_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>
            </div>`
-        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.85rem"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No selfie uploaded</div>`
+        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:var(--fs-sm)"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No selfie uploaded</div>`
       }
       ${app.vehicle_url
         ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
              <div style="display:flex;align-items:center;gap:10px">
                <i class="fa-solid fa-motorcycle" style="color:var(--orange)"></i>
-               <div><div style="font-size:0.85rem;font-weight:600">Vehicle Photo</div><div style="font-size:0.78rem;color:var(--text-muted)">Click to open in new tab</div></div>
+               <div><div style="font-size:var(--fs-sm);font-weight:600">Vehicle Photo</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">Click to open in new tab</div></div>
              </div>
              <a href="${app.vehicle_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>
            </div>`
-        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.85rem"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No vehicle photo uploaded</div>`
+        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:var(--fs-sm)"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No vehicle photo uploaded</div>`
       }
       ${app.nbi_url
         ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">
              <div style="display:flex;align-items:center;gap:10px">
                <i class="fa-solid fa-shield-halved" style="color:var(--blue)"></i>
-               <div><div style="font-size:0.85rem;font-weight:600">NBI Clearance</div><div style="font-size:0.78rem;color:var(--text-muted)">Click to open in new tab</div></div>
+               <div><div style="font-size:var(--fs-sm);font-weight:600">NBI Clearance</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">Click to open in new tab</div></div>
              </div>
              <a href="${app.nbi_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>
            </div>`
-        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.85rem"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No NBI clearance uploaded (optional)</div>`
+        : `<div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:var(--fs-sm)"><i class="fa-regular fa-file-lines" style="margin-right:6px"></i>No NBI clearance uploaded (optional)</div>`
       }
     </div>
 
     <!-- Metadata -->
-    <div style="font-size:0.78rem;color:var(--text-muted);border-top:1px solid var(--border);padding-top:10px">
+    <div style="font-size:var(--fs-xs);color:var(--text-muted);border-top:1px solid var(--border);padding-top:10px">
       <i class="fa-regular fa-clock" style="margin-right:4px"></i>Application submitted: <strong>${formatDate(app.created_at)}</strong>
-      &nbsp;·&nbsp; Application ID: <code style="font-size:0.75rem;background:var(--bg);padding:2px 6px;border-radius:4px">${app.id}</code>
+      &nbsp;·&nbsp; Application ID: <code style="font-size:var(--fs-xs);background:var(--bg);padding:2px 6px;border-radius:4px">${app.id}</code>
     </div>
   `;
   document.getElementById('app-modal').classList.add('open');
@@ -1020,15 +1020,15 @@ function openSupportModal(req) {
   document.getElementById('support-modal-body').innerHTML = `
     <div style="margin-bottom:14px">
       <strong>${escapeHtml(req.customer?.full_name || 'Unknown')}</strong>
-      <div style="color:var(--text-muted);font-size:0.85rem">${escapeHtml(req.customer?.email || '')}</div>
+      <div style="color:var(--text-muted);font-size:var(--fs-sm)">${escapeHtml(req.customer?.email || '')}</div>
     </div>
     <div style="margin-bottom:14px"><span class="badge badge--pending">${escapeHtml(req.category)}</span> ${statusBadge(req.status)}</div>
     <div style="margin-bottom:14px">
-      <div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Message</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Message</div>
       <p>${escapeHtml(req.message)}</p>
     </div>
-    ${req.booking_id ? `<div style="margin-bottom:14px;font-size:0.85rem;color:var(--text-muted)">Booking: ${escapeHtml(req.booking_type || '')} · ${escapeHtml(req.booking_id)}</div>` : ''}
-    ${req.admin_response ? `<div style="margin-bottom:14px"><div style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Your previous reply</div><p>${escapeHtml(req.admin_response)}</p></div>` : ''}
+    ${req.booking_id ? `<div style="margin-bottom:14px;font-size:var(--fs-sm);color:var(--text-muted)">Booking: ${escapeHtml(req.booking_type || '')} · ${escapeHtml(req.booking_id)}</div>` : ''}
+    ${req.admin_response ? `<div style="margin-bottom:14px"><div style="font-size:var(--fs-xs);color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Your previous reply</div><p>${escapeHtml(req.admin_response)}</p></div>` : ''}
     ${req.booking_id || req.category === 'refund' ? `
       <div class="field">
         <label>Refund to customer's iTULOD wallet (optional)</label>
@@ -1111,7 +1111,7 @@ async function loadRiderBalances() {
         ? `<span class="badge badge--cancelled">Collect ${peso(-net)}</span>`
         : '<span class="badge badge--completed">Settled</span>';
     return `<tr>
-      <td><strong>${escapeHtml(r.full_name || '—')}</strong><div style="color:var(--text-muted);font-size:0.78rem">${escapeHtml(r.phone || '')}</div></td>
+      <td><strong>${escapeHtml(r.full_name || '—')}</strong><div style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml(r.phone || '')}</div></td>
       <td>${peso(r.online_earnings)}</td>
       <td>${peso(r.cash_commission)}</td>
       <td>${netCell}</td>

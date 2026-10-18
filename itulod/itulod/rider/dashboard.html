@@ -74,7 +74,7 @@
       <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
         <i class="fa-solid fa-bars"></i>
       </button>
-      <span class="brand" style="font-size:1.1rem;color:var(--blue)">
+      <span class="brand" style="font-size:var(--fs-lg);color:var(--blue)">
         iTULOD<span class="dot">.</span>
       </span>
       <span></span>
@@ -97,7 +97,7 @@
       <div class="card card--flush" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
         <div>
           <strong id="online-status-label">Offline</strong>
-          <p style="color:var(--text-muted);font-size:0.82rem;margin:2px 0 0">
+          <p style="color:var(--text-muted);font-size:var(--fs-sm);margin:2px 0 0">
             Go online so nearby customers can see you before they book.
           </p>
         </div>
@@ -109,20 +109,20 @@
       <!-- Float / Capital Card -->
       <div class="card" id="float-card" style="margin-bottom: 14px; border: 2px solid var(--primary);">
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <div class="icon icon--blue" style="font-size:1.4rem; padding: 10px;"><i class="fa-solid fa-wallet"></i></div>
+          <div class="icon icon--blue" style="font-size:var(--fs-2xl); padding: 10px;"><i class="fa-solid fa-wallet"></i></div>
           <div style="flex: 1; min-width: 120px;">
-            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Capital on Hand (Float)</div>
-            <strong id="home-float-amount" style="font-size: 1.4rem;">₱0.00</strong>
+            <div style="font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">Capital on Hand (Float)</div>
+            <strong id="home-float-amount" style="font-size: var(--fs-2xl);">₱0.00</strong>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <input type="number" id="float-input" min="0" step="50" placeholder="New amount"
-              style="width: 130px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); color: var(--text);" />
+              style="width: 130px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: var(--bg-input); color: var(--text);" />
             <button class="btn btn-primary btn-sm" id="float-update-btn" onclick="updateFloat()">
               <i class="fa-solid fa-floppy-disk"></i> Update
             </button>
           </div>
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0;">
+        <p style="font-size: var(--fs-xs); color: var(--text-muted); margin: 8px 0 0;">
           <i class="fa-solid fa-circle-info"></i>
           Your float determines which food orders you can accept. Orders where the estimated food cost exceeds your float will be hidden.
         </p>
@@ -176,7 +176,7 @@
           <div id="accepted-list">
             <div class="card">
               <div class="empty-state">
-                <i class="fa-solid fa-route" style="font-size:2.2rem;color:var(--border)"></i>
+                <i class="fa-solid fa-route" style="font-size:var(--fs-4xl);color:var(--border)"></i>
                 <h4>No active booking</h4>
                 <p>Accept a booking request to start navigating.</p>
               </div>
@@ -300,7 +300,7 @@
         <!-- Pending / not-yet-submitted placeholder -->
         <div id="vehicle-info">
           <div class="empty-state" style="padding:36px 20px">
-            <i class="fa-solid fa-car" style="font-size:2.2rem;color:var(--border)"></i>
+            <i class="fa-solid fa-car" style="font-size:var(--fs-4xl);color:var(--border)"></i>
             <h4>No vehicle on file</h4>
             <p>Submit your vehicle and documents during registration to get approved.</p>
           </div>

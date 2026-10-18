@@ -588,3 +588,4 @@
           border-radius: var(--radius-md);
         }
       }
+      .bp-stat-icon i { color: #ffffff; opacity: 0.9; }

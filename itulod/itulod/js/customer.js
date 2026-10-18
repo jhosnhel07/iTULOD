@@ -627,7 +627,7 @@ function updateFoodRestaurantSummary() {
     if (cartField) cartField.style.display = items.length ? '' : 'none';
     if (cartList) {
       cartList.innerHTML = items.length
-        ? items.map(it => `<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:2px 0"><span>${it.qty} × ${escapeHtml(it.name)}</span><span>${peso(it.price * it.qty)}</span></div>`).join('')
+        ? items.map(it => `<div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);padding:2px 0"><span>${it.qty} × ${escapeHtml(it.name)}</span><span>${peso(it.price * it.qty)}</span></div>`).join('')
         : '';
     }
   }
@@ -1479,11 +1479,11 @@ async function loadWalletBalance() {
   const listEl = document.getElementById('wallet-txn-list');
   if (!listEl) return;
   if (!txns || txns.length === 0) {
-    listEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.82rem">No wallet activity yet.</p>`;
+    listEl.innerHTML = `<p style="color:var(--text-muted);font-size:var(--fs-sm)">No wallet activity yet.</p>`;
     return;
   }
   listEl.innerHTML = txns.map(t => `
-    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)">
       <span>${escapeHtml(walletTxnLabel(t.type))} · ${formatDate(t.created_at)}</span>
       <span style="color:${Number(t.amount) >= 0 ? 'var(--green)' : 'var(--text-muted)'};font-weight:600">${Number(t.amount) >= 0 ? '+' : ''}${peso(t.amount)}</span>
     </div>`).join('');
@@ -1534,7 +1534,7 @@ function wireReferralCard() {
       const { data, error } = await supabase.functions.invoke('apply-referral-code', { body: { code } });
       setLoading(btn, false);
       if (error || data?.error) { toast(data?.error || 'Could not redeem that code.', 'error'); return; }
-      toast(`Redeemed! ₱${Number(data.bonus).toFixed(2)} added to your wallet.`, 'success');
+      toast(`Redeemed! ${peso(data.bonus)} added to your wallet.`, 'success');
       form.reset();
       await loadReferralInfo();
       await loadWalletBalance();

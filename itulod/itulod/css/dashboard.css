@@ -17,7 +17,7 @@
    SIDEBAR
    ===================================================================== */
 .sidebar {
-  background: var(--white);
+  background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 0;
   display: flex;
@@ -231,7 +231,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 14px 18px;
-    background: var(--white);
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
@@ -353,7 +353,7 @@
 }
 
 .stat-card {
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 20px;
@@ -422,7 +422,7 @@
    GENERIC CARDS
    ===================================================================== */
 .card {
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
@@ -520,7 +520,7 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: var(--white);
+    background: var(--surface);
     margin: 0 0 12px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
@@ -538,7 +538,7 @@
     flex-shrink: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius-xs);
-    background: var(--white);
+    background: var(--surface);
     color: var(--text-muted);
     font-size: var(--fs-md);
     cursor: pointer;
@@ -675,7 +675,7 @@
 .map-pin-btn:hover,
 .saved-addr-btn:hover {
   background: var(--blue-200);
-  color: var(--blue-dark);
+  color: var(--blue-ink);
 }
 .map-pin-btn:focus-visible,
 .saved-addr-btn:focus-visible {
@@ -859,7 +859,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   height: 32px;
   border-radius: var(--radius-xs);
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -893,7 +893,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 
 .pagination button {
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius-xs);
   width: 32px;
   height: 32px;
@@ -967,7 +967,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
-  background: var(--white);
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
@@ -1073,7 +1073,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 14px;
-  background: var(--white);
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease;
 }
@@ -1174,7 +1174,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 }
 
 .vehicle-chip-item {
-  background: var(--white);
+  background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px 10px;
@@ -1318,7 +1318,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 }
 
 .map-step.active {
-  background: var(--white);
+  background: var(--surface);
   color: var(--blue);
   border-color: rgba(33, 150, 243, 0.16);
   box-shadow: var(--shadow-sm);
@@ -1423,7 +1423,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   height: 32px;
   border-radius: 50%;
   border: 2px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1496,7 +1496,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  background: var(--white);
+  background: var(--surface);
   position: absolute;
 }
 
@@ -1601,7 +1601,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 }
 
 .modal {
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius-md);
   width: 100%;
   max-width: 520px;
@@ -1907,7 +1907,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   margin-bottom: 12px;
-  background: var(--white);
+  background: var(--surface);
 }
 
 .announcement-item h4 {
@@ -1998,7 +1998,7 @@ table.data-table tbody tr:nth-child(even):hover td {
    RIDER CHIP (pending application card)
    ===================================================================== */
 .app-card {
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 20px;
@@ -2252,7 +2252,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 }
 
 .bd-doc {
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
@@ -2526,7 +2526,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   border-radius: var(--radius-md);
   padding: 18px 20px;
   margin-bottom: 12px;
-  background: var(--white);
+  background: var(--surface);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -2643,7 +2643,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   border-left-color: var(--blue);
 }
 .sidebar .brand {
-  color: var(--blue-dark);
+  color: var(--blue-ink);
 }
 .sidebar .user-chip {
   background: var(--surface-2);
@@ -2704,7 +2704,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 
 /* Tabs */
 .tab-btn.active {
-  color: var(--blue-dark);
+  color: var(--blue-ink);
 }
 
 /* Dashboard primary buttons follow the landing treatment */
@@ -2876,7 +2876,7 @@ table.data-table tbody tr:nth-child(even):hover td {
     right: 0;
     bottom: 0;
     z-index: 70;
-    background: var(--white);
+    background: var(--surface);
     border-top: 1px solid var(--border);
     box-shadow: 0 -6px 20px rgba(13, 71, 161, 0.07);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
@@ -2968,11 +2968,11 @@ table.data-table tbody tr:nth-child(even):hover td {
   font-size: 0.9em;
 }
 .seg-btn:hover {
-  color: var(--blue-dark);
+  color: var(--blue-ink);
 }
 .seg-btn.active {
-  background: var(--white);
-  color: var(--blue-dark);
+  background: var(--surface);
+  color: var(--blue-ink);
   box-shadow: var(--shadow-xs);
 }
 
@@ -3016,8 +3016,8 @@ table.data-table tbody tr:nth-child(even):hover td {
   font-size: var(--fs-sm);
 }
 .home-hero .btn-primary {
-  background: var(--white);
-  color: var(--blue-dark);
+  background: var(--surface);
+  color: var(--blue-ink);
   box-shadow: none;
   flex-shrink: 0;
 }
@@ -3045,7 +3045,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--blue-dark);
+  color: var(--blue-ink);
 }
 .home-active h3 {
   font-size: var(--fs-lg);
@@ -3053,7 +3053,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   margin-bottom: 4px;
 }
 .home-active__stage {
-  color: var(--blue-dark);
+  color: var(--blue-ink);
   font-weight: 600;
   font-size: var(--fs-sm);
   margin-bottom: 12px;
@@ -3235,6 +3235,9 @@ body {
 @media (max-width: 900px) {
   body {
     overflow-x: hidden;
+    /* clip, unlike hidden, does not make body a scroll container, so
+       position: sticky (the booking button) keeps working. */
+    overflow-x: clip;
   }
 }
 /* long addresses / route titles wrap instead of widening the page */
@@ -3328,7 +3331,7 @@ body {
   gap: 10px;
   padding: 14px 24px;
   border-top: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
 }
 
 /* ---- sticky filter panel ------------------------------------------------- */
@@ -3338,7 +3341,7 @@ body {
   z-index: 2;
   margin: 0 -24px 14px;
   padding: 16px 24px 12px;
-  background: var(--white);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-xs);
 }
@@ -3365,7 +3368,7 @@ body {
 }
 .rf-search input:focus {
   outline: none;
-  background: var(--white);
+  background: var(--surface);
   border-color: var(--blue);
   box-shadow: 0 0 0 4px var(--blue-50);
 }
@@ -3384,7 +3387,7 @@ body {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--white);
+  background: var(--surface);
   cursor: pointer;
   transition: border-color 0.15s;
 }
@@ -3453,7 +3456,7 @@ body {
   height: 30px;
   border-radius: 50%;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   color: var(--blue);
   box-shadow: var(--shadow-sm);
   font-size: var(--fs-xs);
@@ -3475,7 +3478,7 @@ body {
   padding: 7px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  background: var(--white);
+  background: var(--surface);
   color: var(--text-body);
   font: inherit;
   font-size: var(--fs-xs);
@@ -3527,7 +3530,7 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--white);
+  background: var(--surface);
   font: inherit;
   text-align: left;
   color: inherit;
@@ -3577,7 +3580,7 @@ body {
   padding: 2px 9px;
   border-radius: var(--radius-pill);
   background: var(--blue-50);
-  color: var(--blue-dark);
+  color: var(--blue-ink);
   font-weight: 600;
   font-size: var(--fs-xs);
 }
@@ -3670,7 +3673,7 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--white);
+  background: var(--surface);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .rm-item.has-qty { border-color: var(--blue-200); box-shadow: 0 0 0 3px var(--blue-50); }
@@ -3682,7 +3685,7 @@ body {
   margin-top: 6px;
   font-family: var(--font-display);
   font-weight: 700;
-  color: var(--blue-dark);
+  color: var(--blue-ink);
   font-size: var(--fs-base);
 }
 .rm-badge {
@@ -3725,7 +3728,7 @@ body {
   color: var(--ink);
   font-size: var(--fs-sm);
 }
-.rm-item.has-qty .rm-stepper { border-color: var(--blue); background: var(--white); }
+.rm-item.has-qty .rm-stepper { border-color: var(--blue); background: var(--surface); }
 
 @media (max-width: 560px) {
   .rb-modal .modal-body { padding: 0 16px 16px; }
@@ -3745,7 +3748,7 @@ body {
   gap: 6px;
   font-size: var(--fs-xs);
   font-weight: 600;
-  color: var(--blue-dark);
+  color: var(--blue-ink);
   background: var(--blue-50);
   padding: 3px 10px;
   border-radius: var(--radius-pill);
@@ -3773,7 +3776,7 @@ body {
   border-radius: var(--radius-xs);
   font: inherit;
   font-size: var(--fs-sm);
-  background: var(--white);
+  background: var(--surface);
 }
 
 /* Rider balance card (earnings tab) + COD action. */
@@ -3785,7 +3788,7 @@ body {
   margin-bottom: 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
 }
 .balance-card__icon {
   width: 46px; height: 46px; border-radius: var(--radius-md);
@@ -3800,7 +3803,7 @@ body {
   display: flex; align-items: center; gap: 8px;
   margin: 0 0 12px; padding: 10px 12px;
   border-radius: var(--radius-sm); font-size: var(--fs-sm);
-  background: var(--blue-50); color: var(--blue-dark);
+  background: var(--blue-50); color: var(--blue-ink);
 }
 .hauling-availability--none { background: var(--rose-50); color: var(--rose-deep); }
 
@@ -3845,7 +3848,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: var(--white);
+  background: var(--surface);
 }
 .rm-item__img {
   width: 64px;
@@ -3894,3 +3897,441 @@ body {
 
 /* Sidebar links glide between states. */
 .side-link, .nav-item, .tab-btn { transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease; }
+
+/* =====================================================================
+   PREMIUM LAYER (batch 2) — booking details: fare hero, timeline,
+   rider card, route line
+   ===================================================================== */
+.bd-header { padding: 22px 24px 20px; background: linear-gradient(180deg, var(--blue-50), transparent 85%); }
+.bd-header__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.bd-header__top .bd-kind-pill { margin-bottom: 0; }
+.bd-header h2 { font-family: var(--font-display); font-size: var(--fs-lg); margin-bottom: 4px; }
+.bd-sub { font-size: var(--fs-xs); }
+
+.bd-fare-hero {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bd-fare-hero__label {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.bd-fare-hero__amount {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.bd-fare-hero__pay { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.bd-pay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--slate-50);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+}
+.bd-pay-chip i { color: var(--blue); }
+
+/* Status timeline */
+.bd-timeline {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.bd-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  min-width: 0;
+}
+.bd-step::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  z-index: 0;
+}
+.bd-step:first-child::before { display: none; }
+.bd-step--done::before,
+.bd-step--current::before { background: var(--blue); }
+.bd-step--ended::before { background: linear-gradient(90deg, var(--blue), var(--red)); }
+.bd-step__dot {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-2xs);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  color: var(--white);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.bd-step--done .bd-step__dot { background: var(--blue); border-color: var(--blue); }
+.bd-step--current .bd-step__dot { border-color: var(--blue); box-shadow: 0 0 0 5px rgba(33, 150, 243, 0.18); }
+.bd-step--current .bd-step__dot::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: stepPulse 1.6s ease-in-out infinite;
+}
+@keyframes stepPulse { 50% { transform: scale(0.6); opacity: 0.6; } }
+.bd-step--ended .bd-step__dot { background: var(--red); border-color: var(--red); }
+.bd-step__label { font-size: var(--fs-xs); font-weight: 600; color: var(--ink); line-height: 1.25; padding: 0 2px; }
+.bd-step--todo .bd-step__label { color: var(--text-muted); font-weight: 500; }
+.bd-step--ended .bd-step__label { color: var(--red-dark); }
+.bd-step__time { font-size: var(--fs-2xs); color: var(--text-muted); }
+
+/* Route line: pickup dot → drop-off marker */
+.bd-route { position: relative; padding-left: 26px; margin-bottom: 14px; }
+.bd-route::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 12px;
+  bottom: 14px;
+  border-left: 2px dashed var(--blue-200);
+}
+.bd-route__pt { position: relative; padding: 2px 0 12px; }
+.bd-route__pt::before {
+  content: "";
+  position: absolute;
+  left: -26px;
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--blue);
+  box-sizing: border-box;
+}
+.bd-route__pt--to { padding-bottom: 0; }
+.bd-route__pt--to::before { border-color: var(--rose-deep); border-radius: 4px; }
+.bd-route__label {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bd-route__addr {
+  display: block;
+  font-size: var(--fs-base);
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.bd-route__stops { margin: 0 0 12px; }
+
+/* Fare breakdown total */
+.bd-row--total {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-strong);
+}
+.bd-row--total > span { color: var(--ink); font-weight: 700; }
+.bd-row--total > strong { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 800; }
+.bd-stars { color: #e0a200; letter-spacing: 1px; }
+.bd-stars__off { color: var(--slate-300); }
+
+/* Rider card */
+.bd-rider-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+.bd-avatar { width: 56px; height: 56px; border: 3px solid var(--blue-50); box-shadow: 0 0 0 1px var(--border); }
+.bd-rider-info { min-width: 0; }
+.bd-rider-info strong { font-family: var(--font-display); font-size: var(--fs-md); }
+.bd-rider-info .bd-rider-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.bd-rider-meta a { color: var(--text-muted); }
+.bd-rider-info .bd-rider-rating { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); font-weight: 700; }
+.bd-rider-rating i { color: #e0a200; width: auto; font-size: var(--fs-xs); }
+.bd-rider-rating small { color: var(--text-muted); font-weight: 500; }
+.bd-rider-info .bd-rider-rating--new { color: var(--green-dark); font-weight: 600; }
+.bd-rider-vehicle { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.bd-plate {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-xs);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.bd-rider-vehicle__name { font-size: var(--fs-xs); color: var(--text-muted); }
+.bd-rider-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bd-rider-actions .btn { width: 100%; margin: 0; }
+.bd-rider-actions .btn:only-child { grid-column: 1 / -1; }
+
+/* Phones: modals become bottom sheets that slide up. */
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: none; }
+}
+@media (max-width: 600px) {
+  .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+  .modal {
+    max-width: none !important;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    animation: sheetUp 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .modal-head { position: sticky; top: 0; z-index: 2; background: var(--surface); padding-top: 22px; }
+  .modal-head::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    margin-left: -20px;
+    border-radius: var(--radius-pill);
+    background: var(--border-strong);
+  }
+  .bd-header,
+  .bd-section { padding-left: 18px; padding-right: 18px; }
+  .bd-fare-hero__amount { font-size: var(--fs-2xl); }
+  .bd-step__label { font-size: var(--fs-2xs); }
+}
+.bd-header { border-radius: var(--radius-md); }
+@media (max-width: 600px) {
+  .bd-rider-vehicle { grid-column: 2 / -1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin-top: -4px; }
+}
+.bd-section h4 + .bd-row--total { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* =====================================================================
+   PREMIUM LAYER (batch 2) — phones feel like an app
+   ===================================================================== */
+@media (max-width: 900px) {
+  /* Full-bleed frosted top bar */
+  .mobile-topbar {
+    margin: -20px -18px 18px;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.82);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid rgba(236, 222, 221, 0.8);
+  }
+
+  /* Frosted bottom bar with an active "pill" behind the icon */
+  .bottom-nav {
+    background: rgba(255, 255, 255, 0.9);
+    -webkit-backdrop-filter: saturate(1.4) blur(16px);
+    backdrop-filter: saturate(1.4) blur(16px);
+    border-top: 1px solid rgba(236, 222, 221, 0.8);
+    padding: 6px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .bottom-nav button {
+    min-height: 54px;
+    justify-content: center;
+    gap: 4px;
+    transition: color 0.18s ease;
+  }
+  .bottom-nav button i {
+    width: 48px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .bottom-nav button.active i {
+    background: var(--blue-50);
+    transform: none;
+  }
+  .bottom-nav button:active i { transform: scale(0.92); }
+
+  /* Customer "Book" — the main action — is a raised round button */
+  .bottom-nav button[data-tab="book"] i {
+    width: 52px;
+    height: 52px;
+    margin-top: -24px;
+    border-radius: 50%;
+    color: var(--white);
+    font-size: var(--fs-xl);
+    background: var(--grad-blue);
+    box-shadow: 0 10px 22px rgba(33, 150, 243, 0.38), 0 0 0 5px var(--surface);
+  }
+  .bottom-nav button[data-tab="book"].active i { background: var(--grad-blue); }
+  .bottom-nav button[data-tab="book"] { color: var(--blue-ink); }
+
+  /* Bigger touch targets */
+  .btn { min-height: 46px; }
+  .btn-sm { min-height: 38px; }
+  .tab-btn, .seg-btn, .rf-chip { min-height: 40px; }
+
+  /* The booking form's main button stays in reach above the bottom bar */
+  #tab-book form > button[type="submit"].btn-block {
+    position: sticky;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    z-index: 5;
+    box-shadow: 0 12px 28px rgba(13, 71, 161, 0.3), 0 0 0 6px var(--bg);
+  }
+
+  .page-head h1 { font-size: var(--fs-2xl); }
+}
+
+/* Three KPI cards sit in one compact row instead of 2 + an orphan. */
+@media (max-width: 560px) {
+  .stat-grid:has(> .stat-card:nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .stat-grid:has(> .stat-card:nth-child(3):last-child) .stat-card {
+    padding: 12px;
+    gap: 8px;
+  }
+  .stat-grid:has(> .stat-card:nth-child(3):last-child) .stat-card .icon {
+    width: 32px;
+    height: 32px;
+    font-size: var(--fs-sm);
+  }
+  .stat-grid:has(> .stat-card:nth-child(3):last-child) .stat-card strong {
+    font-size: var(--fs-lg);
+    overflow-wrap: anywhere;
+  }
+  .stat-grid:has(> .stat-card:nth-child(3):last-child) .stat-card span.label {
+    font-size: var(--fs-2xs);
+    line-height: 1.3;
+  }
+}
+
+/* =====================================================================
+   DARK MODE (batch 2) — follows the phone/computer setting.
+   Dashboards only: this file isn't loaded on the landing or auth pages,
+   which keep their light brand look. Built on the navy #0D47A1 family.
+   ===================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #131c29;
+    --surface-2: #172131;
+    --bg: #0b121c;
+    --ink: #e8eef6;
+    --text-body: #c3cdd9;
+    --text-muted: #8d9aab;
+    --border: #243246;
+    --border-strong: #34455d;
+    --border-blue: #2b5c92;
+    --blue-ink: #90caf9;
+    --blue-50: #102540;
+    --blue-100: #15304f;
+    --blue-tint: #102540;
+    --rose-50: #221820;
+    --rose-100: #3a2630;
+    --orange-tint: #221820;
+    --rose-deep: #e2a3b1;
+    --slate-50: #162030;
+    --slate-100: #1c2839;
+    --slate-300: #46566c;
+    --slate-500: #8d9aab;
+    --slate-700: #c3cdd9;
+    --green-tint: #0f2a1f;
+    --yellow-tint: #2b2210;
+    --red-tint: #2f151b;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 30px 64px rgba(0, 0, 0, 0.55);
+  }
+
+  body { background: var(--bg); color: var(--text-body); }
+  .main {
+    background:
+      radial-gradient(820px 320px at 100% -40px, rgba(33, 150, 243, 0.10), transparent 70%),
+      var(--bg);
+  }
+
+  /* Frosted bars */
+  .mobile-topbar { background: rgba(19, 28, 41, 0.82); border-bottom-color: rgba(36, 50, 70, 0.9); }
+  .bottom-nav { background: rgba(19, 28, 41, 0.9); border-top-color: rgba(36, 50, 70, 0.9); }
+  .bottom-nav button[data-tab="book"] i { box-shadow: 0 10px 22px rgba(33, 150, 243, 0.35), 0 0 0 5px var(--surface); }
+
+  /* Toast sat on --ink (now light) — give it its own dark slate. */
+  .toast { background: #22314a; color: #ffffff; }
+
+  /* Form controls */
+  input, select, textarea { color: var(--ink); background-color: var(--surface); border-color: var(--border); }
+  input::placeholder, textarea::placeholder { color: #6c7a8d; }
+
+  /* Status badges: brighter text on the darker tints */
+  .badge--completed, .badge--approved, .badge--active, .badge--success { color: #6ee7a8; }
+  .badge--pending { color: #f7c561; }
+  .badge--ongoing, .badge--accepted { color: #90caf9; }
+  .badge--cancelled, .badge--rejected, .badge--danger { color: #ff9aab; }
+  .badge--expired, .badge--inactive { color: #a9b5c4; }
+  .badge--no-show { color: #ffb37a; }
+  .badge--role-rider { color: #6ee7a8; }
+
+  /* Overlays read darker */
+  .modal-overlay, .app-dialog-overlay { background: rgba(2, 6, 12, 0.66); }
+
+  /* Images keep a light backing (logos are usually drawn for white) */
+  .rf-logo img, .rm-item__img { background: #ffffff; }
+
+  /* Booking details */
+  .bd-header { background: linear-gradient(180deg, rgba(33, 150, 243, 0.12), transparent 85%); }
+  .bd-plate { border-color: var(--ink); }
+
+  /* Skeleton shimmer on dark */
+  .skeleton {
+    background: linear-gradient(90deg, #172131 25%, #1f2c40 37%, #172131 63%);
+    background-size: 400% 100%;
+  }
+}
+@media (max-width: 560px) {
+  /* basis 0 keeps the title beside the icon instead of wrapping below it */
+  .booking-card .info { flex: 1 1 0; }
+}

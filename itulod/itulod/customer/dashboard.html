@@ -88,7 +88,7 @@
           <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <span class="brand" style="font-size: 1.1rem; color: var(--blue)">
+          <span class="brand" style="font-size: var(--fs-lg); color: var(--blue)">
             iTULOD<span class="dot">.</span>
           </span>
           <button
@@ -283,7 +283,7 @@
                   <p
                     style="
                       color: var(--text-muted);
-                      font-size: 0.8rem;
+                      font-size: var(--fs-xs);
                       margin: 6px 0 0;
                     "
                   >
@@ -346,7 +346,7 @@
               <p
                 id="map-mode-hint"
                 style="
-                  font-size: 0.8rem;
+                  font-size: var(--fs-xs);
                   color: var(--text-muted);
                   margin-bottom: 10px;
                 "
@@ -355,7 +355,7 @@
                 your pickup location.
               </p>
               <div id="tracking-map" class="map-canvas"></div>
-              <p id="nearby-riders-count" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px">
+              <p id="nearby-riders-count" style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 8px">
                 <i class="fa-solid fa-motorcycle"></i> Looking for nearby riders…
               </p>
               <div id="ride-active-status" style="margin-top: 16px"></div>
@@ -379,7 +379,7 @@
                 <div class="field">
                   <label>Restaurant</label>
                   <div id="food-restaurant-summary" class="card" style="padding: 12px; margin-bottom: 0">
-                    <p id="food-restaurant-empty-note" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px">
+                    <p id="food-restaurant-empty-note" style="color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 8px">
                       No restaurant chosen yet.
                     </p>
                     <p id="food-restaurant-name-display" style="font-weight: 600; margin-bottom: 8px; display: none"></p>
@@ -467,7 +467,7 @@
                     <option value="gcash">GCash</option>
                     <option value="wallet">Wallet</option>
                   </select>
-                  <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
+                  <p style="color: var(--text-muted); font-size: var(--fs-xs); margin: 6px 0 0">
                     <i class="fa-solid fa-lock"></i> The price above is what
                     the rider will confirm at pickup. If you chose GCash,
                     you'll pay once they do.
@@ -502,7 +502,7 @@
               <p
                 id="food-map-mode-hint"
                 style="
-                  font-size: 0.8rem;
+                  font-size: var(--fs-xs);
                   color: var(--text-muted);
                   margin-bottom: 10px;
                 "
@@ -725,7 +725,7 @@
                     <option value="gcash">GCash</option>
                     <option value="wallet">Wallet</option>
                   </select>
-                  <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
+                  <p style="color: var(--text-muted); font-size: var(--fs-xs); margin: 6px 0 0">
                     <i class="fa-solid fa-lock"></i> The rider may adjust the
                     final fare at pickup; you'll only be charged the confirmed
                     amount.
@@ -782,7 +782,7 @@
               <p
                 id="parcel-map-mode-hint"
                 style="
-                  font-size: 0.8rem;
+                  font-size: var(--fs-xs);
                   color: var(--text-muted);
                   margin-bottom: 10px;
                 "
@@ -947,7 +947,7 @@
                     <option value="gcash">GCash</option>
                     <option value="wallet">Wallet</option>
                   </select>
-                  <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0">
+                  <p style="color: var(--text-muted); font-size: var(--fs-xs); margin: 6px 0 0">
                     <i class="fa-solid fa-lock"></i> The driver confirms the
                     final fare after seeing the load; you'll only be charged the
                     confirmed amount.
@@ -978,7 +978,7 @@
                   <span><i class="fa-solid fa-flag-checkered"></i> Set Drop-off</span>
                 </button>
               </div>
-              <p id="hauling-map-mode-hint" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px">
+              <p id="hauling-map-mode-hint" style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 10px">
                 <i class="fa-solid fa-circle-info"></i> Click on the map to set pickup location.
               </p>
               <div id="hauling-map" class="map-canvas"></div>
@@ -1019,7 +1019,7 @@
           <div class="card">
             <div class="card-head">
               <h3>Notifications</h3>
-              <span style="font-size: 0.8rem; color: var(--text-muted)"
+              <span style="font-size: var(--fs-xs); color: var(--text-muted)"
                 >Most recent first</span
               >
             </div>
@@ -1128,11 +1128,11 @@
 
           <div class="card card--narrow">
             <div class="card-head"><h3>My wallet</h3></div>
-            <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
+            <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: -6px 0 14px">
               Top up with GCash once, then pay for rides instantly at checkout — no redirect.
             </p>
             <div style="text-align: center; margin-bottom: 16px">
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px">Balance</p>
+              <p style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px">Balance</p>
               <div class="receipt-amount" id="wallet-balance">₱0.00</div>
             </div>
             <form id="wallet-topup-form" style="display: flex; gap: 8px; margin-bottom: 16px">
@@ -1154,12 +1154,12 @@
 
           <div class="card card--narrow">
             <div class="card-head"><h3>Refer a friend</h3></div>
-            <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
+            <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: -6px 0 14px">
               Share your code — they get ₱50 in their wallet right away, and
               you get ₱50 once their first booking is completed.
             </p>
             <div style="text-align: center; margin-bottom: 16px">
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px">Your code</p>
+              <p style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px">Your code</p>
               <div class="receipt-amount" id="referral-code" style="letter-spacing: 2px">——————</div>
             </div>
             <button class="btn btn-outline btn-block" id="referral-copy-btn" style="margin-bottom: 16px">
@@ -1174,14 +1174,14 @@
                 <i class="fa-solid fa-gift"></i> Redeem
               </button>
             </form>
-            <p id="referral-redeemed-note" style="display: none; color: var(--text-muted); font-size: 0.82rem; text-align: center">
+            <p id="referral-redeemed-note" style="display: none; color: var(--text-muted); font-size: var(--fs-sm); text-align: center">
               <i class="fa-solid fa-circle-check" style="color: var(--green)"></i> Referral applied — thanks!
             </p>
           </div>
 
           <div class="card card--narrow">
             <div class="card-head"><h3>Saved addresses</h3></div>
-            <p style="color: var(--text-muted); font-size: 0.82rem; margin: -6px 0 14px">
+            <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: -6px 0 14px">
               Save the places you book often — pick them from the
               <i class="fa-solid fa-bookmark"></i> button next to any address
               field.
@@ -1239,7 +1239,7 @@
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
-              <p id="saved-map-mode-hint" style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 14px">
+              <p id="saved-map-mode-hint" style="color: var(--text-muted); font-size: var(--fs-sm); margin: 8px 0 14px">
                 <i class="fa-solid fa-circle-info"></i> Click on the map to set address.
               </p>
               <div id="saved-map" class="map-canvas"></div>
@@ -1258,7 +1258,7 @@
 
           <div class="card card--narrow">
             <div class="card-head"><h3>Need help?</h3></div>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px">
+            <p style="color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 14px">
               Something wrong with a booking, a payment, or anything else?
             </p>
             <button
@@ -1327,7 +1327,7 @@
           <div style="text-align: center; margin-bottom: 18px">
             <p
               style="
-                font-size: 0.85rem;
+                font-size: var(--fs-sm);
                 color: var(--text-muted);
                 margin-bottom: 4px;
               "
@@ -1339,7 +1339,7 @@
           <dl class="receipt" id="pay-summary"></dl>
           <p
             style="
-              font-size: 0.8rem;
+              font-size: var(--fs-xs);
               color: var(--text-muted);
               margin: 14px 0 0;
               text-align: center;
@@ -1375,7 +1375,7 @@
         <div class="modal-body">
           <p
             style="
-              font-size: 0.85rem;
+              font-size: var(--fs-sm);
               color: var(--text-muted);
               margin-bottom: 14px;
             "
@@ -1459,7 +1459,7 @@
           </button>
         </div>
         <div class="modal-body">
-          <p id="support-request-context" style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 14px; display: none"></p>
+          <p id="support-request-context" style="color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: 14px; display: none"></p>
           <div class="field">
             <label>What's this about?</label>
             <select id="support-category">

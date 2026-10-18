@@ -783,7 +783,7 @@ async function loadVehicleInfo() {
       <div style="display:flex;justify-content:space-between"><span>Plate number</span><strong>${escapeHtml(data.vehicle_plate || '—')}</strong></div>
       <div style="display:flex;justify-content:space-between"><span>License number</span><strong>${escapeHtml(data.license_number || '—')}</strong></div>
       <div style="display:flex;justify-content:space-between"><span>Submitted</span><strong>${formatDate(data.created_at)}</strong></div>
-      ${data.notes ? `<div style="background:var(--slate-50);padding:12px;border-radius:8px;font-size:0.85rem">Admin note: ${escapeHtml(data.notes)}</div>` : ''}
+      ${data.notes ? `<div style="background:var(--slate-50);padding:12px;border-radius:var(--radius-xs);font-size:var(--fs-sm)">Admin note: ${escapeHtml(data.notes)}</div>` : ''}
     </div>`;
 }
 

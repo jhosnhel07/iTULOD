@@ -1228,3 +1228,4 @@
           grid-template-columns: 1fr 1fr;
         }
       }
+      .bp-stat-icon i { color: #ffffff; opacity: 0.9; }

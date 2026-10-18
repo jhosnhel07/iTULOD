@@ -198,11 +198,22 @@ function peso(amount) {
   const n = Number(amount || 0);
   return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+// "Today, 8:42 AM" / "Yesterday, 3:10 PM" / "Tomorrow, 9:00 AM" / "Oct 12, 3:10 AM";
+// the year is only shown when it isn't this year.
 function formatDate(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  const now = new Date();
+  const time = d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  const dayDiff = Math.round((new Date(now.toDateString()) - new Date(d.toDateString())) / 86400000);
+  if (dayDiff === 0) return 'Today, ' + time;
+  if (dayDiff === 1) return 'Yesterday, ' + time;
+  if (dayDiff === -1) return 'Tomorrow, ' + time;
+  const date = d.toLocaleDateString('en-PH', d.getFullYear() === now.getFullYear()
+    ? { month: 'short', day: 'numeric' }
+    : { month: 'short', day: 'numeric', year: 'numeric' });
+  return date + ', ' + time;
 }
 // Only http(s) image URLs are rendered — anything else (javascript:, data:)
 // falls back to the icon tile.
