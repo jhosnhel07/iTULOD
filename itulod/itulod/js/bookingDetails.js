@@ -49,7 +49,7 @@
     document.body.style.overflow = 'hidden';
 
     const body = document.getElementById('booking-details-body');
-    body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading details…</div>`;
+    body.innerHTML = skeletonDetails();
 
     try {
       const table = kindTable(kind);
@@ -123,7 +123,7 @@
         </button>
         <p id="bd-eta" class="bd-eta" hidden></p>
         <div class="bd-map" id="bd-map" hidden>
-          <div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>
+          <div class="bd-map-loading skeleton"><i class="fa-solid fa-map-location-dot"></i> Loading route…</div>
         </div>
       ` : '';
 
@@ -347,7 +347,7 @@
         <div class="bd-section">
           <h4><i class="fa-solid fa-comment-dots"></i> Messages</h4>
           <div class="bd-chat-messages" id="bd-chat-messages">
-            <p class="muted" style="font-size:0.85rem">Loading…</p>
+            <div class="skeleton skeleton-line skeleton-line--w60"></div><div class="skeleton skeleton-line skeleton-line--w40"></div>
           </div>
           ${canChat ? `
             <form id="bd-chat-form" style="display:flex;gap:8px;margin-top:10px">
@@ -411,7 +411,7 @@
           if (!opening) {
             if (typeof stopTrackingRider === 'function') stopTrackingRider();
             if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
-            mapEl.innerHTML = '<div class="bd-map-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading route…</div>';
+            mapEl.innerHTML = '<div class="bd-map-loading skeleton"><i class="fa-solid fa-map-location-dot"></i> Loading route…</div>';
             return;
           }
           try {
@@ -568,7 +568,7 @@
 
   window.markItemOutOfStock = async function(itemId, bookingId, e) {
     if (e) e.stopPropagation();
-    if (!confirm('Mark this item as out of stock?')) return;
+    if (!(await appConfirm('The customer will see this item marked as out of stock on their order.', { title: 'Mark as out of stock?', confirmText: 'Out of stock', icon: 'fa-box-open' }))) return;
     try {
       toast('Updating...', 'info');
       const { error } = await supabase.from('food_order_items').update({ is_out_of_stock: true }).eq('id', itemId);

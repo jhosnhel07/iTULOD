@@ -429,7 +429,7 @@ function renderAcceptedCard(b, kind) {
 // distinct from letting it silently expire (this books it as a no-show on
 // the record rather than a timeout).
 async function markNoShow(kind, id) {
-  if (!confirm("Mark this as a no-show? Use this only if you arrived and the customer/order wasn't there.")) return;
+  if (!(await appConfirm("Use this only if you arrived and the customer/order wasn't there.", { title: 'Mark as no-show?', confirmText: 'Mark no-show', danger: true, icon: 'fa-user-slash' }))) return;
   await updateStatus(kind, id, 'no_show');
 }
 
@@ -437,7 +437,7 @@ async function markNoShow(kind, id) {
 // (rider_id -> null, status -> pending, per sql/010) so another rider can
 // pick it up instead of the customer being stuck with a no-show.
 async function releaseJob(kind, id) {
-  if (!confirm("Release this job back to other riders? Only do this if you genuinely can't complete it.")) return;
+  if (!(await appConfirm("Only do this if you genuinely can't complete it.", { title: 'Release this job?', confirmText: 'Release job', danger: true, icon: 'fa-rotate-left' }))) return;
   const table = TABLE_BY_KIND[kind];
   const { error } = await supabase.from(table).update({ rider_id: null, status: 'pending' }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
@@ -476,7 +476,7 @@ function wireProofUpload() {
     const { error: upErr } = await supabase.storage.from('delivery-proof').upload(path, file, { upsert: true });
     if (upErr) {
       console.error('Proof of delivery upload failed:', upErr.message);
-      if (!confirm("Couldn't upload the photo. Mark this complete without one?")) return;
+      if (!(await appConfirm("The proof-of-delivery photo couldn't be uploaded.", { title: 'Complete without a photo?', confirmText: 'Complete anyway', icon: 'fa-camera' }))) return;
       await updateStatus(target.kind, target.id, 'completed');
       return;
     }
@@ -516,7 +516,7 @@ function wireReceiptUpload() {
     const { error: upErr } = await supabase.storage.from('receipts').upload(path, file, { upsert: true });
     if (upErr) {
       console.error('Receipt upload failed:', upErr.message);
-      if (!confirm("Couldn't upload the receipt. Confirm fare without one?")) return;
+      if (!(await appConfirm("The receipt photo couldn't be uploaded.", { title: 'Confirm fare without a receipt?', confirmText: 'Confirm anyway', icon: 'fa-receipt' }))) return;
       await setFinalFare('food', target.id, target.amount);
       return;
     }
@@ -665,7 +665,7 @@ async function loadRiderBalance() {
 }
 
 async function markCodRemitted(id) {
-  if (!confirm('Confirm you have handed the collected COD to the sender?')) return;
+  if (!(await appConfirm('Confirm you have handed the collected cash to the sender.', { title: 'COD handed over?', confirmText: 'Yes, handed over', cancelText: 'Not yet', icon: 'fa-money-bill-wave' }))) return;
   const { error } = await supabase.from('parcel_deliveries').update({ cod_remitted_at: new Date().toISOString() }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast('COD marked as handed over. The sender has been notified.', 'success');

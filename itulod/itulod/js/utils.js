@@ -24,6 +24,55 @@ function toastIcon(type) {
   return { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' }[type] || 'fa-circle-info';
 }
 
+// ---- Confirm dialog -----------------------------------------------------
+// Branded replacement for window.confirm(): resolves true on confirm, false on
+// cancel / Esc / backdrop click. `danger` styles the confirm button red for
+// destructive actions (delete, cancel booking, no-show).
+function appConfirm(message, { title = 'Are you sure?', confirmText = 'Confirm', cancelText = 'Cancel', danger = false, icon = null } = {}) {
+  return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
+    const overlay = document.createElement('div');
+    overlay.className = 'app-dialog-overlay';
+    overlay.innerHTML = `
+      <div class="app-dialog ${danger ? 'app-dialog--danger' : ''}" role="alertdialog" aria-modal="true"
+           aria-labelledby="app-dialog-title" aria-describedby="app-dialog-msg">
+        <div class="app-dialog__icon"><i class="fa-solid ${icon || (danger ? 'fa-triangle-exclamation' : 'fa-circle-question')}"></i></div>
+        <h3 id="app-dialog-title">${escapeHtml(title)}</h3>
+        <p id="app-dialog-msg">${escapeHtml(message)}</p>
+        <div class="app-dialog__actions">
+          <button type="button" class="btn btn-outline" data-act="cancel">${escapeHtml(cancelText)}</button>
+          <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-act="ok">${escapeHtml(confirmText)}</button>
+        </div>
+      </div>`;
+    const close = (result) => {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.classList.remove('app-dialog-overlay--show');
+      setTimeout(() => overlay.remove(), 180);
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+      resolve(result);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+      else if (e.key === 'Tab') {
+        // Keep keyboard focus inside the dialog's two buttons.
+        const btns = overlay.querySelectorAll('button');
+        const first = btns[0], last = btns[btns.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    overlay.addEventListener('click', (e) => {
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act) close(act === 'ok');
+      else if (e.target === overlay) close(false);
+    });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('app-dialog-overlay--show'));
+    overlay.querySelector(danger ? '[data-act="cancel"]' : '[data-act="ok"]').focus();
+  });
+}
+
 // ---- Loading indicator --------------------------------------------------
 function setLoading(el, isLoading, labelWhenIdle = null) {
   if (!el) return;
@@ -106,6 +155,21 @@ function skeletonList(count = 3) {
     </div>`.repeat(count);
 }
 
+// Booking-details modal placeholder: a header row, a map block, then a few
+// label/value lines — the same rhythm as the real details view.
+function skeletonDetails() {
+  const line = (w) => `<div class="skeleton skeleton-line skeleton-line--${w}"></div>`;
+  return `
+    <div class="skeleton-details" aria-busy="true" aria-label="Loading">
+      <div class="skeleton-card" style="border:0;padding:0;margin-bottom:18px">
+        <div class="skeleton skeleton-avatar"></div>
+        <div class="skeleton-body">${line('w60')}${line('w40')}</div>
+      </div>
+      <div class="skeleton skeleton-block"></div>
+      ${['w80', 'w60', 'w80', 'w40', 'w60'].map(line).join('')}
+    </div>`;
+}
+
 // `cols` must match the table's column count or the placeholder row will not
 // span the full width.
 function skeletonRows(count, cols) {
@@ -140,6 +204,12 @@ function formatDate(iso) {
     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 }
+// Only http(s) image URLs are rendered — anything else (javascript:, data:)
+// falls back to the icon tile.
+function safeImageUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str ?? '';

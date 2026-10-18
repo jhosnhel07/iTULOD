@@ -124,7 +124,7 @@
       .bp-logo-text {
         font-family: "Poppins", sans-serif;
         font-weight: 800;
-        font-size: 1.5rem;
+        font-size: var(--fs-2xl);
         color: #fff;
         letter-spacing: -0.5px;
       }
@@ -151,12 +151,12 @@
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.25);
         color: rgba(255, 255, 255, 0.92);
-        font-size: 0.72rem;
+        font-size: var(--fs-xs);
         font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         padding: 6px 14px;
-        border-radius: 999px;
+        border-radius: var(--radius-pill);
         margin-bottom: 22px;
         width: fit-content;
       }
@@ -176,7 +176,7 @@
 
       .bp-subtitle {
         color: rgba(255, 255, 255, 0.8);
-        font-size: 0.95rem;
+        font-size: var(--fs-base);
         line-height: 1.7;
         max-width: 36ch;
         margin-bottom: 36px;
@@ -197,10 +197,10 @@
         backdrop-filter: blur(6px);
         border: 1px solid rgba(255, 255, 255, 0.22);
         color: #fff;
-        font-size: 0.8rem;
+        font-size: var(--fs-xs);
         font-weight: 500;
         padding: 7px 14px;
-        border-radius: 999px;
+        border-radius: var(--radius-pill);
         transition:
           background 0.2s,
           transform 0.2s;
@@ -217,7 +217,7 @@
       }
       .bp-service-pill i {
         color: #b06b79;
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
       }
 
       /* Stats grid */
@@ -232,7 +232,7 @@
         background: rgba(255, 255, 255, 0.12);
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.22);
-        border-radius: 18px;
+        border-radius: var(--radius-lg);
         padding: 18px 20px;
         transition:
           transform 0.25s ease,
@@ -243,14 +243,14 @@
         background: rgba(255, 255, 255, 0.18);
       }
       .bp-stat-icon {
-        font-size: 1.4rem;
+        font-size: var(--fs-2xl);
         margin-bottom: 8px;
         display: block;
       }
       .bp-stat-value {
         font-family: "Poppins", sans-serif;
         font-weight: 800;
-        font-size: 1.4rem;
+        font-size: var(--fs-2xl);
         color: #fff;
         display: block;
         line-height: 1;
@@ -258,7 +258,7 @@
       }
       .bp-stat-label {
         color: rgba(255, 255, 255, 0.75);
-        font-size: 0.78rem;
+        font-size: var(--fs-xs);
         font-weight: 500;
       }
 
@@ -276,7 +276,7 @@
         width: 100%;
         max-width: 460px;
         background: #ffffff;
-        border-radius: 24px;
+        border-radius: var(--radius-lg);
         box-shadow:
           0 4px 6px rgba(43, 52, 64, 0.04),
           0 20px 60px rgba(43, 52, 64, 0.1),
@@ -312,7 +312,7 @@
       .card-logo-row span {
         font-family: "Poppins", sans-serif;
         font-weight: 800;
-        font-size: 1.2rem;
+        font-size: var(--fs-xl);
         color: #2b3440;
       }
       .card-logo-row span em {
@@ -323,13 +323,13 @@
       .card-title {
         font-family: "Poppins", sans-serif;
         font-weight: 800;
-        font-size: 1.75rem;
+        font-size: var(--fs-3xl);
         color: #2b3440;
         margin: 0 0 6px;
       }
       .card-sub {
         color: #7b8794;
-        font-size: 0.95rem;
+        font-size: var(--fs-base);
         margin: 0 0 32px;
       }
 
@@ -339,7 +339,7 @@
       }
       .input-group label {
         display: block;
-        font-size: 0.83rem;
+        font-size: var(--fs-sm);
         font-weight: 600;
         color: #3c4650;
         margin-bottom: 8px;
@@ -354,7 +354,7 @@
         position: absolute;
         left: 14px;
         color: #9aa6b2;
-        font-size: 0.95rem;
+        font-size: var(--fs-base);
         pointer-events: none;
         transition: color 0.2s;
         z-index: 1;
@@ -363,9 +363,9 @@
         width: 100%;
         padding: 13px 14px 13px 42px;
         border: 1.5px solid #ecdedd;
-        border-radius: 12px;
+        border-radius: var(--radius-sm);
         font-family: "Inter", sans-serif;
-        font-size: 0.95rem;
+        font-size: var(--fs-base);
         color: #2b3440;
         background: #faf6f5;
         transition:
@@ -393,9 +393,9 @@
         border: none;
         cursor: pointer;
         color: #9aa6b2;
-        font-size: 0.9rem;
+        font-size: var(--fs-sm);
         padding: 4px;
-        border-radius: 6px;
+        border-radius: var(--radius-xs);
         transition:
           color 0.2s,
           background 0.2s;
@@ -418,7 +418,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
         color: #7b8794;
         cursor: pointer;
         user-select: none;
@@ -430,7 +430,7 @@
         cursor: pointer;
       }
       .forgot-link {
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
         font-weight: 600;
         color: #2196f3;
         text-decoration: none;
@@ -448,10 +448,10 @@
         background: linear-gradient(135deg, #2196f3 0%, #0d47a1 100%);
         color: #fff;
         border: none;
-        border-radius: 14px;
+        border-radius: var(--radius-md);
         font-family: "Poppins", sans-serif;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: var(--fs-md);
         cursor: pointer;
         transition:
           transform 0.2s,
@@ -500,7 +500,7 @@
         gap: 14px;
         margin: 24px 0;
         color: #9aa6b2;
-        font-size: 0.82rem;
+        font-size: var(--fs-sm);
         font-weight: 500;
       }
       .divider::before,
@@ -514,7 +514,7 @@
       /* Register link */
       .register-link {
         text-align: center;
-        font-size: 0.88rem;
+        font-size: var(--fs-sm);
         color: #7b8794;
         margin-top: 8px;
       }
@@ -535,7 +535,7 @@
         align-items: center;
         gap: 6px;
         color: rgba(255, 255, 255, 0.75);
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
         font-weight: 500;
         text-decoration: none;
         transition:
@@ -573,7 +573,7 @@
         .login-card {
           margin: 0 auto;
           padding: 36px 28px;
-          border-radius: 20px;
+          border-radius: var(--radius-lg);
         }
         .card-logo-row {
           display: flex;
@@ -585,6 +585,6 @@
         }
         .login-card {
           padding: 28px 20px;
-          border-radius: 16px;
+          border-radius: var(--radius-md);
         }
       }

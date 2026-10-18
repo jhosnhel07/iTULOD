@@ -581,7 +581,7 @@ function wireVehicleForm() {
   });
 }
 async function deleteVehicle(id) {
-  if (!confirm('Delete this vehicle category? Existing bookings keep their history.')) return;
+  if (!(await appConfirm('Existing bookings keep their history.', { title: 'Delete this vehicle category?', confirmText: 'Delete', danger: true, icon: 'fa-trash-can' }))) return;
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast('Vehicle deleted.', 'success');
@@ -652,7 +652,7 @@ function wireRestaurantForm() {
   });
 }
 async function deleteRestaurant(id) {
-  if (!confirm('Delete this restaurant and its whole menu? Existing orders keep their history.')) return;
+  if (!(await appConfirm('Its whole menu is deleted too. Existing orders keep their history.', { title: 'Delete this restaurant?', confirmText: 'Delete', danger: true, icon: 'fa-trash-can' }))) return;
   const { error } = await supabase.from('restaurants').delete().eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast('Restaurant deleted.', 'success');
@@ -721,7 +721,7 @@ async function toggleMenuItemAvailable(id, currentlyAvailable) {
   await loadMenuItems(ACTIVE_MENU_RESTAURANT_ID);
 }
 async function deleteMenuItem(id) {
-  if (!confirm('Delete this menu item?')) return;
+  if (!(await appConfirm('Customers will no longer see it on the menu.', { title: 'Delete this menu item?', confirmText: 'Delete', danger: true, icon: 'fa-trash-can' }))) return;
   const { error } = await supabase.from('menu_items').delete().eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast('Item deleted.', 'success');
@@ -953,7 +953,7 @@ async function togglePromoActive(id, currentlyActive) {
   await loadPromoCodes();
 }
 async function deletePromoCode(id) {
-  if (!confirm('Delete this promo code? This does not undo discounts already given.')) return;
+  if (!(await appConfirm('This does not undo discounts already given.', { title: 'Delete this promo code?', confirmText: 'Delete', danger: true, icon: 'fa-trash-can' }))) return;
   const { error } = await supabase.from('promo_codes').delete().eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   await loadPromoCodes();
@@ -1050,7 +1050,7 @@ async function refundFromSupport() {
   if (!ACTIVE_SUPPORT) return;
   const amount = parseFloat(document.getElementById('support-refund-amount')?.value);
   if (!(amount > 0)) { toast('Enter the refund amount.', 'error'); return; }
-  if (!confirm(`Add ${peso(amount)} to ${ACTIVE_SUPPORT.customer?.full_name || 'this customer'}'s iTULOD wallet?`)) return;
+  if (!(await appConfirm(`${peso(amount)} will be added to ${ACTIVE_SUPPORT.customer?.full_name || 'this customer'}'s iTULOD wallet.`, { title: 'Issue this refund?', confirmText: 'Refund', icon: 'fa-wallet' }))) return;
   const { error } = await supabase.rpc('admin_refund_to_wallet', {
     p_customer: ACTIVE_SUPPORT.customer_id,
     p_amount: amount,
@@ -1164,7 +1164,7 @@ const RIDER_VEHICLE_TYPES = ['Motorcycle', 'Tricycle', 'Car', 'SUV', 'Van', 'Pic
 const HAULING_VEHICLE_TYPES = ['Van', 'Pickup', 'Truck'];
 
 async function changeRiderVehicle(riderId, vehicleType, selectEl) {
-  if (!confirm(`Change this rider's vehicle to ${vehicleType}? Make sure you've checked the vehicle's OR/CR.`)) {
+  if (!(await appConfirm("Make sure you've checked the vehicle's OR/CR.", { title: `Change vehicle to ${vehicleType}?`, confirmText: 'Change vehicle', icon: 'fa-car-side' }))) {
     loadAllRiders();
     return;
   }

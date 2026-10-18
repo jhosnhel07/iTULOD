@@ -70,7 +70,21 @@
   --font-display: "Poppins", sans-serif;
   --font-body: "Inter", sans-serif;
 
+  /* Type scale — every font-size in the stylesheets snaps to one of these.
+     --fs-md stays 1rem (16px): inputs below 16px make iOS Safari zoom in. */
+  --fs-2xs: 0.7rem;    /* 11px  micro labels, counters */
+  --fs-xs: 0.78rem;    /* 12.5px captions, badges, meta */
+  --fs-sm: 0.875rem;   /* 14px  secondary text, table cells */
+  --fs-base: 0.95rem;  /* 15px  body copy, buttons */
+  --fs-md: 1rem;       /* 16px  inputs, emphasis */
+  --fs-lg: 1.1rem;     /* 17.5px card titles */
+  --fs-xl: 1.25rem;    /* 20px  section titles */
+  --fs-2xl: 1.5rem;    /* 24px  page titles, big numbers */
+  --fs-3xl: 1.75rem;   /* 28px  hero numbers */
+  --fs-4xl: 2.1rem;    /* 34px  display */
+
   /* --- Geometry --- */
+  --radius-xs: 8px;
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 22px;
@@ -166,7 +180,7 @@ button {
   border-radius: var(--radius-pill);
   border: 1px solid transparent;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   line-height: 1;
   transition:
     transform 0.15s ease,
@@ -223,7 +237,7 @@ button {
 }
 .btn-sm {
   padding: 8px 16px;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 .btn-danger {
   background: var(--red);
@@ -256,7 +270,7 @@ button {
   gap: 10px;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.4rem;
+  font-size: var(--fs-2xl);
 }
 .brand span.dot {
   color: var(--rose-deep);
@@ -279,7 +293,7 @@ button {
   display: none;
   background: none;
   border: none;
-  font-size: 1.4rem;
+  font-size: var(--fs-2xl);
   cursor: pointer;
   color: var(--slate-700);
 }
@@ -380,11 +394,11 @@ button {
   background: var(--ink);
   color: var(--white);
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   line-height: 1.35;
   letter-spacing: 0.05em;
   padding: 7px 15px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
@@ -405,7 +419,7 @@ button {
   color: var(--blue);
 }
 .hero p.lead {
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   color: var(--slate-700);
   max-width: 46ch;
   margin-bottom: 28px;
@@ -438,13 +452,13 @@ button {
 .hero-stats div strong {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: var(--fs-2xl);
   color: var(--blue-dark);
   letter-spacing: -0.02em;
 }
 .hero-stats div span {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 /* the destination board itself */
@@ -458,7 +472,7 @@ button {
   color: var(--white);
 }
 .route-board .board-label {
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--slate-300);
@@ -523,7 +537,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   z-index: 2;
   margin-bottom: 8px;
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12);
@@ -542,7 +556,7 @@ button {
   color: var(--white);
 }
 .route-stop span.label {
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   color: var(--slate-300);
 }
 .board-fare {
@@ -554,7 +568,7 @@ button {
   border-top: 1px dashed var(--slate-500);
 }
 .board-fare strong {
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   font-family: var(--font-display);
 }
 
@@ -574,7 +588,7 @@ button {
   background: var(--blue-tint);
   color: var(--blue);
   margin-bottom: 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   align-items: center;
 }
 .section-head .eyebrow i {
@@ -586,7 +600,7 @@ button {
 }
 .section-head p {
   color: var(--slate-500);
-  font-size: 1.05rem;
+  font-size: var(--fs-lg);
 }
 
 /* ---- about / feature grid ---------------------------------------------- */
@@ -615,23 +629,23 @@ button {
 .feature-card .icon {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   margin-bottom: 18px;
   color: var(--white);
   background: var(--grad-blue);
   box-shadow: 0 8px 18px rgba(43, 52, 64, 0.16);
 }
 .feature-card h3 {
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   margin-bottom: 8px;
 }
 .feature-card p {
   color: var(--slate-500);
-  font-size: 0.92rem;
+  font-size: var(--fs-base);
 }
 
 /* ---- services: numbered because they are real booking steps ------------- */
@@ -657,19 +671,19 @@ button {
   right: 24px;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 2.2rem;
+  font-size: var(--fs-4xl);
   opacity: 0.35;
 }
 .service-plate i {
-  font-size: 1.6rem;
+  font-size: var(--fs-2xl);
   margin-bottom: 14px;
 }
 .service-plate h3 {
-  font-size: 1.25rem;
+  font-size: var(--fs-xl);
   margin-bottom: 8px;
 }
 .service-plate p {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   opacity: 0.9;
 }
 .plate--ride {
@@ -715,14 +729,14 @@ button {
   border-color: var(--blue);
 }
 .vehicle-chip i {
-  font-size: 1.6rem;
+  font-size: var(--fs-2xl);
   color: var(--blue);
   margin-bottom: 10px;
 }
 .vehicle-chip span {
   display: block;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
 }
 .vehicle-chip small {
   color: var(--slate-500);
@@ -747,7 +761,7 @@ button {
 }
 .testimonial-card p.quote {
   color: var(--slate-700);
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   margin-bottom: 18px;
 }
 .testimonial-card .who {
@@ -768,10 +782,10 @@ button {
 }
 .testimonial-card .who strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
 }
 .testimonial-card .who span {
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--slate-500);
 }
 
@@ -788,7 +802,7 @@ button {
   color: var(--white);
 }
 .cta-band h2 {
-  font-size: 1.9rem;
+  font-size: var(--fs-3xl);
   margin-bottom: 10px;
 }
 .cta-band p {
@@ -809,7 +823,7 @@ button {
 .contact-info i {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--blue-tint);
   color: var(--blue);
   display: flex;
@@ -830,7 +844,7 @@ button {
 }
 .field label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   margin-bottom: 6px;
   color: var(--slate-700);
@@ -843,7 +857,7 @@ button {
   border: 1.5px solid var(--slate-300);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   transition: border-color 0.15s ease;
 }
 .field input:focus,
@@ -888,7 +902,7 @@ button {
 }
 .footer h4 {
   color: var(--white);
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   margin-bottom: 16px;
 }
 .footer .brand {
@@ -896,12 +910,12 @@ button {
   margin-bottom: 12px;
 }
 .footer p.tag {
-  font-size: 0.88rem;
+  font-size: var(--fs-sm);
   max-width: 32ch;
 }
 .footer li {
   margin-bottom: 10px;
-  font-size: 0.88rem;
+  font-size: var(--fs-sm);
 }
 .footer li a:hover {
   color: var(--white);
@@ -910,7 +924,7 @@ button {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: 40px;
   padding-top: 20px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
@@ -950,7 +964,7 @@ button {
   overflow: hidden;
 }
 .auth-visual h2 {
-  font-size: 2rem;
+  font-size: var(--fs-4xl);
   margin-bottom: 14px;
   max-width: 18ch;
 }
@@ -969,7 +983,7 @@ button {
   max-width: 420px;
 }
 .auth-card h1 {
-  font-size: 1.7rem;
+  font-size: var(--fs-3xl);
   margin-bottom: 6px;
 }
 .auth-card p.sub {
@@ -987,13 +1001,13 @@ button {
   border-radius: var(--radius-sm);
   padding: 12px 8px;
   text-align: center;
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 .role-option i {
   display: block;
   margin-bottom: 6px;
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   color: var(--slate-500);
 }
 .role-option input {
@@ -1010,7 +1024,7 @@ button {
 .auth-switch {
   text-align: center;
   margin-top: 22px;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--slate-500);
 }
 .auth-switch a {
@@ -1052,12 +1066,12 @@ button {
     padding: 0 18px;
   }
   .eyebrow {
-    font-size: 0.7rem;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.03em;
     padding: 6px 12px;
   }
   .hero p.lead {
-    font-size: 1rem;
+    font-size: var(--fs-md);
   }
   .hero-cta .btn {
     flex: 1 1 100%;
@@ -1074,7 +1088,7 @@ button {
     display: none;
   }
   .hero-stats div strong {
-    font-size: 1.4rem;
+    font-size: var(--fs-2xl);
   }
 }
 
@@ -1096,7 +1110,7 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.88rem;
+  font-size: var(--fs-sm);
   box-shadow: var(--shadow-md);
   opacity: 0;
   transform: translateX(20px);
@@ -1137,8 +1151,8 @@ button {
   align-items: center;
   gap: 5px;
   padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.74rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
   font-weight: 600;
   text-transform: capitalize;
   white-space: nowrap;
@@ -1169,8 +1183,8 @@ button {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.74rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
   font-weight: 600;
   background: rgba(34, 197, 94, 0.12);
   color: #15803d;
@@ -1211,18 +1225,145 @@ button {
 .badge--role-admin {
   background: rgba(33, 150, 243, 0.12);
   color: var(--blue-dark);
-  font-size: 0.68rem;
+  font-size: var(--fs-2xs);
   padding: 2px 8px;
 }
 .badge--role-customer {
   background: rgba(176, 107, 121, 0.16);
   color: var(--rose-deep);
-  font-size: 0.68rem;
+  font-size: var(--fs-2xs);
   padding: 2px 8px;
 }
 .badge--role-rider {
   background: rgba(34, 197, 94, 0.1);
   color: #15803d;
-  font-size: 0.68rem;
+  font-size: var(--fs-2xs);
   padding: 2px 8px;
+}
+
+/* =====================================================================
+   PREMIUM LAYER — branded dialogs + motion (design only)
+   ===================================================================== */
+
+/* ---- confirm dialog (appConfirm in js/utils.js) ---------------------- */
+.app-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 26, 47, 0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.app-dialog-overlay--show { opacity: 1; }
+.app-dialog {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px 24px 22px;
+  text-align: center;
+  transform: translateY(12px) scale(0.97);
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.app-dialog-overlay--show .app-dialog { transform: none; }
+.app-dialog__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-xl);
+  color: var(--blue);
+  background: var(--blue-50);
+  box-shadow: 0 0 0 8px rgba(227, 242, 253, 0.55);
+}
+.app-dialog--danger .app-dialog__icon {
+  color: var(--red);
+  background: var(--red-tint);
+  box-shadow: 0 0 0 8px rgba(253, 237, 240, 0.6);
+}
+.app-dialog h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.app-dialog p {
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--text-body);
+  margin: 0 0 22px;
+}
+.app-dialog__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.app-dialog__actions .btn { width: 100%; padding: 12px 14px; }
+.app-dialog--danger .btn-danger { box-shadow: 0 10px 22px rgba(224, 69, 95, 0.28); }
+.btn-danger:hover { background: var(--red-dark); transform: translateY(-1px); }
+
+/* ---- motion ---------------------------------------------------------- */
+/* Buttons: a tactile press instead of a 1px nudge. */
+.btn:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+
+/* Toasts slide in from the side rather than just appearing. */
+.toast { transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.15); }
+
+/* Landing page: sections rise gently into view (js/landing.js adds .is-visible). */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.is-visible { opacity: 1; transform: none; }
+
+/* Hero entrance */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero .container > * { animation: heroRise 0.7s ease both; }
+.hero .container > *:nth-child(2) { animation-delay: 0.12s; }
+
+/* ---- landing: Ilocos Norte hero scene + 4th service ------------------ */
+.hero { padding-bottom: 150px; }
+.hero-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 150px;
+  pointer-events: none;
+}
+.hero-scene svg { width: 100%; height: 100%; display: block; }
+.hs-blades {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: hsSpin 7s linear infinite;
+}
+@keyframes hsSpin { to { transform: rotate(360deg); } }
+.hs-rider { animation: hsRide 22s linear infinite; }
+@keyframes hsRide {
+  from { transform: translateX(-60px); }
+  to   { transform: translateX(1500px); }
+}
+@media (max-width: 720px) {
+  .hero { padding-bottom: 110px; }
+  .hero-scene { height: 105px; }
+}
+
+.service-strip { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.plate--hauling { background: linear-gradient(135deg, #4a4a4a, #1f2a36); }
+@media (max-width: 1100px) {
+  .service-strip { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .service-strip { grid-template-columns: 1fr; }
 }

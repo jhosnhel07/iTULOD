@@ -181,7 +181,12 @@ function restaurantDistance(r) {
 
 function restaurantLogoTile(r, size = '') {
   const v = restaurantVisual(r);
-  return `<div class="rf-logo ${size}" style="--tile-bg:${v.bg};--tile-fg:${v.fg}"><i class="fa-solid ${v.icon}"></i></div>`;
+  // A logo/photo set in the admin Restaurants tab covers the category icon;
+  // if it fails to load it removes itself and the icon tile shows through.
+  const img = safeImageUrl(r.image_url)
+    ? `<img src="${escapeHtml(r.image_url)}" alt="" loading="lazy" onerror="this.remove()">`
+    : '';
+  return `<div class="rf-logo ${size}" style="--tile-bg:${v.bg};--tile-fg:${v.fg}"><i class="fa-solid ${v.icon}"></i>${img}</div>`;
 }
 
 /** Name without a trailing "(Town)" — the town is already shown as a tag.

@@ -275,7 +275,7 @@ function wireSavedAddressForm() {
 }
 
 async function deleteSavedAddress(id) {
-  if (!confirm('Remove this saved address?')) return;
+  if (!(await appConfirm('You can save it again any time.', { title: 'Remove this saved address?', confirmText: 'Remove', danger: true, icon: 'fa-location-dot' }))) return;
   const { error } = await supabase.from('saved_addresses').delete().eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   await loadSavedAddresses();
@@ -744,7 +744,7 @@ async function showRestaurantList() {
   document.getElementById('restaurant-browse-title').textContent = 'Choose a restaurant';
   document.getElementById('restaurant-browse-foot').style.display = 'none';
   const body = document.getElementById('restaurant-browse-body');
-  body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading restaurants…</div>`;
+  body.innerHTML = skeletonList(5);
 
   const { data, error } = await supabase.from('restaurants').select('*').eq('is_active', true).order('name');
   if (error) { body.innerHTML = `<p class="muted">Could not load restaurants: ${escapeHtml(error.message)}</p>`; return; }
@@ -759,7 +759,7 @@ async function showRestaurantList() {
 
 async function selectRestaurantForMenu(restaurant) {
   if (FOOD_CART.restaurantId && FOOD_CART.restaurantId !== restaurant.id && Object.keys(FOOD_CART.items).length) {
-    if (!confirm(`Switching restaurants clears your current order from ${FOOD_CART.restaurantName}. Continue?`)) return;
+    if (!(await appConfirm(`Your current order from ${FOOD_CART.restaurantName} will be cleared.`, { title: 'Switch restaurants?', confirmText: 'Switch', cancelText: 'Keep my order', icon: 'fa-store' }))) return;
     FOOD_CART.items = {};
   }
   await showRestaurantMenu(restaurant);
@@ -776,7 +776,7 @@ async function showRestaurantMenu(restaurant) {
   document.getElementById('restaurant-browse-foot').style.display = '';
   updateMenuDoneButton();
   const body = document.getElementById('restaurant-browse-body');
-  body.innerHTML = `<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i> Loading menu…</div>`;
+  body.innerHTML = skeletonList(5);
 
   const { data, error } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurant.id).eq('is_available', true).order('name');
   if (error) { body.innerHTML = `<p class="muted">Could not load the menu: ${escapeHtml(error.message)}</p>`; return; }
@@ -823,6 +823,7 @@ function renderMenuItems(items, restaurant) {
       const desc = typical ? m.description.slice(0, -TYPICAL_ITEM_NOTE.length) : (m.description || '');
       return `
       <div class="rm-item ${qty ? 'has-qty' : ''}" data-menu-item="${m.id}">
+        ${safeImageUrl(m.image_url) ? `<img class="rm-item__img" src="${escapeHtml(m.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
         <div class="rm-item__text">
           <strong>${escapeHtml(m.name)}</strong>${typical ? ' <span class="rm-badge">Typical</span>' : ''}
           ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
@@ -1363,14 +1364,14 @@ async function cancelBooking(kind, id) {
   // cancellation fee for (sql/010) — warn about it before they confirm,
   // using the real configured amount rather than a guessed number.
   const { data: b } = await supabase.from(table).select('status').eq('id', id).single();
-  let message = 'Cancel this booking?';
+  let message = 'Your booking will be cancelled.';
   if (b?.status === 'accepted') {
     const { data: cfg } = await supabase.from('platform_config').select('cancellation_fee').single();
     message = cfg?.cancellation_fee
-      ? `A rider has already accepted — cancelling now may incur a ${peso(cfg.cancellation_fee)} cancellation fee. Cancel anyway?`
-      : 'A rider has already accepted this booking. Cancel anyway?';
+      ? `A rider has already accepted — cancelling now may incur a ${peso(cfg.cancellation_fee)} cancellation fee.`
+      : 'A rider has already accepted this booking.';
   }
-  if (!confirm(message)) return;
+  if (!(await appConfirm(message, { title: 'Cancel this booking?', confirmText: 'Yes, cancel', cancelText: 'Keep booking', danger: true, icon: 'fa-ban' }))) return;
 
   const { error } = await supabase.from(table).update({ status: 'cancelled', cancelled_reason: 'Cancelled by customer' }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
