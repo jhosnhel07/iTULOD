@@ -25,14 +25,14 @@ function toastIcon(type) {
 }
 
 // ---- Light / dark theme ---------------------------------------------------
-// No saved choice → follow the device setting. A tap on any .js-theme-toggle
-// saves 'light' or 'dark' on this device. The saved choice is applied before
+// Light is the default. A tap on any .js-theme-toggle saves 'light' or 'dark'
+// on this device. The saved choice is applied before
 // first paint by a small inline script in each dashboard's <head>.
 const THEME_KEY = 'itulod-theme';
 function currentTheme() {
   const t = document.documentElement.dataset.theme;
   if (t === 'light' || t === 'dark') return t;
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'light';
 }
 function syncThemeToggles() {
   const dark = currentTheme() === 'dark';
@@ -53,8 +53,6 @@ function toggleTheme() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncThemeToggles);
 else syncThemeToggles();
-// Keep the icon right when the device flips theme and no choice is saved.
-window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', syncThemeToggles);
 
 // ---- Confirm dialog -----------------------------------------------------
 // Branded replacement for window.confirm(): resolves true on confirm, false on
