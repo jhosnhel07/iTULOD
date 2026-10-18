@@ -306,6 +306,9 @@ To publish a new version of app_itulod:
      --content-type application/vnd.android.package-archive
    # same for itulod-armv7.apk, and latest.json with --content-type application/json
    ```
+   `storage cp` won't overwrite: remove the old copies first with
+   `npx supabase@latest storage rm ss:///app-downloads/itulod.apk --project-ref <ref> --experimental --yes`
+   (and the same for the other two files), then upload.
 
 ---
 
