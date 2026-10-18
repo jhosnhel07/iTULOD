@@ -4499,28 +4499,34 @@ body {
     background: none;
     border: 0;
   }
-  .app-shell--tabbed .mobile-topbar .topbar-theme { right: auto; left: 10px; }
+  /* Upper right; next to the bell when the bar has one (customer). */
+  .mobile-topbar:has(.topbar-action) .topbar-theme { right: 52px; }
   .mobile-topbar .topbar-theme:active { background: var(--blue-50); }
 }
 .js-theme-toggle i { transition: transform 0.35s ease; }
 .js-theme-toggle:active i { transform: rotate(-30deg); }
 body { transition: background-color 0.25s ease, color 0.25s ease; }
-.sidebar .side-foot .side-link.js-theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--slate-50);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: var(--fs-sm);
-  font-weight: 600;
+
+/* Desktop: round sun/moon button in the page header's upper-right corner.
+   Phones use the top-bar button instead. */
+.page-theme {
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
   border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-md);
+  box-shadow: var(--shadow-xs);
   cursor: pointer;
-  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.sidebar .side-foot .side-link.js-theme-toggle i { width: 18px; text-align: center; color: var(--blue); }
-.sidebar .side-foot .side-link.js-theme-toggle:hover { background: var(--blue-50); border-color: var(--border-blue); }
+.page-theme:hover { background: var(--blue-50); border-color: var(--border-blue); box-shadow: var(--shadow-sm); }
+.page-theme i { color: var(--blue); }
+@media (max-width: 900px) {
+  .page-theme { display: none; }
+}
