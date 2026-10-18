@@ -1138,16 +1138,16 @@
               <p style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px">Balance</p>
               <div class="receipt-amount" id="wallet-balance">₱0.00</div>
             </div>
-            <form id="wallet-topup-form" style="display: flex; gap: 8px; margin-bottom: 16px">
-              <input
+            <form id="wallet-topup-form" style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px">
+              <div class="field" style="flex: 1; margin: 0"><input
                 type="number"
                 id="wallet-topup-amount"
                 min="1"
                 step="0.01"
                 placeholder="Amount"
                 required
-                style="flex: 1"
-              />
+                inputmode="decimal"
+              /></div>
               <button class="btn btn-primary btn-sm" id="wallet-topup-submit" type="submit">
                 <i class="fa-solid fa-mobile-screen-button"></i> Top up
               </button>

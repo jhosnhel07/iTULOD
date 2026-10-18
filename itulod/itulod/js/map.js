@@ -45,13 +45,33 @@ function loadMapbox() {
 
 function _initMap(containerId) {
   mapboxgl.accessToken = MAPBOX_TOKEN;
-  return new mapboxgl.Map({
+  const map = new mapboxgl.Map({
     container: containerId,
     style: STYLE,
     center: DEFAULT_CENTER,
     zoom: DEFAULT_ZOOM,
     attributionControl: true,
   });
+  _autoResize(map);
+  return map;
+}
+
+// Maps built inside a hidden tab or a closed sheet get a 0×0 canvas and then
+// show blank or half-drawn until something calls resize(). Watch the map's
+// box and resize whenever it changes size (tab shown, sheet opened, window
+// resized), so every map is always drawn edge to edge.
+function _autoResize(map) {
+  const el = map.getContainer();
+  if (!el || typeof ResizeObserver === 'undefined') return;
+  let queued = false;
+  new ResizeObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      if (el.offsetWidth > 0 && el.offsetHeight > 0) map.resize();
+    });
+  }).observe(el);
 }
 
 /* ── Geocoding ────────────────────────────────────────────────────────────

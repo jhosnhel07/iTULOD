@@ -123,6 +123,14 @@ function activateTab(name) {
     }
     setBookingService(currentBookingService());
   }
+  // Profile holds the saved-address map, which sits beside the form on wide
+  // screens — load it the first time Profile opens instead of leaving an
+  // empty box until a booking map has been opened.
+  if (name === 'profile' && typeof ensureBookingMaps === 'function') {
+    ensureBookingMaps().then(() => {
+      if (typeof resizeBookingMap === 'function') requestAnimationFrame(() => resizeBookingMap('saved'));
+    });
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }
