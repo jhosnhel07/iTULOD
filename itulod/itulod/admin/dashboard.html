@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard — iTULOD</title>
+    <script>try{var t=localStorage.getItem('itulod-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
     <meta name="description" content="iTULOD admin dashboard — manage customers, riders, bookings, payments, and platform settings." />
     <link
       rel="stylesheet"
@@ -80,6 +81,7 @@
             </div>
             <span class="badge badge--role-admin" style="margin-left:auto">Admin</span>
           </div>
+          <button type="button" class="side-link js-theme-toggle" onclick="toggleTheme()" aria-label="Switch to dark mode"><i class="fa-solid fa-moon"></i> <span class="js-theme-label">Dark mode</span></button>
           <button class="side-link logout-btn" onclick="logout()">
             <i class="fa-solid fa-right-from-bracket"></i> Log out
           </button>
@@ -90,6 +92,7 @@
       <main class="main">
         <!-- Mobile topbar -->
         <div class="mobile-topbar">
+          <button type="button" class="topbar-theme js-theme-toggle" onclick="toggleTheme()" aria-label="Switch to dark mode"><i class="fa-solid fa-moon"></i></button>
           <button onclick="toggleSidebar()">
             <i class="fa-solid fa-bars"></i>
           </button>

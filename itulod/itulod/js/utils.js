@@ -24,6 +24,38 @@ function toastIcon(type) {
   return { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' }[type] || 'fa-circle-info';
 }
 
+// ---- Light / dark theme ---------------------------------------------------
+// No saved choice → follow the device setting. A tap on any .js-theme-toggle
+// saves 'light' or 'dark' on this device. The saved choice is applied before
+// first paint by a small inline script in each dashboard's <head>.
+const THEME_KEY = 'itulod-theme';
+function currentTheme() {
+  const t = document.documentElement.dataset.theme;
+  if (t === 'light' || t === 'dark') return t;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function syncThemeToggles() {
+  const dark = currentTheme() === 'dark';
+  document.querySelectorAll('.js-theme-toggle').forEach((b) => {
+    const icon = b.querySelector('i');
+    if (icon) icon.className = 'fa-solid ' + (dark ? 'fa-sun' : 'fa-moon');
+    const label = b.querySelector('.js-theme-label');
+    if (label) label.textContent = dark ? 'Light mode' : 'Dark mode';
+    b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    b.setAttribute('aria-pressed', String(dark));
+  });
+}
+function toggleTheme() {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem(THEME_KEY, next); } catch (_) { /* private mode: applies for this visit only */ }
+  syncThemeToggles();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncThemeToggles);
+else syncThemeToggles();
+// Keep the icon right when the device flips theme and no choice is saved.
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', syncThemeToggles);
+
 // ---- Confirm dialog -----------------------------------------------------
 // Branded replacement for window.confirm(): resolves true on confirm, false on
 // cancel / Esc / backdrop click. `danger` styles the confirm button red for

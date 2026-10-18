@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Customer Dashboard — iTULOD</title>
+    <script>try{var t=localStorage.getItem('itulod-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
     <meta
       name="description"
       content="Book rides, food delivery, parcel delivery, and hauling with iTULOD."
@@ -76,6 +77,7 @@
               >Customer</span
             >
           </div>
+          <button type="button" class="side-link js-theme-toggle" onclick="toggleTheme()" aria-label="Switch to dark mode"><i class="fa-solid fa-moon"></i> <span class="js-theme-label">Dark mode</span></button>
           <button class="side-link logout-btn" onclick="logout()">
             <i class="fa-solid fa-right-from-bracket"></i> Log out
           </button>
@@ -85,6 +87,7 @@
       <!-- =================== MAIN =================== -->
       <main class="main">
         <div class="mobile-topbar">
+          <button type="button" class="topbar-theme js-theme-toggle" onclick="toggleTheme()" aria-label="Switch to dark mode"><i class="fa-solid fa-moon"></i></button>
           <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
             <i class="fa-solid fa-bars"></i>
           </button>
