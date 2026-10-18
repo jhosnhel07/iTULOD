@@ -72,6 +72,7 @@ once:
 | 22 | `sql/022_hauling.sql` | Hauling service: `hauling_bookings` (same lifecycle as parcel — `booking_before_update`, referral bonus, `updated_at` triggers; RLS where open jobs are visible only to approved riders with a Van/Pickup/Truck via `is_hauling_rider()`), `vehicles.service` + 4 hauling vehicles, `platform_config.hauling_helper_fee`, `hauling` added to every `booking_type` check, the expiry / nearby-riders / chat-notification / referral functions, the cross-table policies (rider profile, rider application, live tracking, reviews, chat) and realtime. Redeploy `create-payment`, `finalize-fare`, `sync-payment-status`, `redeem-promo`, `paymongo-webhook`, `on-booking-change` (shared `TABLE_BY_KIND` now includes `hauling`). |
 | 23 | `sql/023_booking_notifications_push.sql` | Booking-status notifications from the database (replaces the old `on-booking-change` webhooks): `notify_booking_change()` AFTER UPDATE on all four booking tables (accepted, released, on the way, completed, cancelled, expired, no-show, paid, tip); `notify_hauling_riders()` tells approved Van/Pickup/Truck riders about each new hauling job; `push_new_notification()` forwards every new `notifications` row to the `send-push` Edge Function via `pg_net`. Needs the two Vault secrets in §4a — without them notifications still appear in-app, just no push. |
 | 24 | `sql/024_refunds_fees_settlements.sql` | Money settlement: `cancellation_fee_paid` on all four booking tables; parcel `cod_remitted_at`/`cod_remit_note`; `booking_before_update()` now refunds a paid GCash/wallet booking (minus any fee) to the customer's wallet when it's cancelled/expired/no-show, and collects an unpaid booking's fee from the wallet when it can; `rider_settlements` + `rider_balance()`, `admin_rider_balances()`, `admin_record_settlement()`, `admin_refund_to_wallet()` (admin Payments tab → Rider balances). |
+| 26 | `sql/026_app_downloads_bucket.sql` | Public `app-downloads` storage bucket holding the Android app (`itulod.apk`, `itulod-armv7.apk`) and `latest.json` for the website's "Get the app" buttons. Upload-only by the service role / CLI. See §6a. |
 | 25 | `sql/025_hauling_availability.sql` | `hauling_availability()` — how many hauling drivers exist / are online, shown on the Hauling booking form. |
 
 All files are idempotent (`create ... if not exists`, `drop policy if exists`),
@@ -278,6 +279,33 @@ table** (`transport_bookings`, `food_deliveries`, `parcel_deliveries`):
 
 This is what turns "rider accepted" / "trip started" / "completed" / "paid" into
 SMS + push + in-app notifications.
+
+---
+
+## 6a. Android app download ("Get the app")
+
+The landing page (#get-app), the login page and the customer/rider Profile tabs
+link to the APKs in the public `app-downloads` bucket (js/app-download.js).
+To publish a new version of app_itulod:
+
+1. Bump `version:` in app_itulod/pubspec.yaml (e.g. `1.0.1+2` — the number
+   after `+` must go up every release).
+2. Build: `flutter build apk --release --split-per-abi` (from app_itulod).
+   Release builds are signed with `android/app/itulod-release.jks` via
+   `android/key.properties` — both gitignored. **Keep a backup of both files**:
+   an update signed with a different key won't install over the old app.
+3. Copy `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` →
+   `itulod.apk` and `app-armeabi-v7a-release.apk` → `itulod-armv7.apk`, and
+   write `latest.json` (`version`, `build`, `size_mb`, `size_mb_armv7`,
+   `updated`).
+4. Upload (run from the folder holding the files — the CLI misreads
+   `C:\…` paths):
+   ```bash
+   npx supabase@latest storage cp ./itulod.apk ss:///app-downloads/itulod.apk \
+     --project-ref <ref> --experimental \
+     --content-type application/vnd.android.package-archive
+   # same for itulod-armv7.apk, and latest.json with --content-type application/json
+   ```
 
 ---
 

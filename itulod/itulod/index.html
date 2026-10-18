@@ -29,6 +29,7 @@
           <a href="#features">Features</a>
           <a href="#testimonials">Testimonials</a>
           <a href="#contact">Contact</a>
+          <a href="#get-app" class="nav-getapp"><i class="fa-brands fa-android"></i> Get the app</a>
           <a href="login.html" class="btn btn-outline btn-sm nav-login-mobile"
             >Log in</a
           >
@@ -466,6 +467,35 @@
       </div>
     </section>
 
+    <!-- ============================= GET THE APP ============================= -->
+    <section class="section get-app" id="get-app">
+      <div class="container get-app__grid">
+        <div class="get-app__text">
+          <span class="eyebrow"><i class="fa-solid fa-mobile-screen-button"></i> Mobile app</span>
+          <h2>Take iTULOD with you.</h2>
+          <p class="get-app__lead">
+            The iTULOD app for Android: book a ride, order food, send a parcel or
+            book hauling in a few taps, track your rider live on the map, and get
+            notified the moment they arrive.
+          </p>
+          <ul class="get-app__perks">
+            <li><i class="fa-solid fa-bolt"></i> Faster booking with your saved places</li>
+            <li><i class="fa-solid fa-location-crosshairs"></i> Live rider tracking</li>
+            <li><i class="fa-solid fa-bell"></i> Booking alerts on your phone</li>
+          </ul>
+          <div class="get-app-inline" id="get-app-block" data-get-app></div>
+        </div>
+        <div class="get-app__phone" aria-hidden="true">
+          <div class="get-app__screen">
+            <img src="assets/icon-192.png" alt="" width="72" height="72">
+            <strong>iTULOD</strong>
+            <span>Ride · Food · Parcel · Hauling</span>
+            <div class="get-app__screen-card"><i class="fa-solid fa-motorcycle"></i> Rider on the way · 3 min</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============================= CONTACT ============================= -->
     <section class="section section--muted" id="contact">
       <div class="container">
@@ -578,6 +608,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabaseClient.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/app-download.js"></script>
     <script src="js/landing.js"></script>
   </body>
 </html>

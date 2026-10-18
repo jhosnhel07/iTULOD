@@ -1403,3 +1403,160 @@ button {
 }
 .badge--ongoing::before { animation: badgePulse 1.6s ease-in-out infinite; }
 @keyframes badgePulse { 50% { opacity: 0.35; } }
+
+/* =====================================================================
+   GET THE APP — Android download (js/app-download.js)
+   ===================================================================== */
+.app-dl { max-width: 440px; text-align: left; position: relative; padding: 24px 22px 20px; }
+.app-dl__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+}
+.app-dl__head { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; padding-right: 30px; }
+.app-dl__head img { border-radius: 14px; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+.app-dl__head h3 { font-family: var(--font-display); font-size: var(--fs-lg); color: var(--ink); margin: 0 0 2px; }
+.app-dl__head p { font-size: var(--fs-sm); color: var(--text-muted); margin: 0; line-height: 1.45; }
+
+.get-app-inline .btn,
+.app-dl .btn { text-decoration: none; }
+.app-dl__primary { padding: 15px 20px; font-size: var(--fs-md); }
+.app-dl__primary .fa-android { font-size: var(--fs-lg); }
+.app-dl__version { text-align: center; font-size: var(--fs-xs); color: var(--text-muted); margin: 8px 0 0; }
+.app-dl__steps {
+  margin: 16px 0 12px;
+  padding: 14px 16px 14px 34px;
+  background: var(--blue-50);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  line-height: 1.55;
+}
+.app-dl__steps li { margin: 2px 0; }
+.app-dl__steps li::marker { color: var(--blue); font-weight: 700; }
+.app-dl__fine { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.5; margin: 0; }
+.app-dl__fine a, .app-dl__direct { color: var(--blue); font-weight: 600; }
+.app-dl__note {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--slate-50);
+  border: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  line-height: 1.5;
+}
+.app-dl__note > i { font-size: var(--fs-2xl); color: var(--ink); }
+.app-dl__note strong { display: block; color: var(--ink); }
+.app-dl__qr-wrap { display: flex; gap: 18px; align-items: center; }
+.app-dl__qr {
+  flex-shrink: 0;
+  width: 168px;
+  height: 168px;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.app-dl__qr-wrap strong { display: block; color: var(--ink); margin-bottom: 4px; }
+.app-dl__qr-wrap span { display: block; font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+.app-dl__direct { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); }
+@media (max-width: 480px) {
+  .app-dl__qr-wrap { flex-direction: column; text-align: center; }
+}
+
+/* Landing page section */
+.get-app { background: linear-gradient(160deg, var(--blue-50), var(--rose-50)); overflow: hidden; }
+.get-app__grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 48px; align-items: center; }
+.get-app__grid > * { min-width: 0; }
+.get-app__text h2 { margin: 14px 0 10px; }
+.get-app__lead { color: var(--text-body); max-width: 52ch; margin-bottom: 16px; }
+.get-app__perks { list-style: none; padding: 0; margin: 0 0 22px; display: grid; gap: 8px; }
+.get-app__perks li { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); }
+.get-app__perks i {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--blue);
+  box-shadow: var(--shadow-xs);
+  font-size: var(--fs-sm);
+}
+.get-app .get-app-inline { max-width: 460px; }
+.get-app__phone {
+  justify-self: center;
+  width: 230px;
+  height: 440px;
+  border-radius: 38px;
+  padding: 12px;
+  background: #0b1a2f;
+  box-shadow: var(--shadow-lg), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  transform: rotate(4deg);
+}
+.get-app__screen {
+  height: 100%;
+  border-radius: 28px;
+  background: var(--grad-blue);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  text-align: center;
+  padding: 20px;
+}
+.get-app__screen img { border-radius: 18px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25); }
+.get-app__screen strong { font-family: var(--font-display); font-size: var(--fs-xl); }
+.get-app__screen span { font-size: var(--fs-xs); opacity: 0.85; }
+.get-app__screen-card {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 18px;
+  background: #ffffff;
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+.get-app__screen-card i { color: var(--blue); margin-right: 4px; }
+.nav-getapp { display: inline-flex; align-items: center; gap: 6px; color: var(--blue) !important; font-weight: 700; }
+@media (max-width: 900px) {
+  .get-app__grid { grid-template-columns: 1fr; gap: 32px; }
+  .get-app__phone { width: 190px; height: 360px; }
+}
+
+/* Login page link */
+.get-app-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--border-blue);
+  background: var(--blue-50);
+  color: var(--blue-ink);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+.get-app-link:hover { background: var(--surface); border-style: solid; }
+.get-app-card .card-head h3 i { color: var(--blue); margin-right: 4px; }
