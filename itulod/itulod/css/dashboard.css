@@ -4425,3 +4425,111 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 @media (max-width: 900px) {
   .bottom-nav button[data-tab="notifications"] { flex: 1.4 1 0; }
 }
+
+/* =====================================================================
+   LIQUID GLASS NAVIGATION (phones) — js/liquid-nav.js
+   A floating frosted-glass bar with a liquid highlight blob; it shrinks
+   while scrolling down. Overrides the earlier bottom-nav styling.
+   ===================================================================== */
+@media (max-width: 900px) {
+  .bottom-nav {
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 6px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(22px) saturate(1.8);
+    backdrop-filter: blur(22px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 18px 40px rgba(13, 71, 161, 0.18),
+      0 2px 6px rgba(13, 71, 161, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 0 rgba(13, 71, 161, 0.06);
+    isolation: isolate;
+    transition:
+      left 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1),
+      right 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1),
+      padding 0.3s ease,
+      border-radius 0.3s ease;
+  }
+  /* Glass sheen across the top half. */
+  .bottom-nav::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bottom-nav button {
+    position: relative;
+    z-index: 1;
+    min-height: 52px;
+  }
+  /* The blob replaces the per-icon pill. */
+  .bottom-nav button.active i { background: transparent; }
+  .bottom-nav button.active { color: var(--blue-ink); }
+
+  .bn-blob {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 0;
+    width: 0;
+    opacity: 0;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(227, 242, 253, 0.98), rgba(144, 202, 249, 0.55));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 6px rgba(33, 150, 243, 0.12),
+      0 6px 16px rgba(33, 150, 243, 0.22);
+    transform-origin: center;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Customer "Book": the raised round button still sits above the glass. */
+  .bottom-nav button[data-tab="book"] i { margin-top: -26px; }
+
+  /* Compact while scrolling: narrower, labels tucked away. */
+  .bottom-nav button span:not(.bn-badge) {
+    max-height: 16px;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+  }
+  .bottom-nav--compact {
+    left: 16%;
+    right: 16%;
+    padding: 4px;
+  }
+  .bottom-nav--compact button { min-height: 44px; }
+  .bottom-nav--compact button span:not(.bn-badge) { max-height: 0; opacity: 0; overflow: hidden; }
+  .bottom-nav--compact .bn-blob { top: 4px; bottom: 4px; }
+  .bottom-nav--compact button[data-tab="book"] i { margin-top: -14px; width: 44px; height: 44px; }
+
+  /* Room for the floating bar at the end of each page. */
+  .main { padding-bottom: 112px; }
+}
+
+/* Dark */
+:root[data-theme="dark"] .bottom-nav {
+  background: rgba(19, 28, 41, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+:root[data-theme="dark"] .bottom-nav::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%);
+}
+:root[data-theme="dark"] .bn-blob {
+  background: linear-gradient(180deg, rgba(33, 150, 243, 0.4), rgba(33, 150, 243, 0.16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav, .bottom-nav button span:not(.bn-badge) { transition: none; }
+}
