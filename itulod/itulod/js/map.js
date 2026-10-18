@@ -8,6 +8,71 @@ const MAPTILER_KEY = MAPBOX_TOKEN;
 const DEFAULT_CENTER = [120.5936, 18.1977]; // Laoag City
 const DEFAULT_ZOOM = 13;
 
+/* ── Service area: Ilocos Norte only ─────────────────────────────────────
+   Province border from OpenStreetMap (relation 1504744), simplified to about
+   45 m. Pins, search results and booking addresses outside it are refused.
+   The app has the same polygon in lib/core/constants/ilocos_norte.dart. */
+const ILOCOS_NORTE_BOUNDARY = [ // [lng, lat]
+  [120.26926,17.91548],[120.27047,17.89984],[120.2739,17.88218],[120.36999,17.86113],[120.40887,17.88196],[120.43425,17.89424],
+  [120.44348,17.90125],[120.44323,17.90329],[120.44527,17.90513],[120.44626,17.90476],[120.44669,17.9028],[120.44767,17.90391],
+  [120.44842,17.90279],[120.44983,17.90305],[120.45021,17.90123],[120.45268,17.9012],[120.45285,17.89971],[120.45399,17.89871],
+  [120.45797,17.89824],[120.45793,17.89772],[120.45963,17.89724],[120.46012,17.89606],[120.46341,17.89595],[120.46464,17.89676],
+  [120.46734,17.8959],[120.46903,17.89643],[120.48003,17.89182],[120.51718,17.88677],[120.52235,17.88465],[120.53028,17.87912],
+  [120.53236,17.87704],[120.53398,17.87339],[120.53117,17.85309],[120.52881,17.84217],[120.5292,17.82907],[120.52793,17.8234],
+  [120.57182,17.78603],[120.57396,17.78924],[120.58279,17.7991],[120.60222,17.80929],[120.61129,17.81111],[120.61591,17.81314],
+  [120.62459,17.81463],[120.62755,17.8156],[120.63329,17.8191],[120.66031,17.82518],[120.66759,17.82755],[120.68185,17.83035],
+  [120.69087,17.83458],[120.69846,17.84191],[120.70409,17.84848],[120.70825,17.85478],[120.71309,17.85996],[120.71785,17.87332],
+  [120.72825,17.89251],[120.73639,17.89844],[120.74365,17.9014],[120.75553,17.90319],[120.76318,17.90614],[120.76998,17.90694],
+  [120.7758,17.90923],[120.78375,17.91124],[120.80458,17.92943],[120.81006,17.93505],[120.81781,17.94375],[120.82604,17.95476],
+  [120.83369,17.95945],[120.841,17.96147],[120.8502,17.96286],[120.86494,17.96152],[120.87938,17.95766],[120.89458,17.95147],
+  [120.90399,17.94964],[120.90997,17.94992],[120.91506,17.95215],[120.92039,17.95626],[120.93209,17.97522],[120.9337,17.97638],
+  [120.93772,17.9843],[120.94137,17.98794],[120.94384,17.98842],[120.94483,17.98944],[120.94701,17.99707],[120.94509,17.99647],
+  [120.94399,17.99811],[120.94409,17.99983],[120.93931,18.00518],[120.9381,18.01236],[120.93663,18.01342],[120.93229,18.01382],
+  [120.92779,18.02071],[120.92798,18.0231],[120.93341,18.0291],[120.93475,18.04408],[120.93587,18.04845],[120.93508,18.05288],
+  [120.93303,18.05764],[120.93422,18.05944],[120.93548,18.06437],[120.93546,18.069],[120.92753,18.07858],[120.92814,18.08819],
+  [120.93553,18.10641],[120.94456,18.12289],[120.94854,18.13261],[120.94803,18.13715],[120.94987,18.13976],[120.96192,18.16651],
+  [120.97007,18.18186],[120.94317,18.21651],[120.93879,18.22089],[120.92676,18.24194],[120.91667,18.28457],[120.94836,18.38169],
+  [120.94704,18.42063],[120.96565,18.44477],[120.96051,18.44573],[120.96125,18.44855],[120.95831,18.45557],[120.95891,18.4629],
+  [120.96001,18.46552],[120.96054,18.47044],[120.95917,18.47898],[120.95911,18.49031],[120.96089,18.49542],[120.96012,18.5011],
+  [120.96211,18.50389],[120.96464,18.51609],[120.96406,18.52401],[120.96814,18.53913],[120.96771,18.54262],[120.96857,18.54763],
+  [120.96844,18.55137],[120.96724,18.55324],[120.96647,18.55867],[120.96836,18.56181],[120.96909,18.56795],[120.97078,18.57042],
+  [120.97085,18.57296],[120.96882,18.57797],[120.94828,18.59061],[120.93297,18.60128],[120.93181,18.60945],[120.93499,18.64726],
+  [120.94681,18.68744],[120.94944,18.6942],[120.9575,18.72081],[120.96109,18.73632],[120.94569,18.74982],[120.93133,18.76017],
+  [120.91101,18.77147],[120.8922,18.779],[120.87413,18.78359],[120.85246,18.78606],[120.83319,18.78569],[120.8116,18.78265],
+  [120.79451,18.77795],[120.7784,18.77139],[120.76522,18.76421],[120.74608,18.75841],[120.73374,18.75329],[120.72025,18.74628],
+  [120.70895,18.73947],[120.69097,18.72584],[120.67909,18.71475],[120.66703,18.70035],[120.65938,18.68924],[120.65501,18.68173],
+  [120.64014,18.68294],[120.62843,18.68284],[120.61685,18.68184],[120.59637,18.67846],[120.58464,18.67569],[120.57119,18.67123],
+  [120.55776,18.66553],[120.54853,18.66064],[120.53078,18.64874],[120.5132,18.63319],[120.50301,18.6271],[120.49035,18.61796],
+  [120.47792,18.60676],[120.46141,18.58874],[120.44308,18.56498],[120.43694,18.55498],[120.43161,18.54426],[120.4266,18.53146],
+  [120.42229,18.51551],[120.42041,18.5033],[120.41966,18.49029],[120.42004,18.47874],[120.42117,18.46888],[120.42388,18.44963],
+  [120.42679,18.437],[120.43008,18.4267],[120.43552,18.41371],[120.44164,18.40165],[120.44981,18.38826],[120.45311,18.38096],
+  [120.45584,18.37254],[120.4567,18.36511],[120.44744,18.35251],[120.43932,18.33878],[120.43293,18.32425],[120.42929,18.31269],
+  [120.42593,18.30441],[120.41665,18.29428],[120.40622,18.2805],[120.40054,18.2715],[120.39383,18.25878],[120.38295,18.23115],
+  [120.37986,18.22101],[120.37676,18.20505],[120.37572,18.18805],[120.36432,18.17694],[120.3537,18.16386],[120.34513,18.15025],
+  [120.33831,18.13577],[120.33225,18.11663],[120.32916,18.09676],[120.32879,18.08639],[120.32926,18.07552],[120.33065,18.06473],
+  [120.33318,18.05328],[120.33174,18.03416],[120.31909,18.02454],[120.30475,18.01055],[120.29413,17.99704],[120.28511,17.9819],
+  [120.27726,17.96369],[120.27299,17.9488],[120.26991,17.9311],[120.26926,17.91548],
+];
+// Bounding box of the border, and a padded box the maps can't be panned past.
+const ILOCOS_NORTE_BBOX = [120.2692, 17.786, 120.9709, 18.7862]; // minLng, minLat, maxLng, maxLat
+const ILOCOS_NORTE_MAX_BOUNDS = [[120.12, 17.66], [121.12, 18.92]];
+const OUTSIDE_SERVICE_AREA_MSG = 'iTULOD only serves Ilocos Norte — please pick a spot inside the province.';
+
+// Ray-casting point-in-polygon test.
+function isInIlocosNorte(lng, lat) {
+  if (lng == null || lat == null || isNaN(lng) || isNaN(lat)) return false;
+  const [minLng, minLat, maxLng, maxLat] = ILOCOS_NORTE_BBOX;
+  if (lng < minLng || lng > maxLng || lat < minLat || lat > maxLat) return false;
+  let inside = false;
+  const poly = ILOCOS_NORTE_BOUNDARY;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+
 // Mapbox GL JS (~200 KB) + the geocoder plugin are loaded on demand — the
 // first time a map is actually needed — not on every dashboard visit. The
 // promise is cached so concurrent callers share one load.
@@ -51,6 +116,9 @@ function _initMap(containerId) {
     center: DEFAULT_CENTER,
     zoom: DEFAULT_ZOOM,
     attributionControl: true,
+    // Keep every map on Ilocos Norte — it can't be panned or zoomed out past it.
+    maxBounds: ILOCOS_NORTE_MAX_BOUNDS,
+    minZoom: 8,
   });
   _autoResize(map);
   return map;
@@ -95,10 +163,12 @@ async function _photonSearch(query) {
   if (!query || query.trim().length < 2) return [];
   try {
     const url = `${PHOTON_URL}/api/?q=${encodeURIComponent(query)}&lang=en&limit=8`
-      + `&lat=${DEFAULT_CENTER[1]}&lon=${DEFAULT_CENTER[0]}`;
+      + `&lat=${DEFAULT_CENTER[1]}&lon=${DEFAULT_CENTER[0]}`
+      + `&bbox=${ILOCOS_NORTE_BBOX.join(',')}`;
     const d = await (await fetch(url)).json();
     return (d.features || [])
       .filter(f => f.geometry && (f.properties || {}).countrycode === 'PH')
+      .filter(f => isInIlocosNorte(f.geometry.coordinates[0], f.geometry.coordinates[1]))
       .map(f => {
         const c = f.geometry.coordinates;
         const label = _photonLabel(f.properties);
@@ -303,6 +373,10 @@ function getMapMarkerLngLat(tab, mode) {
 // the route once both ends are set.
 async function _setStop(tab, lngLat, address) {
   const cfg = _maps[tab];
+  if (!isInIlocosNorte(lngLat[0], lngLat[1])) {
+    if (typeof toast === 'function') toast(OUTSIDE_SERVICE_AREA_MSG, 'error');
+    return;
+  }
   if (!address) address = await _reverseGeocode({ lng: lngLat[0], lat: lngLat[1] });
   if (cfg.mode === 'pickup') {
     const input = document.getElementById(cfg.pickupInputId);
@@ -357,8 +431,9 @@ function _makeGeocoder(onResult) {
     collapsed: true,
     limit: 8,
     language: 'en',
-    placeholder: 'Search any place or address…',
+    placeholder: 'Search a place in Ilocos Norte…',
     countries: 'ph',
+    bbox: ILOCOS_NORTE_BBOX,
     proximity: { longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] },
     // OpenStreetMap results (rich PH coverage) are prepended to Mapbox's.
     externalGeocoder: (query) => _photonSearch(query),
@@ -385,6 +460,40 @@ function _addGeocoder(tab) {
 function _addSearchControl(map) {
   const geocoder = _makeGeocoder();
   if (geocoder) map.addControl(geocoder, 'top-left');
+}
+
+// Where a typed address really is — searched across the whole Philippines
+// (nearest-to-Laoag first), so an address outside the province is found and
+// can be refused instead of silently matching nothing.
+async function _locateAnywhereInPH(addr) {
+  if (!addr || addr.trim().length < 3) return null;
+  try {
+    const url = `${PHOTON_URL}/api/?q=${encodeURIComponent(addr)}&lang=en&limit=1`
+      + `&lat=${DEFAULT_CENTER[1]}&lon=${DEFAULT_CENTER[0]}`;
+    const f = ((await (await fetch(url)).json()).features || [])
+      .find(x => x.geometry && (x.properties || {}).countrycode === 'PH');
+    return f ? f.geometry.coordinates : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Booking/saved-address submit guard. Each item is { label, address, coords? }
+// where coords ([lng, lat]) is the pinned spot when there is one. Returns
+// true when every place is in Ilocos Norte (or can't be located — a barangay
+// name the geocoder doesn't know is allowed through; the rider confirms it).
+async function checkServiceArea(items) {
+  for (const it of items) {
+    if (!it || !it.address) continue;
+    const c = it.coords || await _locateAnywhereInPH(it.address);
+    if (c && !isInIlocosNorte(c[0], c[1])) {
+      if (typeof toast === 'function') {
+        toast(`${it.label} looks like it's outside Ilocos Norte. iTULOD only serves Ilocos Norte.`, 'error');
+      }
+      return false;
+    }
+  }
+  return true;
 }
 
 /* ── Public init functions ──────────────────────────────────────────────── */
@@ -561,8 +670,9 @@ async function _geocodeAddress(addr) {
   const ph = await _photonSearch(addr);
   if (ph[0]) return ph[0].center;
   try {
-    const d = await (await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&country=ph&limit=1`)).json();
-    return d.features?.[0]?.center || null;
+    const d = await (await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json?access_token=${MAPBOX_TOKEN}&country=ph&bbox=${ILOCOS_NORTE_BBOX.join(',')}&limit=1`)).json();
+    const c = d.features?.[0]?.center;
+    return c && isInIlocosNorte(c[0], c[1]) ? c : null;
   } catch (err) {
     console.warn('Mapbox geocode fallback failed:', err && err.message);
     return null;

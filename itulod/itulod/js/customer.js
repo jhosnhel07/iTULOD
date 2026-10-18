@@ -270,6 +270,9 @@ function wireSavedAddressForm() {
       if (ll) { lng = ll[0]; lat = ll[1]; }
     }
 
+    if (lng != null && !isInIlocosNorte(lng, lat)) { toast(OUTSIDE_SERVICE_AREA_MSG, 'error'); return; }
+    if (lng == null && typeof checkServiceArea === 'function' && !(await checkServiceArea([{ label: 'This address', address }]))) return;
+
     setLoading(btn, true);
     const { error } = await supabase.from('saved_addresses').insert({
       customer_id: CURRENT_PROFILE.id, label, address, lng, lat
@@ -487,6 +490,11 @@ function wireRideForm() {
 
     const paymentMethod = document.getElementById('ride-payment').value; // cash | gcash
     const { km, coords } = est.current();
+    if (typeof checkServiceArea === 'function' && !(await checkServiceArea([
+      { label: 'Pickup', address: pickup.value.trim(), coords: coords?.pickup },
+      { label: 'Destination', address: dest.value.trim(), coords: coords?.dropoff },
+      ...getStops().filter(Boolean).map((a, i) => ({ label: `Stop ${i + 1}`, address: a })),
+    ]))) return;
     // One fare value for both the inserted row and the confirmation modal, so
     // the amount shown can never drift from the amount charged.
     const fare = estimateFare(vehicle, km);
@@ -681,6 +689,9 @@ function wireFoodForm() {
     const deliveryFee = estimateFare(vehicle, km);
     const total = Math.round((subtotal + deliveryFee) * 100) / 100;
     const paymentMethod = document.getElementById('food-payment')?.value || 'cash';
+    if (typeof checkServiceArea === 'function' && !(await checkServiceArea([
+      { label: 'Delivery address', address: address.value.trim(), coords: typeof getMapMarkerLngLat === 'function' ? getMapMarkerLngLat('food', 'dropoff') : null },
+    ]))) return;
 
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('food_deliveries').insert({
@@ -953,6 +964,11 @@ function wireParcelForm() {
         return;
       }
     }
+    const parcelCoords = est.current().coords;
+    if (typeof checkServiceArea === 'function' && !(await checkServiceArea([
+      { label: 'Sender address', address: payload.sender_address, coords: parcelCoords?.pickup },
+      { label: 'Receiver address', address: payload.receiver_address, coords: parcelCoords?.dropoff },
+    ]))) return;
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('parcel_deliveries').insert(payload).select('id').single();
     setLoading(btn, false);
@@ -1094,6 +1110,10 @@ function wireHaulingForm() {
     }
 
     const { km, coords } = est.current();
+    if (typeof checkServiceArea === 'function' && !(await checkServiceArea([
+      { label: 'Pickup address', address: payload.pickup_address, coords: coords?.pickup },
+      { label: 'Drop-off address', address: payload.dropoff_address, coords: coords?.dropoff },
+    ]))) return;
     payload.distance_km = Number(km.toFixed(2));
     payload.estimated_fare = Math.round((estimateFare(vehicle, km) + payload.helpers * HAULING_HELPER_FEE) * 100) / 100;
     payload.pickup_lng = coords?.pickup?.[0] ?? null;

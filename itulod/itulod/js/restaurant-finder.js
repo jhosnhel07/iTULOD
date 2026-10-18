@@ -262,6 +262,12 @@ function renderRestaurantFinder(body, restaurants) {
       if (!navigator.geolocation) { toast('Location is not available in this browser.', 'error'); return; }
       toast('Finding your location…', 'info');
       navigator.geolocation.getCurrentPosition(async (pos) => {
+        if (typeof isInIlocosNorte === 'function' && !isInIlocosNorte(pos.coords.longitude, pos.coords.latitude)) {
+          toast("You're outside Ilocos Norte — iTULOD only delivers within the province. Pick a saved address instead.", 'error');
+          e.target.value = 'none';
+          FINDER.deliverTo = null;
+          return _renderResults();
+        }
         FINDER.deliverTo = { key: 'gps', label: 'My current location', lat: pos.coords.latitude, lng: pos.coords.longitude };
         _renderResults();
         await _applyToFoodForm(FINDER.deliverTo);
