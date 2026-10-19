@@ -90,13 +90,9 @@ function setBookingService(svc) {
   if (sub && document.getElementById('tab-book').classList.contains('active')) sub.textContent = BOOKING_SUBTITLES[svc];
   if (typeof resizeBookingMap === 'function') requestAnimationFrame(() => resizeBookingMap(svc));
 
-  // "Riders near you" only makes sense on the ride map — stop polling
-  // whenever the customer isn't looking at it.
-  if (svc === 'ride' && typeof startNearbyRidersWatch === 'function') {
-    startNearbyRidersWatch('ride');
-  } else if (typeof stopNearbyRidersWatch === 'function') {
-    stopNearbyRidersWatch();
-  }
+  // "Riders near you" follows whichever booking form is showing (each has
+  // its own map, vehicle and pickup).
+  if (typeof startNearbyRidersWatch === 'function') startNearbyRidersWatch(svc);
 }
 function wireBookingSwitch() {
   document.querySelectorAll('#booking-switch .seg-btn').forEach(btn => {
@@ -649,6 +645,7 @@ function updateFoodRestaurantSummary() {
     }
   }
   recalcFoodFare();
+  if (typeof renderNearbyRiders === 'function' && _nearbyRidersTab === 'food') renderNearbyRiders('food');
 }
 
 function wireFoodForm() {
@@ -791,6 +788,8 @@ async function showRestaurantMenu(restaurant) {
   FOOD_CART.restaurantId = restaurant.id;
   FOOD_CART.restaurantName = restaurant.name;
   FOOD_CART.restaurantAddress = restaurant.address;
+  // Where riders are counted from on the food map ("near the restaurant").
+  FOOD_CART.restaurantPoint = (restaurant.lat != null && restaurant.lng != null) ? [restaurant.lng, restaurant.lat] : null;
 
   document.getElementById('restaurant-browse-title').textContent = 'Menu';
   document.getElementById('restaurant-browse-foot').style.display = '';

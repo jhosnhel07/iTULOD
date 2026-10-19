@@ -791,34 +791,148 @@ function goOffline() {
   }
 }
 
-/* ── Customer: "riders near you" markers on the ride booking map ──────────── */
+/* ── Customer: "riders near you" markers on the booking maps ────────────── */
+// Every booking form (ride, food, parcel, hauling) shows the online, idle
+// drivers from get_nearby_riders() — only those with the vehicle the customer
+// picked, and only within NEARBY_RADIUS_KM of the pickup (the restaurant, for
+// food). The app's RidersNearYouMap does the same.
+const NEARBY_RADIUS_KM = 10;
+const HAULING_RIDER_TYPES = ['Van', 'Pickup', 'Truck'];
+const NEARBY_VEHICLES = {
+  Motorcycle: { icon: '<i class="fa-solid fa-motorcycle"></i>', one: 'motorcycle', many: 'motorcycles' },
+  Tricycle:   { icon: '<span class="nr-emoji" aria-hidden="true">🛺</span>', one: 'tricycle', many: 'tricycles' },
+  Car:        { icon: '<i class="fa-solid fa-car"></i>', one: 'car', many: 'cars' },
+  SUV:        { icon: '<i class="fa-solid fa-car-side"></i>', one: 'SUV', many: 'SUVs' },
+  Van:        { icon: '<i class="fa-solid fa-van-shuttle"></i>', one: 'van', many: 'vans' },
+  Pickup:     { icon: '<i class="fa-solid fa-truck-pickup"></i>', one: 'pickup', many: 'pickups' },
+  Truck:      { icon: '<i class="fa-solid fa-truck"></i>', one: 'truck', many: 'trucks' },
+  Bicycle:    { icon: '<i class="fa-solid fa-bicycle"></i>', one: 'bicycle', many: 'bicycles' },
+  Jeepney:    { icon: '<i class="fa-solid fa-bus-simple"></i>', one: 'jeepney', many: 'jeepneys' },
+  Bus:        { icon: '<i class="fa-solid fa-bus"></i>', one: 'bus', many: 'buses' },
+};
+
+// Booking vehicle name (vehicles.name) → rider vehicle type
+// (rider_applications.vehicle_type). Standard names match one to one; the
+// hauling ones are descriptive ("L300 Van", "6-Wheeler Truck").
+function riderTypeForVehicle(name) {
+  if (!name) return null;
+  if (NEARBY_VEHICLES[name]) return name;
+  const n = name.toLowerCase();
+  if (n.includes('pickup') || n.includes('multicab')) return 'Pickup';
+  if (n.includes('truck') || n.includes('wheeler')) return 'Truck';
+  if (n.includes('van')) return 'Van';
+  if (n.includes('suv')) return 'SUV';
+  if (n.includes('tricycle') || n.includes('trike')) return 'Tricycle';
+  if (n.includes('motor')) return 'Motorcycle';
+  if (n.includes('bicycle') || n.includes('bike')) return 'Bicycle';
+  if (n.includes('jeep')) return 'Jeepney';
+  if (n.includes('bus')) return 'Bus';
+  if (n.includes('car') || n.includes('sedan')) return 'Car';
+  return name;
+}
+
+function _kmBetween([lng1, lat1], [lng2, lat2]) {
+  const rad = (d) => d * Math.PI / 180;
+  const dLat = rad(lat2 - lat1), dLng = rad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
+}
+
 let _nearbyRidersTimer = null;
 let _nearbyRiderMarkers = [];
+let _nearbyRidersTab = null;
+let _nearbyRidersData = null;
+const _nearbyWired = {};
 
-async function refreshNearbyRiders(tab) {
+// Which rider vehicle types this tab's form is asking for right now.
+function _nearbyVehicleFilter(tab) {
+  const sel = document.getElementById(`${tab}-vehicle`);
+  const list = tab === 'hauling'
+    ? (typeof HAULING_VEHICLES !== 'undefined' ? HAULING_VEHICLES : [])
+    : (typeof VEHICLES !== 'undefined' ? VEHICLES : []);
+  const vehicle = sel && list.find(v => v.id === sel.value);
+  const type = vehicle ? riderTypeForVehicle(vehicle.name) : null;
+  if (type) return { types: [type], type };
+  return { types: tab === 'hauling' ? HAULING_RIDER_TYPES : null, type: null };
+}
+
+// Where "nearby" is measured from: the pinned pickup, or the restaurant.
+function _nearbyOrigin(tab) {
+  if (tab === 'food') {
+    return (typeof FOOD_CART !== 'undefined' && FOOD_CART.restaurantPoint) || null;
+  }
+  return getMapMarkerLngLat(tab, 'pickup');
+}
+
+function renderNearbyRiders(tab) {
   const cfg = _maps[tab];
-  if (!cfg || !cfg.map || typeof supabase === 'undefined') return;
-  const { data, error } = await supabase.rpc('get_nearby_riders');
-  if (error) { console.warn('get_nearby_riders failed:', error.message); return; }
+  if (!cfg || !cfg.map || !_nearbyRidersData) return;
+  const { types, type } = _nearbyVehicleFilter(tab);
+  const origin = _nearbyOrigin(tab);
+  const shown = _nearbyRidersData.filter(r =>
+    (!types || types.includes(r.vehicle_type)) &&
+    (!origin || _kmBetween(origin, [r.lng, r.lat]) <= NEARBY_RADIUS_KM));
+
   _nearbyRiderMarkers.forEach(m => m.remove());
-  _nearbyRiderMarkers = (data || []).map(r => {
+  _nearbyRiderMarkers = shown.map(r => {
+    const v = NEARBY_VEHICLES[r.vehicle_type];
     const el = document.createElement('div');
-    el.innerHTML = '<i class="fa-solid fa-motorcycle"></i>';
-    el.style.cssText = 'color:#fff;background:#1a9d63;border-radius:50%;width:28px;height:28px;'
-      + 'display:flex;align-items:center;justify-content:center;font-size:14px;'
-      + 'box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff';
+    el.className = 'nearby-rider-pin';
+    el.innerHTML = v ? v.icon : NEARBY_VEHICLES.Motorcycle.icon;
+    el.title = `${r.vehicle_type || 'Rider'} driver — online`;
     return new mapboxgl.Marker({ element: el }).setLngLat([r.lng, r.lat]).addTo(cfg.map);
   });
-  const countEl = document.getElementById('nearby-riders-count');
-  if (countEl) {
-    const label = (data && data.length)
-      ? `${data.length} rider${data.length === 1 ? '' : 's'} nearby`
-      : 'No riders online right now';
-    countEl.innerHTML = `<i class="fa-solid fa-motorcycle"></i> ${label}`;
+
+  const countEl = document.getElementById(`nearby-riders-count-${tab}`);
+  if (!countEl) return;
+  const n = shown.length;
+  const v = type && NEARBY_VEHICLES[type];
+  const fallback = tab === 'hauling'
+    ? { icon: '<i class="fa-solid fa-truck-moving"></i>', one: 'hauling driver', many: 'hauling drivers' }
+    : { icon: '<i class="fa-solid fa-motorcycle"></i>', one: 'driver', many: 'drivers' };
+  const kind = v || (type ? { icon: fallback.icon, one: `${type} driver`, many: `${type} drivers` } : fallback);
+  const noun = n === 1 ? kind.one : kind.many;
+  const from = tab === 'food' ? 'the restaurant' : 'your pickup';
+  let label;
+  if (origin) {
+    label = n
+      ? `<strong>${n} ${noun}</strong> within ${NEARBY_RADIUS_KM} km of ${from}`
+      : `No ${kind.many} within ${NEARBY_RADIUS_KM} km of ${from} right now`;
+  } else {
+    const hint = tab === 'food' ? 'choose a restaurant' : 'set your pickup';
+    label = n
+      ? `<strong>${n} ${noun}</strong> online — ${hint} to see who's near`
+      : `No ${kind.many} online right now`;
   }
+  countEl.innerHTML = `${kind.icon} ${label}`;
+}
+
+async function refreshNearbyRiders(tab) {
+  if (typeof supabase === 'undefined') return;
+  const { data, error } = await supabase.rpc('get_nearby_riders');
+  if (error) { console.warn('get_nearby_riders failed:', error.message); return; }
+  _nearbyRidersData = data || [];
+  if (_nearbyRidersTab === tab) renderNearbyRiders(tab);
+}
+
+// Re-draw (without refetching) when the vehicle or the pickup changes.
+function _wireNearbyRiders(tab) {
+  if (_nearbyWired[tab]) return;
+  _nearbyWired[tab] = true;
+  const rerender = () => setTimeout(() => { if (_nearbyRidersTab === tab) renderNearbyRiders(tab); }, 0);
+  document.getElementById(`${tab}-vehicle`)?.addEventListener('change', rerender);
+  const pickupId = _maps[tab]?.pickupInputId;
+  if (pickupId) document.getElementById(pickupId)?.addEventListener('input', rerender);
 }
 
 function startNearbyRidersWatch(tab) {
+  if (_nearbyRidersTab !== tab) {
+    _nearbyRiderMarkers.forEach(m => m.remove());
+    _nearbyRiderMarkers = [];
+  }
+  _nearbyRidersTab = tab;
+  _wireNearbyRiders(tab);
+  renderNearbyRiders(tab);
   refreshNearbyRiders(tab);
   clearInterval(_nearbyRidersTimer);
   _nearbyRidersTimer = setInterval(() => refreshNearbyRiders(tab), 20000);
@@ -827,6 +941,7 @@ function startNearbyRidersWatch(tab) {
 function stopNearbyRidersWatch() {
   clearInterval(_nearbyRidersTimer);
   _nearbyRidersTimer = null;
+  _nearbyRidersTab = null;
   _nearbyRiderMarkers.forEach(m => m.remove());
   _nearbyRiderMarkers = [];
 }

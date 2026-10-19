@@ -4650,3 +4650,31 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
   cursor: pointer;
   box-shadow: var(--shadow-xs);
 }
+
+/* ── "Riders near you" on the booking maps (js/map.js renderNearbyRiders) ── */
+.nearby-riders-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.nearby-riders-count strong { color: var(--ink); }
+.nearby-riders-count i { color: #1a9d63; }
+.nearby-rider-pin {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  background: #1a9d63;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  cursor: default;
+}
+.nr-emoji { font-size: 14px; line-height: 1; }
+.nearby-riders-count .nr-emoji { font-size: 13px; }

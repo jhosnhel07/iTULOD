@@ -358,8 +358,8 @@
                 your pickup location.
               </p>
               <div id="tracking-map" class="map-canvas"></div>
-              <p id="nearby-riders-count" style="font-size: var(--fs-xs); color: var(--text-muted); margin-top: 8px">
-                <i class="fa-solid fa-motorcycle"></i> Looking for nearby riders…
+              <p id="nearby-riders-count-ride" class="nearby-riders-count" aria-live="polite">
+                <i class="fa-solid fa-motorcycle"></i> Looking for nearby drivers…
               </p>
               <div id="ride-active-status" style="margin-top: 16px"></div>
               <button
@@ -514,6 +514,9 @@
                 your delivery address.
               </p>
               <div id="food-map" class="map-canvas"></div>
+              <p id="nearby-riders-count-food" class="nearby-riders-count" aria-live="polite">
+                <i class="fa-solid fa-motorcycle"></i> Looking for nearby drivers…
+              </p>
               <button
                 type="button"
                 class="btn btn-primary btn-block map-sheet-done"
@@ -794,6 +797,9 @@
                 pickup location.
               </p>
               <div id="parcel-map" class="map-canvas"></div>
+              <p id="nearby-riders-count-parcel" class="nearby-riders-count" aria-live="polite">
+                <i class="fa-solid fa-motorcycle"></i> Looking for nearby drivers…
+              </p>
               <button
                 type="button"
                 class="btn btn-primary btn-block map-sheet-done"
@@ -985,6 +991,9 @@
                 <i class="fa-solid fa-circle-info"></i> Click on the map to set pickup location.
               </p>
               <div id="hauling-map" class="map-canvas"></div>
+              <p id="nearby-riders-count-hauling" class="nearby-riders-count" aria-live="polite">
+                <i class="fa-solid fa-truck-moving"></i> Looking for nearby drivers…
+              </p>
               <button type="button" class="btn btn-primary btn-block map-sheet-done" onclick="closeMapSheet('hauling')">
                 <i class="fa-solid fa-check"></i> Done
               </button>
