@@ -458,16 +458,43 @@
         }
       }
 
+      // Every rider document is required except the NBI clearance (same as
+      // the app's _missingDocuments). The face photo also becomes the rider's
+      // profile picture — customers see it when the rider accepts a booking.
+      const REQUIRED_RIDER_DOCS = [
+        ["license_file", "uz-license", "Driver's License"],
+        ["orcr_file", "uz-orcr", "OR / CR Paper"],
+        ["selfie_file", "uz-selfie", "Profile Photo"],
+        ["vehicle_file", "uz-vehicle", "Vehicle Photo"],
+      ];
+
+      // Marks the empty required slots and returns their names.
+      function missingRiderDocs() {
+        const missing = [];
+        REQUIRED_RIDER_DOCS.forEach(([inputId, zoneId, label]) => {
+          const empty = !document.getElementById(inputId)?.files[0];
+          document.getElementById(zoneId)?.classList.toggle("is-missing", empty);
+          if (empty) missing.push(label);
+        });
+        return missing;
+      }
+
+      // Returns true when every required document is there; otherwise says
+      // which are missing and scrolls to the first one.
+      function checkRiderDocs() {
+        const missing = missingRiderDocs();
+        if (!missing.length) return true;
+        const msg = `Please upload: ${missing.join(", ")}.`;
+        if (typeof toast === "function") toast(msg, "error");
+        else alert(msg);
+        document
+          .querySelector(".upload-zone.is-missing")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return false;
+      }
+
       function submitDocumentsStep() {
-        // The face photo becomes the rider's profile picture — customers see
-        // it when the rider accepts their booking — so it can't be skipped.
-        if (!document.getElementById("selfie_file")?.files[0]) {
-          const msg = "Please add your profile photo — a clear photo of your face.";
-          if (typeof toast === "function") toast(msg, "error");
-          else alert(msg);
-          document.getElementById("uz-selfie")?.scrollIntoView({ behavior: "smooth", block: "center" });
-          return;
-        }
+        if (!checkRiderDocs()) return;
         goToStep(5);
       }
 
@@ -793,6 +820,13 @@
       let __riderSubmitting = false;
       async function submitRiderRegistration() {
         if (__riderSubmitting) return;
+        // Files don't survive a page reload (a restored draft can land on
+        // Review without them) — send the rider back to Documents if so.
+        if (missingRiderDocs().length) {
+          goToStep(4);
+          checkRiderDocs();
+          return;
+        }
         __riderSubmitting = true;
 
         const btn = document.getElementById("btn-submit-rider");
@@ -1078,6 +1112,7 @@
         const file = input.files[0];
         if (!file) return;
         const zone = document.getElementById(zoneId);
+        zone.classList.remove("is-missing");
         const prev = document.getElementById(previewId);
         zone.classList.add("has-file");
         const icon = zone.querySelector(".upload-icon i");

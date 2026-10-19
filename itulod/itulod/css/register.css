@@ -882,6 +882,17 @@
         background: #e9f8f0;
         border-style: solid;
       }
+      /* A required document that's still empty (register.js checkRiderDocs) */
+      .upload-zone.is-missing {
+        border-color: #e5484d;
+        border-style: solid;
+        background: #fff5f5;
+      }
+      .upload-zone.is-missing .upload-label::after {
+        content: " — required";
+        color: #e5484d;
+        font-weight: 600;
+      }
       .upload-zone.dragging {
         border-color: #2196f3;
         background: #e3f2fd;
