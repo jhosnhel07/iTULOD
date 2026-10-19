@@ -393,16 +393,26 @@ function renderAcceptedCard(b, kind) {
   const releaseAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); releaseJob('${kind}','${b.id}')"><i class="fa-solid fa-arrow-rotate-left"></i> Release</button>`
     : '';
-  // Food/parcel drop-off gets a proof-of-delivery photo; a ride has no
-  // "delivery" to photograph, so it completes the same way as before.
-  const completeAction = kind === 'transport'
-    ? `updateStatus('${kind}','${b.id}','completed')`
-    : `completeWithProof('${kind}','${b.id}')`;
+  // Food/parcel/hauling drop-off: the rider takes the proof-of-delivery
+  // photo as its own step, and "Mark complete" stays locked until it's saved
+  // (sql/031 enforces this too). A ride has nothing to photograph.
+  const needsProof = kind !== 'transport';
+  const hasProof = !!safeImageUrl(b.delivery_proof_url);
+  const proofAction = canComplete && needsProof
+    ? (hasProof
+        ? `<a class="proof-chip" href="${escapeHtml(b.delivery_proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View proof of delivery">
+             <img src="${escapeHtml(b.delivery_proof_url)}" alt=""><span><i class="fa-solid fa-check"></i> Proof saved</span>
+           </a>
+           <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); takeDeliveryProof('${kind}','${b.id}')"><i class="fa-solid fa-camera-rotate"></i> Retake</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); takeDeliveryProof('${kind}','${b.id}')"><i class="fa-solid fa-camera"></i> Take proof of delivery</button>`)
+    : '';
   const nextAction = b.status === 'accepted'
     ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
-    : canComplete
-      ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); ${completeAction}"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`
-      : '';
+    : !canComplete
+      ? ''
+      : needsProof && !hasProof
+        ? `<button class="btn btn-outline btn-sm" disabled title="Take a proof-of-delivery photo first"><i class="fa-solid fa-lock"></i> Mark complete</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','completed')"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`;
 
   // Turn-by-turn in Google Maps: to the pickup until the trip starts, then
   // to the drop-off.
@@ -425,7 +435,7 @@ function renderAcceptedCard(b, kind) {
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
     footLeft: [paidBadge, haulingNeeds(b, kind)].filter(Boolean).join(' '),
-    actions: setFareAction + navigateAction + noShowAction + releaseAction + nextAction,
+    actions: setFareAction + navigateAction + noShowAction + releaseAction + proofAction + nextAction,
   });
 }
 
@@ -452,15 +462,16 @@ async function releaseJob(kind, id) {
   await loadEarnings();
 }
 
-// ---- proof of delivery (food/parcel) ---------------------------------------
-// One hidden file input, reused for whichever booking's "Mark complete" was
-// tapped — set by completeWithProof(), read by the input's own change handler.
+// ---- proof of delivery (food/parcel/hauling) -------------------------------
+// One hidden file input, reused for whichever booking's "Take proof of
+// delivery" was tapped — set by takeDeliveryProof(), read by the input's own
+// change handler. Saving the photo unlocks that booking's "Mark complete".
 let _proofTarget = null;
 
-function completeWithProof(kind, id) {
+function takeDeliveryProof(kind, id) {
   _proofTarget = { kind, id };
   const input = document.getElementById('proof-upload-input');
-  if (!input) { updateStatus(kind, id, 'completed'); return; } // page hasn't got the input — complete without a photo rather than dead-end the rider
+  if (!input) { toast("Couldn't open the camera on this page — please reload.", 'error'); return; }
   input.value = '';
   input.click();
 }
@@ -483,14 +494,14 @@ function wireProofUpload() {
     const { error: upErr } = await supabase.storage.from('delivery-proof').upload(path, photo, { upsert: true });
     if (upErr) {
       console.error('Proof of delivery upload failed:', upErr.message);
-      if (!(await appConfirm("The proof-of-delivery photo couldn't be uploaded.", { title: 'Complete without a photo?', confirmText: 'Complete anyway', icon: 'fa-camera' }))) return;
-      await updateStatus(target.kind, target.id, 'completed');
+      toast("The photo couldn't be uploaded — check your connection and try again.", 'error');
       return;
     }
     const delivery_proof_url = supabase.storage.from('delivery-proof').getPublicUrl(path).data.publicUrl;
-    // Photo and status in one update, so the delivery can't end up with its
-    // photo saved but still "ongoing" (the app had that bug).
-    await updateStatus(target.kind, target.id, 'completed', { delivery_proof_url });
+    const { error } = await supabase.from(TABLE_BY_KIND[target.kind]).update({ delivery_proof_url }).eq('id', target.id);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Proof of delivery saved — you can now mark it complete.', 'success');
+    await loadAccepted();
   });
 }
 
@@ -673,8 +684,7 @@ async function setFinalFare(kind, id, amountOverride) {
   await loadAccepted();
 }
 
-// `extra`: other columns saved in the same update (the proof photo).
-async function updateStatus(kind, id, status, extra = {}) {
+async function updateStatus(kind, id, status) {
   const table = TABLE_BY_KIND[kind];
 
   // Transport bookings paid by GCash/Card are charged up front — don't let
@@ -691,7 +701,7 @@ async function updateStatus(kind, id, status, extra = {}) {
   // The booking_before_update() DB trigger owns everything that happens on
   // completion: it validates + locks final_fare, marks cash bookings paid, and
   // creates the payout row in `payments`. The client only changes the status.
-  const { error } = await supabase.from(table).update({ ...extra, status }).eq('id', id);
+  const { error } = await supabase.from(table).update({ status }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
   toast(status === 'completed' ? 'Marked as complete!' : 'Status updated!', 'success');
   await loadAccepted(); // clears RIDER_HAS_ACTIVE_BOOKING once nothing's left in progress

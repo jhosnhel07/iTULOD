@@ -4729,3 +4729,25 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 .photo-review__info h4 { margin: 0 0 2px; }
 .photo-review__info p { margin: 0; color: var(--text-muted); font-size: var(--fs-xs); }
 .photo-review__actions { display: flex; gap: 8px; }
+
+/* ── Rider: saved proof-of-delivery photo on the job card (rider.js renderAcceptedCard) ── */
+.proof-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(26, 157, 99, .35);
+  background: rgba(26, 157, 99, .08);
+  color: #1a9d63;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-decoration: none;
+}
+.proof-chip img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.proof-chip:hover { background: rgba(26, 157, 99, .14); }
