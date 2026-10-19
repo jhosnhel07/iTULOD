@@ -473,12 +473,14 @@ function wireProofUpload() {
     const target = _proofTarget;
     _proofTarget = null;
     if (!file || !target) return;
-    if (!file.type.startsWith('image/')) { toast('Please choose an image file.', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast('That photo is too large — please choose one under 5MB.', 'error'); return; }
+    const problem = photoPickProblem(file);
+    if (problem) { toast(problem, 'error'); return; }
 
     toast('Uploading photo…', 'info');
-    const path = `${CURRENT_PROFILE.id}/${target.kind}-${target.id}-${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from('delivery-proof').upload(path, file, { upsert: true });
+    // Phone camera photos are often over 5MB — shrink instead of refusing.
+    const photo = await shrinkImageFile(file, { max: 1600 });
+    const path = `${CURRENT_PROFILE.id}/${target.kind}-${target.id}-${Date.now()}-${photo.name}`;
+    const { error: upErr } = await supabase.storage.from('delivery-proof').upload(path, photo, { upsert: true });
     if (upErr) {
       console.error('Proof of delivery upload failed:', upErr.message);
       if (!(await appConfirm("The proof-of-delivery photo couldn't be uploaded.", { title: 'Complete without a photo?', confirmText: 'Complete anyway', icon: 'fa-camera' }))) return;
@@ -486,9 +488,9 @@ function wireProofUpload() {
       return;
     }
     const delivery_proof_url = supabase.storage.from('delivery-proof').getPublicUrl(path).data.publicUrl;
-    const table = TABLE_BY_KIND[target.kind];
-    await supabase.from(table).update({ delivery_proof_url }).eq('id', target.id);
-    await updateStatus(target.kind, target.id, 'completed');
+    // Photo and status in one update, so the delivery can't end up with its
+    // photo saved but still "ongoing" (the app had that bug).
+    await updateStatus(target.kind, target.id, 'completed', { delivery_proof_url });
   });
 }
 
@@ -671,7 +673,8 @@ async function setFinalFare(kind, id, amountOverride) {
   await loadAccepted();
 }
 
-async function updateStatus(kind, id, status) {
+// `extra`: other columns saved in the same update (the proof photo).
+async function updateStatus(kind, id, status, extra = {}) {
   const table = TABLE_BY_KIND[kind];
 
   // Transport bookings paid by GCash/Card are charged up front — don't let
@@ -688,9 +691,9 @@ async function updateStatus(kind, id, status) {
   // The booking_before_update() DB trigger owns everything that happens on
   // completion: it validates + locks final_fare, marks cash bookings paid, and
   // creates the payout row in `payments`. The client only changes the status.
-  const { error } = await supabase.from(table).update({ status }).eq('id', id);
+  const { error } = await supabase.from(table).update({ ...extra, status }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
-  toast('Status updated!', 'success');
+  toast(status === 'completed' ? 'Marked as complete!' : 'Status updated!', 'success');
   await loadAccepted(); // clears RIDER_HAS_ACTIVE_BOOKING once nothing's left in progress
   await loadRequests(); // re-enable Accept buttons now that the rider is free again
   await loadEarnings();
