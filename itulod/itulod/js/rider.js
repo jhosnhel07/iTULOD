@@ -135,14 +135,17 @@ function wireTabNav() {
 
 // ---- home / overview -------------------------------------------------
 async function loadRiderHome() {
-  const [payRes, revRes, acc0, acc1, acc2, profileRes] = await Promise.all([
+  // The per-service queries go last as a rest element: their count grows
+  // with TABLE_BY_KIND (Hauling made it 4), and a fixed list of names before
+  // them used to shift — the float read a booking result and showed ₱0.00.
+  const [payRes, revRes, profileRes, ...activeByKind] = await Promise.all([
     supabase.from('payments').select('rider_payout, created_at').eq('rider_id', CURRENT_PROFILE.id),
     supabase.from('reviews').select('rating').eq('rider_id', CURRENT_PROFILE.id),
+    supabase.from('profiles').select('float_amount').eq('id', CURRENT_PROFILE.id).single(),
     ...Object.keys(TABLE_BY_KIND).map(k =>
       supabase.from(TABLE_BY_KIND[k]).select('*').eq('rider_id', CURRENT_PROFILE.id)
         .in('status', ['accepted', 'ongoing']).then(r => ({ k, rows: r.data || [] }))
     ),
-    supabase.from('profiles').select('float_amount').eq('id', CURRENT_PROFILE.id).single(),
   ]);
   const pendCounts = await Promise.all(Object.keys(TABLE_BY_KIND).map(k =>
     supabase.from(TABLE_BY_KIND[k]).select('id', { count: 'exact', head: true }).is('rider_id', null).eq('status', 'pending')
@@ -162,14 +165,15 @@ async function loadRiderHome() {
   document.getElementById('home-open-requests').textContent = openCount;
 
   // -- Float card --
-  const floatAmount = profileRes.data?.float_amount ?? 0;
+  if (profileRes.error) console.warn('Could not load capital on hand:', profileRes.error.message);
+  const floatAmount = profileRes.data?.float_amount ?? CURRENT_PROFILE.float_amount ?? 0;
   CURRENT_PROFILE.float_amount = floatAmount;
   const floatEl = document.getElementById('home-float-amount');
   if (floatEl) floatEl.textContent = peso(floatAmount);
   const floatInput = document.getElementById('float-input');
   if (floatInput && !floatInput.value) floatInput.value = floatAmount || '';
 
-  const active = [acc0, acc1, acc2].flatMap(r => r.rows.map(row => ({ ...row, _kind: r.k })));
+  const active = activeByKind.flatMap(r => r.rows.map(row => ({ ...row, _kind: r.k })));
   renderRiderHomeActive(active, openCount);
 }
 
