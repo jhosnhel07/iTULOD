@@ -38,9 +38,24 @@ function populateProfileForm() {
   const preview = document.getElementById('profile-avatar-preview');
   if (CURRENT_PROFILE.avatar_url) setAvatarImg(preview, CURRENT_PROFILE.avatar_url);
   else preview.textContent = initials(CURRENT_PROFILE.full_name);
+  renderAvatarPending();
 }
 
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB — matches the hint text under the button
+// An approved rider's new photo waits for the admin (sql/030) — say so under
+// the photo until it's approved or turned down.
+function renderAvatarPending() {
+  const info = document.getElementById('profile-avatar-filename')?.parentElement;
+  if (!info) return;
+  let note = document.getElementById('profile-avatar-pending');
+  if (!CURRENT_PROFILE?.avatar_pending_url) { note?.remove(); return; }
+  if (!note) {
+    note = document.createElement('p');
+    note.id = 'profile-avatar-pending';
+    note.className = 'avatar-pending-note';
+    info.appendChild(note);
+  }
+  note.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Your new photo is waiting for admin approval. Customers still see your current photo.';
+}
 
 // Instant feedback the moment a photo is picked, before it's ever uploaded:
 // shows it in the round preview and its filename next to the button. Wired
@@ -56,13 +71,9 @@ function wireAvatarPicker() {
   input.addEventListener('change', () => {
     const file = input.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast('Please choose an image file.', 'error');
-      input.value = '';
-      return;
-    }
-    if (file.size > MAX_AVATAR_BYTES) {
-      toast('That image is too large — please choose one under 5MB.', 'error');
+    const problem = photoPickProblem(file);
+    if (problem) {
+      toast(problem, 'error');
       input.value = '';
       return;
     }
@@ -94,25 +105,40 @@ function wireProfileForm() {
 
     setLoading(btn, true);
     let avatar_url = CURRENT_PROFILE.avatar_url;
-    const file = document.getElementById('profile-avatar-file').files[0];
+    const fileInput = document.getElementById('profile-avatar-file');
+    const file = fileInput.files[0];
+    let uploadFailed = false;
     if (file) {
-      const path = `${CURRENT_PROFILE.id}/avatar-${Date.now()}-${file.name}`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-      if (upErr) {
-        console.error('Avatar upload failed:', upErr.message);
-        toast('Profile saved, but the photo upload failed — try again later.', 'info');
-      } else {
-        avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+      try {
+        avatar_url = await uploadAvatarFile(CURRENT_PROFILE.id, file);
+      } catch (upErr) {
+        console.error('Avatar upload failed:', upErr?.message || upErr);
+        uploadFailed = true;
       }
     }
 
-    const { error } = await supabase.from('profiles').update({ full_name, phone, avatar_url }).eq('id', CURRENT_PROFILE.id);
+    const { data: saved, error } = await supabase.from('profiles')
+      .update({ full_name, phone, avatar_url })
+      .eq('id', CURRENT_PROFILE.id)
+      .select('avatar_url, avatar_pending_url')
+      .single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
-    CURRENT_PROFILE.full_name = full_name; CURRENT_PROFILE.phone = phone; CURRENT_PROFILE.avatar_url = avatar_url;
+    // An approved rider's new photo is held for admin review: the database
+    // keeps the current photo and puts the new one in avatar_pending_url.
+    const sentForReview = !!file && !uploadFailed && saved?.avatar_pending_url === avatar_url;
+    CURRENT_PROFILE.full_name = full_name; CURRENT_PROFILE.phone = phone;
+    CURRENT_PROFILE.avatar_url = saved ? saved.avatar_url : avatar_url;
+    CURRENT_PROFILE.avatar_pending_url = saved ? saved.avatar_pending_url : null;
+    fileInput.value = '';
+    const nameEl = document.getElementById('profile-avatar-filename');
+    if (nameEl) nameEl.textContent = 'No file chosen';
     document.getElementById('side-name').textContent = full_name;
     refreshSideAvatar();
-    toast('Profile updated!', 'success');
+    populateProfileForm();
+    if (uploadFailed) toast('Profile saved, but the photo upload failed — try again later.', 'info');
+    else if (sentForReview) toast('Profile saved. Your new photo was sent to the admin for approval — customers see your current photo until then.', 'info');
+    else toast('Profile updated!', 'success');
   });
 }
 
@@ -188,6 +214,7 @@ function applyProfileUpdate(p) {
     if (p.avatar_url) setAvatarImg(preview, p.avatar_url);
     else preview.textContent = initials(p.full_name);
   }
+  renderAvatarPending();
 
   // Rider: capital on hand (float) card + the "more than your float" warnings.
   if (floatChanged) {

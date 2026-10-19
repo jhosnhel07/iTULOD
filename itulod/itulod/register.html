@@ -234,6 +234,24 @@
               Tell us a bit about yourself to create your account.
             </p>
 
+            <!-- Customer: optional profile photo (riders add theirs in Documents) -->
+            <div class="signup-photo" id="customer-photo-group">
+              <label class="signup-photo__circle" for="signup_avatar" id="signup-avatar-preview" aria-label="Add a profile photo">
+                <i class="fa-solid fa-camera"></i>
+              </label>
+              <input type="file" id="signup_avatar" accept="image/*" hidden />
+              <div class="signup-photo__text">
+                <label for="signup_avatar" class="signup-photo__title">
+                  <span id="signup-avatar-action">Add a profile photo</span>
+                  <span class="signup-photo__optional">Optional</span>
+                </label>
+                <small>Helps your rider recognise you at pickup. You can skip this.</small>
+                <button type="button" class="signup-photo__remove" id="signup-avatar-remove" hidden>
+                  <i class="fa-solid fa-xmark"></i> Remove photo
+                </button>
+              </div>
+            </div>
+
             <div class="field-row">
               <div class="input-group">
                 <label for="full_name">Full Name</label>
@@ -598,7 +616,7 @@
                 <img
                   class="upload-preview"
                   id="prev-selfie"
-                  alt="Selfie preview"
+                  alt="Profile photo preview"
                 />
                 <div class="upload-check">
                   <i class="fa-solid fa-check"></i>
@@ -606,9 +624,10 @@
                 <div class="upload-icon">
                   <i class="fa-solid fa-camera"></i>
                 </div>
-                <div class="upload-label">Selfie Verification</div>
+                <div class="upload-label">Profile Photo (your face)</div>
                 <div class="upload-hint">
-                  Upload a clear selfie for identity confirmation
+                  Face clearly visible — no sunglasses, helmet or mask.
+                  Customers see this photo when you accept their booking.
                 </div>
                 <div class="upload-action">Choose file</div>
               </label>

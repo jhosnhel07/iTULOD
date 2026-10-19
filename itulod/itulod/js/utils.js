@@ -619,3 +619,50 @@ function paginate(items, page, pageSize) {
     totalPages: Math.max(1, Math.ceil(items.length / pageSize))
   };
 }
+
+// ---- Photo uploads -----------------------------------------------------------
+// Shrinks a picked photo before upload so it goes up quickly on weak signal:
+// longest side ≤ max px, re-encoded as JPEG. `square` centre-crops it first
+// (profile photos show in a circle). Anything that isn't a still image — a
+// PDF document, a GIF — or a browser that can't decode it is returned as is.
+async function shrinkImageFile(file, { max = 1600, square = false, quality = 0.85 } = {}) {
+  if (!file || !/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    let sx = 0, sy = 0, sw = bmp.width, sh = bmp.height;
+    if (square) {
+      const side = Math.min(sw, sh);
+      sx = (sw - side) / 2; sy = (sh - side) / 2; sw = sh = side;
+    }
+    const scale = Math.min(1, max / Math.max(sw, sh));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(sw * scale);
+    canvas.height = Math.round(sh * scale);
+    canvas.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch (_) {
+    return file;
+  }
+}
+
+const MAX_PHOTO_PICK_BYTES = 15 * 1024 * 1024; // before shrinking — phone cameras
+
+// Checks a photo the user just picked. Returns an error message, or null.
+function photoPickProblem(file) {
+  if (!file) return null;
+  if (!file.type.startsWith('image/')) return 'Please choose a photo (JPG or PNG).';
+  if (file.size > MAX_PHOTO_PICK_BYTES) return 'That photo is too large — please choose one under 15MB.';
+  return null;
+}
+
+// Square, ≤512px profile photo → the public avatars bucket. Returns its URL.
+async function uploadAvatarFile(userId, file) {
+  const small = await shrinkImageFile(file, { max: 512, square: true });
+  const path = `${userId}/avatar-${Date.now()}.jpg`;
+  const { error } = await supabase.storage.from('avatars')
+    .upload(path, small, { upsert: true, contentType: small.type || 'image/jpeg' });
+  if (error) throw error;
+  return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+}

@@ -33,6 +33,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   await loadAnalytics();
   await loadCustomers();
   await loadPendingApplications();
+  await loadPhotoReviews();
   await loadAllRiders();
   await loadVehicles();
   await loadRestaurants();
@@ -261,7 +262,12 @@ async function loadPendingApplications() {
   }).join('');
 }
 
+let PENDING_APP_COUNT = 0;
+let PHOTO_REVIEW_IDS = new Set();
 function updatePendingBadge(count) {
+  // The badge counts new applications plus photo changes waiting for review.
+  if (count !== undefined) PENDING_APP_COUNT = count;
+  count = PENDING_APP_COUNT + PHOTO_REVIEW_IDS.size;
   // Find the Pending applications tab button and update/add a count badge
   const pendingBtn = document.querySelector('.tab-btn[data-rider-tab="pending"]');
   if (!pendingBtn) return;
@@ -380,10 +386,85 @@ function openAppModal(app) {
       &nbsp;·&nbsp; Application ID: <code style="font-size:var(--fs-xs);background:var(--bg);padding:2px 6px;border-radius:4px">${app.id}</code>
     </div>
   `;
+  wireRiderDocLinks(document.getElementById('app-modal-body'));
   document.getElementById('app-modal').classList.add('open');
 }
 
 function closeAppModal() { document.getElementById('app-modal').classList.remove('open'); }
+
+// rider-documents is a private bucket, so the public URLs saved at sign-up
+// don't open. Swap each link for a short-lived signed URL when clicked.
+function wireRiderDocLinks(root) {
+  root.querySelectorAll('a[href*="/rider-documents/"]').forEach(a => {
+    a.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const path = decodeURIComponent((a.getAttribute('href').split('/rider-documents/')[1] || '').split('?')[0]);
+      const win = window.open('', '_blank');
+      const { data, error } = await supabase.storage.from('rider-documents').createSignedUrl(path, 300);
+      if (error || !data?.signedUrl) {
+        win?.close();
+        toast('Could not open that document: ' + (error?.message || 'file not found'), 'error');
+        return;
+      }
+      if (win) win.location.href = data.signedUrl;
+      else window.open(data.signedUrl, '_blank');
+    });
+  });
+}
+
+// ---- rider photo changes ---------------------------------------------------
+// An approved rider's new profile photo waits in avatar_pending_url until an
+// admin approves it here (sql/030) — customers see the rider's photo on their
+// booking, so it must still be the person who was approved.
+async function loadPhotoReviews() {
+  const el = document.getElementById('photo-reviews');
+  if (!el) return;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, phone, avatar_url, avatar_pending_url')
+    .eq('role', 'rider')
+    .not('avatar_pending_url', 'is', null)
+    .order('updated_at', { ascending: false });
+  if (error) { console.warn('loadPhotoReviews:', error.message); return; }
+  PHOTO_REVIEW_IDS = new Set((data || []).map(p => p.id));
+  updatePendingBadge();
+  if (!data || !data.length) { el.innerHTML = ''; return; }
+
+  const photo = (url, cls, name) => safeImageUrl(url)
+    ? `<img src="${escapeHtml(url)}" alt="" class="${cls}">`
+    : `<div class="photo-review__none">${escapeHtml(initials(name))}</div>`;
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h3><i class="fa-solid fa-user-pen" style="color:var(--orange);margin-right:6px"></i>Profile photo changes to review (${data.length})</h3></div>
+      <p style="color:var(--text-muted);font-size:var(--fs-sm);margin:0 0 12px">Approved riders who uploaded a new photo. Check it's the same person — customers see this photo on their booking.</p>
+      ${data.map(p => `
+        <div class="booking-card photo-review" style="cursor:default">
+          <div class="photo-review__pair">
+            <figure>${photo(p.avatar_url, '', p.full_name)}<figcaption>Current</figcaption></figure>
+            <i class="fa-solid fa-arrow-right photo-review__arrow"></i>
+            <figure><a href="${escapeHtml(p.avatar_pending_url)}" target="_blank" rel="noopener">${photo(p.avatar_pending_url, 'is-new', p.full_name)}</a><figcaption>New</figcaption></figure>
+          </div>
+          <div class="photo-review__info">
+            <h4>${escapeHtml(p.full_name || 'Rider')}</h4>
+            <p>${escapeHtml(p.phone || 'No phone on file')}</p>
+          </div>
+          <div class="photo-review__actions">
+            <button class="btn btn-success btn-sm" onclick="reviewRiderPhoto('${p.id}', true, this)"><i class="fa-solid fa-check"></i> Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="reviewRiderPhoto('${p.id}', false, this)"><i class="fa-solid fa-xmark"></i> Reject</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function reviewRiderPhoto(riderId, approve, btn) {
+  if (!approve && !(await appConfirm('The rider keeps their current photo and is asked to upload a clear photo of their face.', { title: 'Reject this photo?', confirmText: 'Reject photo', danger: true, icon: 'fa-user-xmark' }))) return;
+  if (btn) setLoading(btn, true);
+  const { error } = await supabase.rpc('review_rider_photo', { p_rider: riderId, p_approve: approve });
+  if (btn) setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  toast(approve ? 'Photo approved — customers now see the new photo.' : 'Photo rejected — the rider was notified.', approve ? 'success' : 'info');
+  await Promise.all([loadPhotoReviews(), loadAllRiders()]);
+}
 
 async function decideApplication(status) {
   if (!ACTIVE_APPLICATION) return;
@@ -971,6 +1052,7 @@ async function loadAnnouncements() {
 
 // ---- realtime ------------------------------------------------------------
 let realtimeTimer = null;
+let _photoReviewTimer = null;
 function debouncedReload(fns, delay = 1500) {
   clearTimeout(realtimeTimer);
   realtimeTimer = setTimeout(() => fns.forEach(f => f()), delay);
@@ -984,6 +1066,14 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => debouncedReload([loadPayments]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'support_requests' }, () => debouncedReload([loadSupportRequests]))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+      // Only photo-review changes matter here; own timer so it doesn't cancel
+      // the shared debounced reload above.
+      const p = payload.new || {};
+      if (!p.avatar_pending_url && !PHOTO_REVIEW_IDS.has(p.id)) return;
+      clearTimeout(_photoReviewTimer);
+      _photoReviewTimer = setTimeout(loadPhotoReviews, 1500);
+    })
     .subscribe();
 }
 

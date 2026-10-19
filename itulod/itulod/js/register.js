@@ -214,6 +214,10 @@
           const licenseInput = document.getElementById("license_number");
           if (licenseInput) licenseInput.required = role === "rider";
         }
+        // Customers may add a photo on the Personal step; riders add their
+        // (required) face photo in Documents instead.
+        const photoGroup = document.getElementById("customer-photo-group");
+        if (photoGroup) photoGroup.style.display = role === "rider" ? "none" : "";
         // Show/hide rider-specific steps in the progress bar and sidebar
         updateStepIndicator(currentStep);
         updateBrandingSteps();
@@ -286,7 +290,7 @@
               "Not uploaded",
           ],
           [
-            "Selfie",
+            "Profile Photo",
             document.getElementById("selfie_file")?.files[0]?.name ||
               "Not uploaded",
           ],
@@ -455,7 +459,53 @@
       }
 
       function submitDocumentsStep() {
+        // The face photo becomes the rider's profile picture — customers see
+        // it when the rider accepts their booking — so it can't be skipped.
+        if (!document.getElementById("selfie_file")?.files[0]) {
+          const msg = "Please add your profile photo — a clear photo of your face.";
+          if (typeof toast === "function") toast(msg, "error");
+          else alert(msg);
+          document.getElementById("uz-selfie")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
         goToStep(5);
+      }
+
+      // ── Customer: optional profile photo on the Personal step ───
+      function wireSignupPhoto() {
+        const input = document.getElementById("signup_avatar");
+        const preview = document.getElementById("signup-avatar-preview");
+        const action = document.getElementById("signup-avatar-action");
+        const removeBtn = document.getElementById("signup-avatar-remove");
+        if (!input || !preview) return;
+        const reset = () => {
+          input.value = "";
+          preview.innerHTML = '<i class="fa-solid fa-camera"></i>';
+          if (action) action.textContent = "Add a profile photo";
+          if (removeBtn) removeBtn.hidden = true;
+        };
+        input.addEventListener("change", () => {
+          const file = input.files[0];
+          if (!file) return;
+          const problem = photoPickProblem(file);
+          if (problem) {
+            if (typeof toast === "function") toast(problem, "error");
+            reset();
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            preview.innerHTML = "";
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            img.alt = "Your profile photo";
+            preview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+          if (action) action.textContent = "Change photo";
+          if (removeBtn) removeBtn.hidden = false;
+        });
+        removeBtn?.addEventListener("click", reset);
       }
 
       // ── Vehicle Step Validation ────────────────────────────────
@@ -686,9 +736,19 @@
           if (error) throw error;
 
           if (data?.user?.id) {
+            const updates = { phone };
+            const photo = document.getElementById("signup_avatar")?.files[0];
+            if (photo) {
+              try {
+                updates.avatar_url = await uploadAvatarFile(data.user.id, photo);
+              } catch (e) {
+                // Never block the account over the optional photo.
+                console.warn("Sign-up photo upload failed:", e?.message || e);
+              }
+            }
             await supabase
               .from("profiles")
-              .update({ phone })
+              .update(updates)
               .eq("id", data.user.id);
           }
 
@@ -792,7 +852,18 @@
           const userId = data?.user?.id;
 
           if (userId) {
-            await supabase.from("profiles").update({ phone }).eq("id", userId);
+            const profileUpdates = { phone };
+            const facePhoto = document.getElementById("selfie_file").files[0];
+            // The face photo is also the rider's profile picture (reviewed
+            // by the admin with the rest of the application).
+            if (facePhoto) {
+              try {
+                profileUpdates.avatar_url = await uploadAvatarFile(userId, facePhoto);
+              } catch (e) {
+                console.warn("Rider profile photo upload failed:", e?.message || e);
+              }
+            }
+            await supabase.from("profiles").update(profileUpdates).eq("id", userId);
 
             const licenseFile =
               document.getElementById("license_file").files[0];
@@ -1133,6 +1204,7 @@
         // colours, licence field) — covers a ?role=rider link with no saved draft,
         // where restoreRegistrationDraft() returns before calling selectRole().
         selectRole(selectedRole);
+        wireSignupPhoto();
 
         // A restored draft sets values directly (no input event), so re-run the
         // masks once so an in-progress phone / plate / licence shows formatted.

@@ -205,6 +205,8 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
 });
 
 async function uploadRiderDoc(userId, file, kind) {
+  // Phone photos are often 5–10MB; shrink them so uploads don't fail on weak signal.
+  if (typeof shrinkImageFile === 'function') file = await shrinkImageFile(file, { max: 1600 });
   const path = `${userId}/${kind}-${Date.now()}-${file.name}`;
   const { error } = await supabase.storage.from('rider-documents').upload(path, file, { upsert: true });
   if (error) throw error;

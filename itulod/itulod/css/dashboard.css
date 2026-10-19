@@ -4678,3 +4678,54 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 }
 .nr-emoji { font-size: 14px; line-height: 1; }
 .nearby-riders-count .nr-emoji { font-size: 13px; }
+
+/* ── Profile photo waiting for admin approval (dashboard-common renderAvatarPending) ── */
+.avatar-pending-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 8px);
+  background: rgba(245, 158, 11, .12);
+  color: #a16207;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.4;
+}
+:root[data-theme="dark"] .avatar-pending-note { color: #fbbf24; background: rgba(245, 158, 11, .14); }
+
+/* ── Admin: rider photo changes to review (admin.js loadPhotoReviews) ── */
+.booking-card.photo-review {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.photo-review__pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.photo-review__pair figure { margin: 0; text-align: center; }
+.photo-review__pair img,
+.photo-review__pair .photo-review__none {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.photo-review__pair img.is-new { border-color: var(--orange, #f59e0b); }
+.photo-review__pair figcaption { font-size: var(--fs-2xs); color: var(--text-muted); margin-top: 4px; }
+.photo-review__arrow { color: var(--text-muted); }
+.photo-review__info { flex: 1; min-width: 160px; }
+.photo-review__info h4 { margin: 0 0 2px; }
+.photo-review__info p { margin: 0; color: var(--text-muted); font-size: var(--fs-xs); }
+.photo-review__actions { display: flex; gap: 8px; }
