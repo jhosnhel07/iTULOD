@@ -815,8 +815,10 @@ function renderMenuItems(items, restaurant) {
   const r = restaurant || RESTAURANT_BROWSE_RESTAURANT || {};
   const town = typeof restaurantTown === 'function' ? restaurantTown(r) : '';
   const { km, fee } = typeof restaurantDistance === 'function' ? restaurantDistance(r) : { km: null, fee: null };
+  const cover = typeof restaurantCoverUrl === 'function' ? restaurantCoverUrl(r) : '';
   const header = `
-    <div class="rm-header">
+    ${cover ? `<div class="rm-cover" style="background-image:url('${escapeHtml(cover)}')"><span class="sample-tag">Sample photo</span></div>` : ''}
+    <div class="rm-header${cover ? ' rm-header--on-cover' : ''}">
       ${typeof restaurantLogoTile === 'function' ? restaurantLogoTile(r, 'rf-logo--lg') : ''}
       <div class="rm-header__text">
         <h4>${escapeHtml(typeof restaurantDisplayName === 'function' ? restaurantDisplayName(r) : (r.name || ''))}</h4>
@@ -842,7 +844,7 @@ function renderMenuItems(items, restaurant) {
       const desc = typical ? m.description.slice(0, -TYPICAL_ITEM_NOTE.length) : (m.description || '');
       return `
       <div class="rm-item ${qty ? 'has-qty' : ''}" data-menu-item="${m.id}">
-        ${safeImageUrl(m.image_url) ? `<img class="rm-item__img" src="${escapeHtml(m.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+        ${safeImageUrl(m.image_url) ? `<div class="rm-item__media"><img class="rm-item__img" src="${escapeHtml(m.image_url)}" alt="${escapeHtml(m.name)}" loading="lazy" onerror="this.parentElement.remove()">${isSamplePhoto(m.image_url) ? '<span class="sample-tag sample-tag--xs">Sample</span>' : ''}</div>` : ''}
         <div class="rm-item__text">
           <strong>${escapeHtml(m.name)}</strong>${typical ? ' <span class="rm-badge">Typical</span>' : ''}
           ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}

@@ -179,14 +179,37 @@ function restaurantDistance(r) {
   return { km, fee: _deliveryFeeFrom(km) };
 }
 
+// Up to two initials from the restaurant's name, for its name badge.
+const _MONO_SKIP = new Set(['the', 'of', 'and', 'ni', 'ang', 'sa', 'de', 'la', 'restaurant', 'resto', 'cafe', 'café', 'eatery', 'food', 'house']);
+function restaurantInitials(r) {
+  const words = restaurantDisplayName(r).replace(/\(.*?\)/g, ' ').replace(/['’]/g, '') // "Herbie's" stays one word
+    .split(/[^A-Za-z0-9ÑñÉé]+/).filter(Boolean);
+  const main = words.filter((w) => !_MONO_SKIP.has(w.toLowerCase()));
+  const pick = (main.length ? main : words).slice(0, 2);
+  return pick.map((w) => w[0].toUpperCase()).join('') || '?';
+}
+
+// Logo tile. With a logo uploaded in the admin Restaurants tab it shows that;
+// otherwise an automatic name badge — the restaurant's initials on its
+// category colour with the category icon — instead of a brand logo.
 function restaurantLogoTile(r, size = '') {
   const v = restaurantVisual(r);
-  // A logo/photo set in the admin Restaurants tab covers the category icon;
-  // if it fails to load it removes itself and the icon tile shows through.
   const img = safeImageUrl(r.image_url)
     ? `<img src="${escapeHtml(r.image_url)}" alt="" loading="lazy" onerror="this.remove()">`
     : '';
-  return `<div class="rf-logo ${size}" style="--tile-bg:${v.bg};--tile-fg:${v.fg}"><i class="fa-solid ${v.icon}"></i>${img}</div>`;
+  return `<div class="rf-logo rf-logo--mono ${size}" style="--tile-bg:${v.bg};--tile-fg:${v.fg}">`
+    + `<span class="rf-mono">${escapeHtml(restaurantInitials(r))}</span>`
+    + `<i class="fa-solid ${v.icon} rf-mono__badge" aria-hidden="true"></i>${img}</div>`;
+}
+
+// Banner photo for a restaurant's menu page: a sample photo of its category.
+const _CATEGORY_COVER = {
+  fastfood: 'burger', ilocano: 'longganisa', empanada: 'empanada', coffee: 'coffee', bakery: 'bread',
+  pizza: 'pizza', chicken: 'fried-chicken', asian: 'sushi', chinese: 'dumplings', grill: 'bbq', meals: 'rice-meal',
+};
+function restaurantCoverUrl(r) {
+  const cats = r._cats || restaurantCategories(r);
+  return `${STOCK_PHOTO_BASE}${_CATEGORY_COVER[cats[0]] || 'rice-meal'}.jpg`;
 }
 
 /** Name without a trailing "(Town)" — the town is already shown as a tag.

@@ -25,6 +25,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireVehicleForm();
   wireRestaurantForm();
   wireMenuItemForm();
+  wireCatalogUploads();
   wireAnnouncementForm();
   wirePromoForm();
   wireSupportSubTabs();
@@ -618,6 +619,86 @@ async function loadRestaurants() {
       </div></td>
     </tr>`).join('');
 }
+// ---- catalog images (restaurant logos, menu-item photos) -------------------
+// Uploaded to the public catalog-images bucket (sql/027; admins only). Big
+// photos are scaled down to 1000px first so menus stay quick to load.
+async function _shrinkImage(file, maxSide = 1000) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    // PNG keeps a logo's transparent background; photos go to JPEG.
+    const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise((res) => canvas.toBlob(res, type, 0.85));
+    return blob ? { blob, type } : { blob: file, type: file.type };
+  } catch (_) {
+    return { blob: file, type: file.type };
+  }
+}
+async function uploadCatalogImage(file, folder, id) {
+  if (!file) return null;
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Use a JPG, PNG or WebP image.', 'error'); return null; }
+  if (file.size > 15 * 1024 * 1024) { toast('That image is too large (max 15 MB).', 'error'); return null; }
+  const { blob, type } = await _shrinkImage(file);
+  const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
+  const path = `${folder}/${id || 'new'}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('catalog-images').upload(path, blob, { contentType: type, upsert: false });
+  if (error) { toast(`Upload failed: ${error.message}`, 'error'); return null; }
+  return supabase.storage.from('catalog-images').getPublicUrl(path).data.publicUrl;
+}
+function _setRestaurantPreview(url) {
+  const box = document.getElementById('restaurant-image-preview');
+  if (!box) return;
+  box.innerHTML = safeImageUrl(url)
+    ? `<img src="${escapeHtml(url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('i'), { className: 'fa-solid fa-image' }))">`
+    : '<i class="fa-solid fa-image"></i>';
+}
+function wireCatalogUploads() {
+  const rFile = document.getElementById('restaurant-image-file');
+  rFile?.addEventListener('change', async () => {
+    const file = rFile.files[0];
+    rFile.value = '';
+    const btn = document.getElementById('restaurant-image-upload');
+    setLoading(btn, true);
+    const url = await uploadCatalogImage(file, 'restaurants', document.getElementById('restaurant-id').value);
+    setLoading(btn, false);
+    if (!url) return;
+    document.getElementById('restaurant-image').value = url;
+    _setRestaurantPreview(url);
+    toast('Logo uploaded — press Save restaurant to keep it.', 'success');
+  });
+  document.getElementById('restaurant-image')?.addEventListener('input', (e) => _setRestaurantPreview(e.target.value.trim()));
+
+  const mFile = document.getElementById('menu-photo-file');
+  mFile?.addEventListener('change', async () => {
+    const file = mFile.files[0];
+    const itemId = mFile.dataset.itemId;
+    mFile.value = '';
+    if (!file || !itemId) return;
+    toast('Uploading photo…', 'info');
+    const url = await uploadCatalogImage(file, 'menu-items', itemId);
+    if (!url) return;
+    const { error } = await supabase.from('menu_items').update({ image_url: url }).eq('id', itemId);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Photo saved.', 'success');
+    await loadMenuItems(ACTIVE_MENU_RESTAURANT_ID);
+  });
+}
+function pickMenuItemPhoto(itemId) {
+  const input = document.getElementById('menu-photo-file');
+  input.dataset.itemId = itemId;
+  input.click();
+}
+async function removeMenuItemPhoto(itemId) {
+  if (!(await appConfirm('The item will show without a photo.', { title: 'Remove this photo?', confirmText: 'Remove', danger: true, icon: 'fa-image' }))) return;
+  const { error } = await supabase.from('menu_items').update({ image_url: null }).eq('id', itemId);
+  if (error) { toast(error.message, 'error'); return; }
+  await loadMenuItems(ACTIVE_MENU_RESTAURANT_ID);
+}
+
 function openRestaurantModal(r) {
   document.getElementById('restaurant-modal-title').textContent = r ? 'Edit restaurant' : 'Add restaurant';
   document.getElementById('restaurant-id').value = r?.id || '';
@@ -626,6 +707,7 @@ function openRestaurantModal(r) {
   document.getElementById('restaurant-cuisine').value = r?.cuisine_type || '';
   document.getElementById('restaurant-available').value = String(r?.is_active ?? true);
   document.getElementById('restaurant-image').value = r?.image_url || '';
+  _setRestaurantPreview(r?.image_url || '');
   document.getElementById('restaurant-modal').classList.add('open');
 }
 function closeRestaurantModal() { document.getElementById('restaurant-modal').classList.remove('open'); }
@@ -681,11 +763,20 @@ async function loadMenuItems(restaurantId) {
   const { data, error } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId).order('name');
   if (error) { console.error('loadMenuItems error:', error); toast(error.message, 'error'); return; }
   if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4">${emptyState({ icon: 'fa-utensils', title: 'No items yet', body: 'Add this restaurant\'s menu above.' })}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5">${emptyState({ icon: 'fa-utensils', title: 'No items yet', body: 'Add this restaurant\'s menu above.' })}</td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(m => `
     <tr>
+      <td>
+        <div class="menu-photo-cell">
+          <button type="button" class="menu-photo" title="Upload a photo" onclick="pickMenuItemPhoto('${m.id}')">
+            ${safeImageUrl(m.image_url) ? `<img src="${escapeHtml(m.image_url)}" alt="" loading="lazy">` : '<i class="fa-solid fa-camera"></i>'}
+            ${isSamplePhoto(m.image_url) ? '<span class="sample-tag sample-tag--xs">Sample</span>' : ''}
+          </button>
+          ${m.image_url ? `<button type="button" class="menu-photo-remove" title="Remove photo" onclick="removeMenuItemPhoto('${m.id}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
+        </div>
+      </td>
       <td>${escapeHtml(m.name)}</td>
       <td>${peso(m.price)}</td>
       <td><button class="icon-btn" title="${m.is_available ? 'Mark unavailable' : 'Mark available'}" onclick="toggleMenuItemAvailable('${m.id}', ${m.is_available})">

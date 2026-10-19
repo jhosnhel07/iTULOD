@@ -251,6 +251,14 @@ function safeImageUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
 }
 
+// Sample dish photos (CC0 / public domain) live in catalog-images/stock
+// (sql/027, sql/028, STOCK_PHOTOS.md); the apps tag them "Sample photo" so
+// customers know it isn't the restaurant's own picture.
+const STOCK_PHOTO_BASE = `${CONFIG.SUPABASE_URL}/storage/v1/object/public/catalog-images/stock/`;
+function isSamplePhoto(url) {
+  return typeof url === 'string' && url.includes('/catalog-images/stock/');
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str ?? '';

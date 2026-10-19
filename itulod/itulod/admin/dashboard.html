@@ -771,8 +771,18 @@
               </div>
             </div>
             <div class="field">
-              <label>Image URL (optional)</label>
-              <input type="text" id="restaurant-image" placeholder="https://…" />
+              <label>Logo or photo (optional)</label>
+              <div class="img-upload">
+                <div class="img-upload__preview" id="restaurant-image-preview"><i class="fa-solid fa-image"></i></div>
+                <div class="img-upload__actions">
+                  <input type="file" id="restaurant-image-file" accept="image/png,image/jpeg,image/webp" hidden />
+                  <button type="button" class="btn btn-outline btn-sm" id="restaurant-image-upload" onclick="document.getElementById('restaurant-image-file').click()">
+                    <i class="fa-solid fa-upload"></i> Upload logo
+                  </button>
+                  <input type="text" id="restaurant-image" placeholder="…or paste an image link (https://…)" />
+                  <small class="img-upload__hint">JPG, PNG or WebP. Ask the restaurant for its own logo — without one, iTULOD shows a name badge.</small>
+                </div>
+              </div>
             </div>
           </form>
         </div>
@@ -795,6 +805,8 @@
           <button class="modal-close" onclick="closeMenuModal()">&times;</button>
         </div>
         <div class="modal-body">
+          <input type="file" id="menu-photo-file" accept="image/png,image/jpeg,image/webp" hidden />
+          <p class="img-upload__hint" style="margin:-4px 0 12px"><i class="fa-solid fa-camera"></i> Tap a photo to upload the restaurant's own picture of that item. Photos marked <span class="rm-badge">Sample</span> are stand-ins.</p>
           <form id="menu-item-form" class="field-row" style="align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px">
             <input type="hidden" id="menu-item-id" />
             <div class="field" style="margin-bottom:0;flex:2 1 160px">
@@ -813,6 +825,7 @@
             <table class="data-table" id="menu-items-table">
               <thead>
                 <tr>
+                  <th>Photo</th>
                   <th>Item</th>
                   <th>Price</th>
                   <th>Available</th>
