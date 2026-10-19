@@ -573,13 +573,68 @@ async function updateFloat() {
   }
 }
 
+// Online status is shared with the mobile app (rider_locations.is_online).
+// Only the device where the rider tapped "Go online" sends GPS; this flag
+// remembers whether that was this browser, so a reload resumes sending only
+// here and a phone that went online isn't joined by a second, different
+// location from the laptop.
+const ONLINE_HERE_KEY = 'itulod-online-here';
+function onlineHere(value) {
+  try {
+    if (value === undefined) return localStorage.getItem(ONLINE_HERE_KEY) === CURRENT_PROFILE.id;
+    if (value) localStorage.setItem(ONLINE_HERE_KEY, CURRENT_PROFILE.id);
+    else localStorage.removeItem(ONLINE_HERE_KEY);
+  } catch (_) { /* storage blocked: behave as "not this device" */ }
+  return false;
+}
+
 async function initOnlineStatus() {
   const { data } = await supabase.from('rider_locations').select('is_online').eq('rider_id', CURRENT_PROFILE.id).maybeSingle();
   setOnlineUI(!!data?.is_online);
-  // Resume broadcasting after a page reload if they were already online.
-  if (data?.is_online && typeof goOnline === 'function') {
-    goOnline(() => { setOnlineUI(false); toast('Could not access your location — went back offline.', 'error'); });
+  // Resume broadcasting after a page reload — only if this browser was the
+  // one that went online.
+  if (data?.is_online && onlineHere() && typeof goOnline === 'function') {
+    goOnline(() => { setOnlineUI(false); onlineHere(false); toast('Could not access your location — went back offline.', 'error'); });
   }
+  if (!data?.is_online) onlineHere(false);
+  watchOnlineStatus();
+}
+
+// Follow online/offline changes made on another device (the mobile app or
+// another browser) live.
+let _onlineWatchStarted = false;
+function watchOnlineStatus() {
+  if (_onlineWatchStarted) return;
+  _onlineWatchStarted = true;
+  const apply = (isOnline) => {
+    if (isOnline === RIDER_ONLINE) return;
+    setOnlineUI(isOnline);
+    if (!isOnline) {
+      // Went offline elsewhere: stop sending from here without writing.
+      if (typeof stopOnlinePresence === 'function') stopOnlinePresence();
+      onlineHere(false);
+      toast('You went offline on another device.', 'info');
+    } else {
+      toast('You went online on another device.', 'info');
+    }
+  };
+  supabase.channel(`rider-online-${CURRENT_PROFILE.id}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'rider_locations', filter: `rider_id=eq.${CURRENT_PROFILE.id}` },
+      async (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const { data } = await supabase.from('rider_locations').select('is_online').eq('rider_id', CURRENT_PROFILE.id).maybeSingle();
+          apply(!!data?.is_online);
+        } else {
+          apply(!!payload.new?.is_online);
+        }
+      })
+    .subscribe();
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    const { data } = await supabase.from('rider_locations').select('is_online').eq('rider_id', CURRENT_PROFILE.id).maybeSingle();
+    apply(!!data?.is_online);
+  });
 }
 
 function wireOnlineToggle() {
@@ -593,11 +648,13 @@ function wireOnlineToggle() {
   btn.addEventListener('click', () => {
     if (RIDER_ONLINE) {
       if (typeof goOffline === 'function') goOffline();
+      onlineHere(false);
       setOnlineUI(false);
       return;
     }
     if (typeof goOnline !== 'function') return;
-    goOnline(() => { setOnlineUI(false); toast("Couldn't access your location. Check your browser's location permission and try again.", 'error'); });
+    onlineHere(true);
+    goOnline(() => { setOnlineUI(false); onlineHere(false); toast("Couldn't access your location. Check your browser's location permission and try again.", 'error'); });
     setOnlineUI(true);
   });
 }

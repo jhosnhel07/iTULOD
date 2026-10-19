@@ -732,10 +732,14 @@ function startLocationBroadcast(bookingType, bookingId) {
 }
 
 function stopLocationBroadcast() {
+  const wasTracking = _locWatchId != null;
   if (_locWatchId != null) { navigator.geolocation.clearWatch(_locWatchId); _locWatchId = null; }
   clearTimeout(_locTimer);
-  if (typeof supabase !== 'undefined' && typeof CURRENT_PROFILE !== 'undefined' && CURRENT_PROFILE?.id) {
-    supabase.from('rider_locations').delete().eq('rider_id', CURRENT_PROFILE.id).then(() => {});
+  // Trip over: drop the booking tag but keep the row — deleting it also wiped
+  // is_online, knocking an online rider offline (and, with online status
+  // synced to the app, switching the phone offline too).
+  if (wasTracking && typeof supabase !== 'undefined' && typeof CURRENT_PROFILE !== 'undefined' && CURRENT_PROFILE?.id) {
+    supabase.from('rider_locations').update({ booking_type: null, booking_id: null }).eq('rider_id', CURRENT_PROFILE.id).then(() => {});
   }
 }
 
@@ -772,6 +776,12 @@ function goOnline(onError) {
   }, {
     enableHighAccuracy: false, maximumAge: 15000, timeout: 20000,
   });
+}
+
+// Stop sending presence from this device without marking the rider offline
+// — used when the rider went offline on another device (it already did).
+function stopOnlinePresence() {
+  if (_onlineWatchId != null) { navigator.geolocation.clearWatch(_onlineWatchId); _onlineWatchId = null; }
 }
 
 function goOffline() {
