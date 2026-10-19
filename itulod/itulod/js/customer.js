@@ -14,6 +14,7 @@ let RATING_TARGET = null; // { kind, id }
 
   document.getElementById('side-name').textContent = CURRENT_PROFILE.full_name;
   refreshSideAvatar();
+  if (typeof startProfileSync === 'function') startProfileSync();
 
   await loadVehicleOptions();
 

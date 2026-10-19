@@ -159,3 +159,57 @@ function startBookingExpiryWatch() {
   tick();
   setInterval(tick, BOOKING_EXPIRY_CHECK_MS);
 }
+
+// ---- Profile sync across devices --------------------------------------------
+// The same account can be open on the web and the mobile app at once. When the
+// profile changes on either (name, phone, photo, a rider's capital on hand),
+// realtime pushes the new row here (sql/029 adds profiles to the realtime
+// publication). A re-read when the tab comes back into view covers anything
+// missed while the phone/laptop was asleep.
+function applyProfileUpdate(p) {
+  if (!p || !CURRENT_PROFILE || p.id !== CURRENT_PROFILE.id) return;
+  const floatChanged = Number(p.float_amount ?? 0) !== Number(CURRENT_PROFILE.float_amount ?? 0);
+  Object.assign(CURRENT_PROFILE, p);
+
+  const sideName = document.getElementById('side-name');
+  if (sideName) sideName.textContent = p.full_name || '';
+  refreshSideAvatar();
+
+  // Profile form — leave a field alone while the user is typing in it.
+  const setIfIdle = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) el.value = value;
+  };
+  setIfIdle('profile-name', p.full_name || '');
+  setIfIdle('profile-phone', formatPhoneMobile(p.phone || ''));
+  const preview = document.getElementById('profile-avatar-preview');
+  const picked = document.getElementById('profile-avatar-file')?.files?.length;
+  if (preview && !picked) {
+    if (p.avatar_url) setAvatarImg(preview, p.avatar_url);
+    else preview.textContent = initials(p.full_name);
+  }
+
+  // Rider: capital on hand (float) card + the "more than your float" warnings.
+  if (floatChanged) {
+    const floatEl = document.getElementById('home-float-amount');
+    if (floatEl) floatEl.textContent = peso(p.float_amount || 0);
+    setIfIdle('float-input', p.float_amount || '');
+    if (typeof loadRequests === 'function') loadRequests();
+  }
+}
+
+let _profileSyncStarted = false;
+function startProfileSync() {
+  if (_profileSyncStarted || !CURRENT_PROFILE?.id) return;
+  _profileSyncStarted = true;
+  supabase.channel(`profile-sync-${CURRENT_PROFILE.id}`)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${CURRENT_PROFILE.id}` },
+      ({ new: p }) => applyProfileUpdate(p))
+    .subscribe();
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    const { data } = await supabase.from('profiles').select('*').eq('id', CURRENT_PROFILE.id).single();
+    if (data) applyProfileUpdate(data);
+  });
+}

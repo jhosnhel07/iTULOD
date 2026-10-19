@@ -17,6 +17,7 @@ const PAGE_SIZE = 6;
 
   document.getElementById('side-name').textContent = CURRENT_PROFILE.full_name;
   refreshSideAvatar();
+  if (typeof startProfileSync === 'function') startProfileSync();
 
   await checkApproval();
 
