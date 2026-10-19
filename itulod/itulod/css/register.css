@@ -373,6 +373,11 @@
         z-index: 0;
         transition: background 0.4s;
       }
+      /* Customer: the rider-only steps are hidden, so Personal is the last
+         visible step — drop its connector line. */
+      .step-indicator:not(.role-rider) #si-1::after {
+        display: none;
+      }
       .step-item.completed:not(:last-child)::after {
         background: #1a9d63;
       }

@@ -214,7 +214,8 @@
           const licenseInput = document.getElementById("license_number");
           if (licenseInput) licenseInput.required = role === "rider";
         }
-        // Show/hide rider-specific steps in sidebar preview
+        // Show/hide rider-specific steps in the progress bar and sidebar
+        updateStepIndicator(currentStep);
         updateBrandingSteps();
       }
 
@@ -423,18 +424,13 @@
           }
         });
 
-        const si2 = document.getElementById("si-2");
-        const si3 = document.getElementById("si-3");
-        const si4 = document.getElementById("si-4");
-        if (selectedRole === "customer") {
-          if (si2) si2.style.opacity = "0.3";
-          if (si3) si3.style.opacity = "0.3";
-          if (si4) si4.style.opacity = "0.3";
-        } else {
-          if (si2) si2.style.opacity = "";
-          if (si3) si3.style.opacity = "";
-          if (si4) si4.style.opacity = "";
-        }
+        // Vehicle / Documents / Review are rider-only — a customer's
+        // progress bar is just Role → Personal.
+        const isRider = selectedRole === "rider";
+        ["si-2", "si-3", "si-4"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = isRider ? "" : "none";
+        });
       }
 
       // ── Branding panel step dots ───────────────────────────────
@@ -443,9 +439,9 @@
         const rp2 = document.getElementById("rider-step-2-preview");
         const rp3 = document.getElementById("rider-step-3-preview");
         const rp4 = document.getElementById("rider-step-4-preview");
-        if (rp2) rp2.style.opacity = isRider ? "1" : "0.3";
-        if (rp3) rp3.style.opacity = isRider ? "1" : "0.3";
-        if (rp4) rp4.style.opacity = isRider ? "1" : "0.3";
+        [rp2, rp3, rp4].forEach((row) => {
+          if (row) row.style.display = isRider ? "" : "none";
+        });
 
         const brandingActive = wizardToBrandingIndex(currentStep);
         for (let i = 0; i <= 4; i++) {
