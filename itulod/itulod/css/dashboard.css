@@ -4820,3 +4820,20 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 .input-adornment:has(.adornment-suffix) input { padding-right: 92px !important; }
 .input-adornment:has(.adornment-suffix) input#set-commission { padding-right: 36px !important; }
 #settings-save { margin-top: 6px; }
+
+/* ── Unpaid cancellation fee reminder (customer.js renderUnpaidFee) ── */
+.fee-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid rgba(224, 69, 95, .35);
+  background: rgba(224, 69, 95, .08);
+}
+.fee-alert > i { color: #e0455f; font-size: 1.2rem; }
+.fee-alert > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fee-alert strong { color: var(--ink); font-size: var(--fs-sm); }
+.fee-alert span { color: var(--text-muted); font-size: var(--fs-xs); line-height: 1.4; }
+@media (max-width: 560px) { .fee-alert { flex-wrap: wrap; } .fee-alert .btn { width: 100%; } }

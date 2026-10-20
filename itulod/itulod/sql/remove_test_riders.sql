@@ -27,4 +27,12 @@ set local session_replication_role = origin;
 
 delete from auth.users where id in (select id from _test_riders);
 
+-- Stop the keep-online job from sql/test_riders_online.sql, if it was set up.
+do $$
+begin
+  if exists (select 1 from cron.job where jobname = 'itulod-test-riders-heartbeat') then
+    perform cron.unschedule('itulod-test-riders-heartbeat');
+  end if;
+end $$;
+
 commit;

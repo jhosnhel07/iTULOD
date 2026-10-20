@@ -116,6 +116,8 @@
 
         <!-- ===================== HOME ===================== -->
         <section class="tab-panel active" id="tab-home">
+          <!-- Unpaid cancellation fee reminder (customer.js renderUnpaidFee, sql/036) -->
+          <div id="home-fee-alert"></div>
           <div id="home-active" class="home-active-slot"></div>
 
           <div class="stat-grid">
@@ -1144,7 +1146,7 @@
             </form>
           </div>
 
-          <div class="card card--narrow">
+          <div class="card card--narrow" id="wallet-card">
             <div class="card-head"><h3>My wallet</h3></div>
             <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: -6px 0 14px">
               Top up with GCash once, then pay for rides instantly at checkout — no redirect.

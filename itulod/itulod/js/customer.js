@@ -1171,7 +1171,32 @@ function syncPendingPayments(rows, kindOf) {
     });
 }
 
+// An unpaid cancellation / no-show fee blocks new bookings until it's taken
+// from the wallet (sql/036) — say so up front instead of at checkout.
+async function renderUnpaidFee() {
+  const el = document.getElementById('home-fee-alert');
+  if (!el) return;
+  const { data, error } = await supabase.rpc('my_unpaid_fees');
+  const owed = Number(data || 0);
+  if (error || !(owed > 0)) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="fee-alert" role="alert">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <div>
+        <strong>You have an unpaid ${peso(owed)} cancellation fee</strong>
+        <span>Top up your iTULOD wallet — the fee is taken automatically, then you can book again.</span>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openWalletCard()">Top up wallet</button>
+    </div>`;
+}
+
+function openWalletCard() {
+  activateTab('profile');
+  setTimeout(() => document.getElementById('wallet-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+}
+
 async function loadHome() {
+  renderUnpaidFee();
   const kinds = Object.keys(TABLE_BY_KIND);
   const perKind = await Promise.all(kinds.map(k =>
     supabase.from(TABLE_BY_KIND[k]).select('*').eq('customer_id', CURRENT_PROFILE.id)
