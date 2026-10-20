@@ -31,7 +31,7 @@ document.querySelectorAll('.nav-links a').forEach(link => {
       <div class="vehicle-chip">
         <i class="fa-solid ${v.icon || 'fa-car'}"></i>
         <span>${escapeHtml(v.name)}</span>
-        <small>${v.capacity} seat${v.capacity > 1 ? 's' : ''} · from ${peso(v.base_fare)}</small>
+        <small>${v.service === 'hauling' ? 'Hauling' : `${v.capacity} seat${v.capacity > 1 ? 's' : ''}`} · from ${peso(v.base_fare)}</small>
       </div>
     `).join('');
   } catch (e) {
