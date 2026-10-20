@@ -29,6 +29,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireAnnouncementForm();
   wirePromoForm();
   wireSupportSubTabs();
+  wireSettingsForm();
 
   await loadAnalytics();
   await loadCustomers();
@@ -43,6 +44,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   await loadPayments();
   await loadRiderBalances();
   await loadAnnouncements();
+  await loadSettings();
   subscribeRealtime();
 })();
 
@@ -75,6 +77,74 @@ function wireTabNav() {
   });
 }
 
+// ---- platform settings (sql/034) -----------------------------------------
+async function loadSettings() {
+  const form = document.getElementById('settings-form');
+  if (!form) return;
+  const { data: c, error } = await supabase.from('platform_config').select('*').single();
+  if (error || !c) { toast('Could not load settings: ' + (error?.message || 'not found'), 'error'); return; }
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+  set('set-commission', Math.round(Number(c.commission_rate) * 1000) / 10);
+  set('set-cancel-fee', Number(c.cancellation_fee));
+  set('set-helper-fee', Number(c.hauling_helper_fee));
+  set('set-fare-min', Number(c.fare_min));
+  set('set-fare-max', Number(c.fare_max_multiplier));
+  set('set-phone', c.support_phone);
+  set('set-email', c.support_email);
+  set('set-office', c.office_address);
+  const upd = document.getElementById('settings-updated');
+  if (upd) upd.textContent = c.updated_at ? 'Last changed ' + formatDate(c.updated_at) : '';
+}
+
+function wireSettingsForm() {
+  const form = document.getElementById('settings-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const num = (id) => Number(document.getElementById(id).value);
+    const text = (id) => document.getElementById(id).value.trim() || null;
+    const values = {
+      commission: num('set-commission'), cancel: num('set-cancel-fee'), helper: num('set-helper-fee'),
+      fareMin: num('set-fare-min'), fareMax: num('set-fare-max'),
+    };
+    const limits = [
+      ['Platform commission', values.commission, 0, 50, '%'],
+      ['Cancellation fee', values.cancel, 0, 1000, '₱'],
+      ['Hauling helper fee', values.helper, 0, 5000, '₱'],
+      ['Minimum fare', values.fareMin, 0, 1000, '₱'],
+      ['Final fare limit', values.fareMax, 1, 10, '×'],
+    ];
+    for (const [label, v, lo, hi, unit] of limits) {
+      if (!Number.isFinite(v) || v < lo || v > hi) {
+        toast(`${label} must be between ${unit === '₱' ? '₱' + lo : lo} and ${unit === '₱' ? '₱' + hi : hi + unit}.`, 'error');
+        return;
+      }
+    }
+    const email = text('set-email');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Enter a valid support email.', 'error'); return; }
+    const ok = await appConfirm(
+      `Commission ${values.commission}% · cancellation fee ${peso(values.cancel)} · helper fee ${peso(values.helper)}. These apply to bookings completed from now on.`,
+      { title: 'Save platform settings?', confirmText: 'Save', icon: 'fa-sliders' });
+    if (!ok) return;
+    const btn = document.getElementById('settings-save');
+    setLoading(btn, true);
+    const { error } = await supabase.from('platform_config').update({
+      commission_rate: Math.round(values.commission * 10) / 1000,
+      cancellation_fee: values.cancel,
+      hauling_helper_fee: values.helper,
+      fare_min: values.fareMin,
+      fare_max_multiplier: values.fareMax,
+      support_phone: text('set-phone'),
+      support_email: email,
+      office_address: text('set-office'),
+    }).eq('id', true);
+    setLoading(btn, false);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Settings saved.', 'success');
+    await loadSettings();
+  });
+}
+
 // ---- analytics ----------------------------------------------------------
 async function loadAnalytics() {
   const [{ count: customerCount }, { count: riderCount }, { count: pendingApps }] = await Promise.all([
@@ -87,18 +157,26 @@ async function loadAnalytics() {
     .flatMap(r => r.data || []);
 
   const completed = allBookings.filter(b => b.status === 'completed').length;
-  const revenue = allBookings.reduce((a, b) => a + (b.status === 'completed' ? Number(b.final_fare || 0) : 0), 0);
+  // Revenue is iTULOD's cut — the commission in the payments ledger — not
+  // the fares customers paid (most of that is the riders' money).
+  // Cancellation-fee rows carry no commission, so they add nothing here.
+  const { data: payRows } = await supabase.from('payments').select('platform_commission, created_at');
+  const pays = payRows || [];
+  const revenue = pays.reduce((a, p) => a + Number(p.platform_commission || 0), 0);
+  const faresTotal = allBookings.reduce((a, b) => a + (b.status === 'completed' ? Number(b.final_fare || 0) : 0), 0);
 
   // Update the static stat card elements in the HTML
   const sc = document.getElementById('stat-customers'); if (sc) sc.textContent = customerCount ?? 0;
   const sr = document.getElementById('stat-riders');    if (sr) sr.textContent = riderCount ?? 0;
   const sb = document.getElementById('stat-bookings');  if (sb) sb.textContent = allBookings.length;
   const sv = document.getElementById('stat-revenue');   if (sv) sv.textContent = peso(revenue);
+  const svs = document.getElementById('stat-revenue-sub');
+  if (svs) svs.textContent = `from ${peso(faresTotal)} in fares`;
 
   // revenue chart, last 7 days
   const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (6 - i)); return d; });
-  const totals = days.map(d => allBookings.filter(b => b.status === 'completed' && new Date(b.created_at).toDateString() === d.toDateString())
-    .reduce((a, b) => a + Number(b.final_fare || 0), 0));
+  const totals = days.map(d => pays.filter(p => new Date(p.created_at).toDateString() === d.toDateString())
+    .reduce((a, p) => a + Number(p.platform_commission || 0), 0));
   const max = Math.max(1, ...totals);
   document.getElementById('revenue-chart').innerHTML = totals.map(t => `<div class="bar" style="height:${Math.max(4, (t/max)*100)}%"><span>${t > 0 ? peso(t) : ''}</span></div>`).join('');
   document.getElementById('revenue-labels').innerHTML = days.map(d => `<span>${d.toLocaleDateString('en-PH',{weekday:'short'})}</span>`).join('');

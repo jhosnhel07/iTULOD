@@ -63,3 +63,16 @@ document.getElementById('contact-form')?.addEventListener('submit', (e) => {
   }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   targets.forEach((el) => { el.classList.add('reveal'); io.observe(el); });
 })();
+
+// Contact details set by the admin (Admin → Settings, sql/034). The page
+// keeps its built-in text when nothing is set or the call fails.
+(async function loadContactInfo() {
+  if (typeof supabase === 'undefined') return;
+  const { data, error } = await supabase.rpc('public_site_info');
+  const info = !error && data && data[0];
+  if (!info) return;
+  const put = (id, value) => { const el = document.getElementById(id); if (el && value) el.textContent = value; };
+  put('contact-phone', info.support_phone);
+  put('contact-email', info.support_email);
+  put('contact-office', info.office_address);
+})();

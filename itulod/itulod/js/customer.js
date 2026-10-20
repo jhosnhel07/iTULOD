@@ -142,6 +142,20 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
   const multiplier = () => (typeof getMultiplier === 'function' ? getMultiplier() : 1);
   const keyOf = () => (pickupEl.value || '').trim().toLowerCase() + '|' + stopsList().join(',').toLowerCase() + '|' + (dropoffEl.value || '').trim().toLowerCase() + '|' + multiplier();
 
+  // Until (or unless) the routing service answers: both pins on the map give
+  // a real straight-line distance × 1.3 (the app's roadDistanceKm), so the
+  // fare never rests on a made-up number when the locations are known. Only
+  // typed addresses with no pins fall back to the address-based guess.
+  function pinned() {
+    if (stopsList().length || typeof getMapMarkerLngLat !== 'function' || typeof _kmBetween !== 'function') return null;
+    const pickup = getMapMarkerLngLat(tab, 'pickup');
+    const dropoff = getMapMarkerLngLat(tab, 'dropoff');
+    return pickup && dropoff ? { pickup, dropoff, km: Math.max(0.1, _kmBetween(pickup, dropoff) * 1.3) } : null;
+  }
+  function fallbackKm(a, b) {
+    return pinned()?.km ?? simulateDistanceKm(a.toLowerCase(), b.toLowerCase());
+  }
+
   function render(km, isReal) {
     const effectiveKm = (km || 0) * multiplier();
     distanceEl.textContent = km ? effectiveKm.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
@@ -162,7 +176,7 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
     if (!a || !b) { route = null; lastKey = ''; render(null); return; }
     const key = keyOf();
     if (route && key === lastKey) { render(route.km, true); return; }
-    render(simulateDistanceKm(a.toLowerCase(), b.toLowerCase()), false);
+    render(fallbackKm(a, b), false);
     lastKey = key;
     clearTimeout(timer);
     timer = setTimeout(async () => {
@@ -201,12 +215,12 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
   return {
     recalc,
     current() {
-      const km = route ? route.km : simulateDistanceKm(
-        (pickupEl.value || '').trim().toLowerCase(),
-        (dropoffEl.value || '').trim().toLowerCase(),
-      );
+      const pins = route ? null : pinned();
+      const km = route ? route.km : (pins ? pins.km : fallbackKm((pickupEl.value || '').trim(), (dropoffEl.value || '').trim()));
       const effectiveKm = (km || 0) * multiplier();
-      return { km: effectiveKm, coords: route ? { pickup: route.pickup, dropoff: route.dropoff } : null };
+      const coords = route ? { pickup: route.pickup, dropoff: route.dropoff }
+        : pins ? { pickup: pins.pickup, dropoff: pins.dropoff } : null;
+      return { km: effectiveKm, coords };
     },
   };
 }

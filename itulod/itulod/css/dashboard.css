@@ -4793,3 +4793,30 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
   margin-bottom: 18px;
 }
 .notif-detail__actions { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── Admin → Settings form (admin.js loadSettings / wireSettingsForm) ── */
+#settings-form .field { margin-bottom: 14px; }
+#settings-form .hint { display: block; margin-top: 5px; color: var(--text-muted); font-size: var(--fs-xs); line-height: 1.4; }
+#settings-form .field-row { gap: 12px; }
+.settings-group {
+  margin: 4px 0 10px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.settings-group span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+#settings-form .settings-group:not(:first-child) { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.input-adornment .adornment-prefix {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  pointer-events: none;
+}
+.input-adornment:has(.adornment-prefix) input { padding-left: 28px !important; }
+.input-adornment:has(.adornment-suffix) input { padding-right: 92px !important; }
+.input-adornment:has(.adornment-suffix) input#set-commission { padding-right: 36px !important; }
+#settings-save { margin-top: 6px; }
