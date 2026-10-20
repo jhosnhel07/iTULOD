@@ -396,7 +396,7 @@
         justify-content: center;
         font-size: var(--fs-sm);
         font-weight: 700;
-        color: #9aa6b2;
+        color: #687482;
         z-index: 1;
         position: relative;
         transition: all 0.3s;
@@ -415,7 +415,7 @@
       .step-label {
         font-size: var(--fs-2xs);
         font-weight: 600;
-        color: #9aa6b2;
+        color: #687482;
         margin-top: 6px;
         text-align: center;
         transition: color 0.3s;
@@ -608,7 +608,7 @@
       .input-icon {
         position: absolute;
         left: 14px;
-        color: #9aa6b2;
+        color: #687482;
         font-size: var(--fs-base);
         pointer-events: none;
         transition: color 0.2s;
@@ -649,7 +649,7 @@
         font-size: var(--fs-base);
       }
       .email-status-icon.checking {
-        color: #9aa6b2;
+        color: #687482;
       }
       .email-status-icon.fa-circle-check {
         color: #1a9d63;
@@ -663,7 +663,7 @@
         font-size: var(--fs-xs);
       }
       .email-status.checking {
-        color: #9aa6b2;
+        color: #687482;
       }
       .email-status.available {
         color: #1a9d63;
@@ -683,7 +683,7 @@
         background: none;
         border: none;
         cursor: pointer;
-        color: #9aa6b2;
+        color: #687482;
         font-size: var(--fs-sm);
         padding: 4px;
         border-radius: var(--radius-xs);
@@ -732,7 +732,7 @@
       }
       .pw-strength-label {
         font-size: var(--fs-xs);
-        color: #9aa6b2;
+        color: #687482;
         font-weight: 500;
       }
       .pw-strength-label.weak {
@@ -813,7 +813,7 @@
         font-size: var(--fs-2xl);
         margin-bottom: 6px;
         display: block;
-        color: #9aa6b2;
+        color: #687482;
         transition: color 0.22s;
       }
       .vehicle-card.selected .vc-icon {
@@ -900,7 +900,7 @@
       }
       .upload-icon {
         font-size: var(--fs-2xl);
-        color: #9aa6b2;
+        color: #687482;
         margin-bottom: 8px;
         transition: color 0.25s;
       }
@@ -918,7 +918,7 @@
       }
       .upload-hint {
         font-size: var(--fs-2xs);
-        color: #9aa6b2;
+        color: #687482;
       }
       .upload-preview {
         width: 100%;
@@ -1010,13 +1010,13 @@
       .signup-photo__optional {
         font-size: var(--fs-2xs);
         font-weight: 600;
-        color: #9aa6b2;
+        color: #687482;
         background: #f3eeed;
         padding: 2px 8px;
         border-radius: 999px;
       }
       .signup-photo__text small {
-        color: #9aa6b2;
+        color: #687482;
         font-size: var(--fs-xs);
       }
       .signup-photo__remove {
@@ -1033,7 +1033,7 @@
 
       .upload-optional {
         font-size: var(--fs-2xs);
-        color: #9aa6b2;
+        color: #687482;
         background: #f4ecec;
         padding: 2px 8px;
         border-radius: var(--radius-pill);

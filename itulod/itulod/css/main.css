@@ -49,7 +49,7 @@
   /* --- Neutrals --- */
   --ink: #2b3440;          /* headings — cool charcoal */
   --text-body: #4a4a4a;    /* body copy (spec) */
-  --text-muted: #7b8794;
+  --text-muted: #5f6b78;   /* ≥ 4.5:1 on white — readable small text */
   --white: #ffffff;
   --surface: #ffffff;      /* cards */
   --surface-2: #fbfcfe;    /* nested / inset panels */
@@ -62,7 +62,7 @@
 
   /* --- Slate scale (kept for backward-compat, remapped to the new neutrals) --- */
   --slate-700: #3c4650;
-  --slate-500: #7b8794;
+  --slate-500: #5f6b78;
   --slate-300: #cbd5e1;
   --slate-100: #eef2f7;
   --slate-50:  #f6f8fb;
@@ -1133,6 +1133,56 @@ button {
   opacity: 1;
   transform: translateX(0);
 }
+/* Success moment (js/utils.js celebrate) */
+.celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 18, 28, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.celebrate--show { opacity: 1; }
+.celebrate__card {
+  background: var(--surface, #fff);
+  color: var(--ink);
+  border-radius: 20px;
+  padding: 28px 24px 20px;
+  width: min(340px, 100%);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  transform: scale(0.9);
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+.celebrate--show .celebrate__card { transform: scale(1); }
+.celebrate__check { width: 76px; height: 76px; margin: 0 auto 12px; display: block; }
+.celebrate__ring {
+  stroke: var(--green, #1a9d63);
+  stroke-width: 3;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: celebrate-draw 0.5s ease-out 0.1s forwards;
+}
+.celebrate__tick {
+  stroke: var(--green, #1a9d63);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: celebrate-draw 0.35s ease-out 0.55s forwards;
+}
+.celebrate__title { display: block; font-size: 1.25rem; margin-bottom: 6px; }
+.celebrate__msg { margin: 0 0 16px; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.5; }
+.celebrate__ok { min-width: 120px; }
+@keyframes celebrate-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .celebrate, .celebrate__card { transition: none; }
+  .celebrate__ring, .celebrate__tick { animation: none; stroke-dashoffset: 0; }
+}
 .toast--success i {
   color: var(--green);
 }
@@ -1506,51 +1556,40 @@ button {
   font-size: var(--fs-sm);
 }
 .get-app .get-app-inline { max-width: 460px; }
-.get-app__phone {
+/* Three real screens in phone frames: home in front, trip details and the
+   rider's home fanned out behind it. */
+.get-app__phones {
+  position: relative;
   justify-self: center;
-  width: 230px;
-  height: 440px;
-  border-radius: 38px;
-  padding: 12px;
+  width: 100%;
+  max-width: 460px;
+  height: 500px;
+}
+.phone {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 220px;
+  margin: 0;
+  padding: 8px;
+  border-radius: 34px;
   background: #0b1a2f;
   box-shadow: var(--shadow-lg), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
-  transform: rotate(4deg);
 }
-.get-app__screen {
-  height: 100%;
-  border-radius: 28px;
-  background: var(--grad-blue);
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  position: relative;
-  text-align: center;
-  padding: 20px;
+.phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 27px;
+  background: #f3f6fc;
 }
-.get-app__screen img { border-radius: 18px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25); }
-.get-app__screen strong { font-family: var(--font-display); font-size: var(--fs-xl); }
-.get-app__screen span { font-size: var(--fs-xs); opacity: 0.85; }
-.get-app__screen-card {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 18px;
-  background: #ffffff;
-  color: var(--ink);
-  border-radius: 14px;
-  padding: 10px 12px;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-}
-.get-app__screen-card i { color: var(--blue); margin-right: 4px; }
+.phone--main { z-index: 2; transform: translateX(-50%); }
+.phone--left { z-index: 1; transform: translateX(-108%) translateY(36px) rotate(-6deg) scale(0.86); opacity: 0.96; }
+.phone--right { z-index: 1; transform: translateX(8%) translateY(36px) rotate(6deg) scale(0.86); opacity: 0.96; }
 .nav-getapp { display: inline-flex; align-items: center; gap: 6px; color: var(--blue) !important; font-weight: 700; }
 @media (max-width: 900px) {
   .get-app__grid { grid-template-columns: 1fr; gap: 32px; }
-  .get-app__phone { width: 190px; height: 360px; }
+  .get-app__phones { height: 470px; }
 }
 
 /* Login page link */

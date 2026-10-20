@@ -713,7 +713,8 @@ async function updateStatus(kind, id, status) {
   // creates the payout row in `payments`. The client only changes the status.
   const { error } = await supabase.from(table).update({ status }).eq('id', id);
   if (error) { toast(error.message, 'error'); return; }
-  toast(status === 'completed' ? 'Marked as complete!' : 'Status updated!', 'success');
+  if (status === 'completed') celebrate('Trip complete!', 'Nice work — your earnings are updated.');
+  else toast('Status updated!', 'success');
   await loadAccepted(); // clears RIDER_HAS_ACTIVE_BOOKING once nothing's left in progress
   await loadRequests(); // re-enable Accept buttons now that the rider is free again
   await loadEarnings();

@@ -20,6 +20,38 @@ function toast(message, type = 'info') {
     setTimeout(() => el.remove(), 250);
   }, 3800);
 }
+// ---- Success moment -------------------------------------------------------
+// A short animated check for the big wins (booking placed, trip completed).
+// Closes on its own, on tap or on Esc; reduced-motion users get no animation.
+function celebrate(title, message = '') {
+  document.querySelector('.celebrate')?.remove();
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.innerHTML = `
+    <div class="celebrate__card">
+      <svg class="celebrate__check" viewBox="0 0 52 52" aria-hidden="true">
+        <circle class="celebrate__ring" cx="26" cy="26" r="24" fill="none"/>
+        <path class="celebrate__tick" fill="none" d="M15 27l7 7 15-16"/>
+      </svg>
+      <strong class="celebrate__title">${escapeHtml(title)}</strong>
+      ${message ? `<p class="celebrate__msg">${escapeHtml(message)}</p>` : ''}
+      <button type="button" class="btn btn-primary btn-sm celebrate__ok">OK</button>
+    </div>`;
+  document.body.appendChild(el);
+  const close = () => {
+    document.removeEventListener('keydown', onKey);
+    el.classList.remove('celebrate--show');
+    setTimeout(() => el.remove(), 220);
+  };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  el.addEventListener('click', (e) => { if (e.target === el || e.target.closest('.celebrate__ok')) close(); });
+  requestAnimationFrame(() => el.classList.add('celebrate--show'));
+  setTimeout(close, message ? 5200 : 3200);
+}
+
 function toastIcon(type) {
   return { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' }[type] || 'fa-circle-info';
 }

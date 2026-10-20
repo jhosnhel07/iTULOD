@@ -147,16 +147,53 @@
             </div>
           </div>
 
+          <!-- Period for the charts below (admin.js renderAnalyticsCharts) -->
+          <div class="chart-range">
+            <span class="chart-range__label">Charts show</span>
+            <div class="segmented" id="chart-range" role="tablist" aria-label="Chart period">
+              <button type="button" class="seg-btn active" data-days="7" role="tab" aria-selected="true">Last 7 days</button>
+              <button type="button" class="seg-btn" data-days="30" role="tab" aria-selected="false">Last 30 days</button>
+            </div>
+          </div>
+
           <div class="grid-2">
             <div class="card">
               <div class="card-head">
                 <div>
-                  <h3>Revenue — last 7 days</h3>
+                  <h3>Revenue — <span data-range-label>last 7 days</span></h3>
                   <p class="card-sub">iTULOD's commission per day (₱), by completion date</p>
                 </div>
+                <strong class="chart-total" id="revenue-range-total">—</strong>
               </div>
               <div class="bar-chart" id="revenue-chart"></div>
               <div class="bar-labels" id="revenue-labels"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h3>Bookings — <span data-range-label>last 7 days</span></h3>
+                  <p class="card-sub">New bookings per day, all services</p>
+                </div>
+                <strong class="chart-total" id="bookings-range-total">—</strong>
+              </div>
+              <div class="bar-chart bar-chart--green" id="bookings-chart"></div>
+              <div class="bar-labels" id="bookings-labels"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h3>In this period</h3>
+                  <p class="card-sub" data-range-label>last 7 days</p>
+                </div>
+              </div>
+              <dl class="range-summary" id="range-summary">
+                <div><dt>Completed trips</dt><dd id="rs-completed">—</dd></div>
+                <div><dt>Cancelled</dt><dd id="rs-cancelled">—</dd></div>
+                <div><dt>Fares collected</dt><dd id="rs-fares">—</dd></div>
+                <div><dt>Avg. commission per trip</dt><dd id="rs-avg">—</dd></div>
+              </dl>
             </div>
 
             <div class="card">

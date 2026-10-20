@@ -1575,6 +1575,68 @@ table.data-table tbody tr:nth-child(even):hover td {
   margin-top: 6px;
 }
 
+/* Bookings chart: same bars in green. */
+.bar-chart--green .bar {
+  background: linear-gradient(180deg, #2fb57a 0%, #1a9d63 100%);
+}
+
+/* 30-day view: thinner bars, no value captions (hover titles instead). */
+.bar-chart--dense,
+.bar-labels--dense {
+  gap: 3px;
+}
+.bar-chart--dense .bar {
+  border-radius: 3px 3px 0 0;
+}
+.bar-labels--dense span {
+  overflow: visible;
+  white-space: nowrap;
+}
+
+/* Period switch above the admin charts */
+.chart-range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0 4px;
+}
+.chart-range__label {
+  font-weight: 600;
+  color: var(--ink);
+}
+.chart-range .segmented {
+  margin-bottom: 0;
+}
+.chart-total {
+  font-size: 1.15rem;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.range-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 8px 0 0;
+}
+.range-summary div {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.range-summary dt {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.range-summary dd {
+  margin: 4px 0 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .bar-labels span {
   flex: 1;
   text-align: center;
@@ -1733,7 +1795,7 @@ table.data-table tbody tr:nth-child(even):hover td {
 
 .notif-item time {
   font-size: var(--fs-xs);
-  color: var(--slate-300);
+  color: var(--text-muted);
   white-space: nowrap;
   margin-left: auto;
   padding-top: 2px;
@@ -4210,7 +4272,8 @@ body {
   .tab-btn, .seg-btn, .rf-chip { min-height: 40px; }
 
   /* The booking form's main button stays in reach above the bottom bar */
-  #tab-book form > button[type="submit"].btn-block {
+  #tab-book form > button[type="submit"].btn-block,
+  #tab-book .form-steps-nav {
     position: sticky;
     bottom: calc(94px + env(safe-area-inset-bottom, 0px)); /* above the floating glass bar */
     z-index: 5;
@@ -4218,6 +4281,139 @@ body {
   }
 
   .page-head h1 { font-size: var(--fs-2xl); }
+}
+
+/* =====================================================================
+   STEP-BY-STEP BOOKING (customer.js setupFormSteps)
+   Wide screens: every step shows, only the submit button of the nav.
+   Phones: one step at a time, a step bar with the fare, Back / Next.
+   ===================================================================== */
+.form-steps-bar,
+.form-steps-nav [data-step-back],
+.form-steps-nav [data-step-next],
+.form-step[data-title="Confirm"] .form-summary,
+.form-summary__title {
+  display: none;
+}
+.form-steps-nav .btn-block { width: 100%; }
+
+@media (max-width: 720px) {
+  form[data-stepped] .form-step { display: none; }
+  form[data-stepped] .form-step.is-current {
+    display: block;
+    animation: stepIn 0.2s ease-out;
+  }
+  @keyframes stepIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+
+  .form-steps-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 54px; /* under the mobile top bar */
+    z-index: 6;
+    margin: -4px -4px 16px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-xs);
+  }
+  .form-steps-dots {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .form-steps-dots li {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .form-steps-dots li span {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.72rem;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    color: var(--text-muted);
+  }
+  /* Five steps (parcel, hauling) need smaller labels to fit a phone. */
+  .form-steps-dots:has(li:nth-child(5)) { gap: 1px; }
+  .form-steps-dots:has(li:nth-child(5)) li { font-size: 0.6rem; letter-spacing: -0.01em; text-overflow: clip; }
+  @media (max-width: 400px) {
+    /* Too narrow for five labels: only the current step keeps its name. */
+    .form-steps-dots:has(li:nth-child(5)) li:not(.is-current) { font-size: 0; }
+    .form-steps-dots:has(li:nth-child(5)) li.is-current { overflow: visible; }
+  }
+  .form-steps-dots li.is-current { color: var(--blue-ink, #0d47a1); }
+  .form-steps-dots li.is-current span { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .form-steps-dots li.is-done span { background: var(--blue-50); border-color: var(--blue); color: var(--blue-ink, #0d47a1); font-size: 0; }
+  .form-steps-dots li.is-done span::before {
+    content: "\f00c"; /* fa-check */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.66rem;
+  }
+  .form-steps-fare {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+    line-height: 1.2;
+  }
+  .form-steps-fare span { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
+  .form-steps-fare strong { font-size: 1rem; color: var(--ink); white-space: nowrap; }
+
+  .form-steps-nav {
+    display: flex;
+    gap: 10px;
+    background: var(--bg);
+    border-radius: var(--radius-pill);
+  }
+  .form-steps-nav .btn { flex: 1; white-space: nowrap; padding-left: 14px; padding-right: 14px; }
+  .form-steps-nav [data-step-back],
+  .form-steps-nav [data-step-next] { display: inline-flex; }
+  form.on-first-step .form-steps-nav [data-step-back],
+  form.on-last-step .form-steps-nav [data-step-next] { display: none; }
+  form[data-stepped]:not(.on-last-step) .form-steps-nav button[type="submit"] { display: none; }
+  form[data-stepped] .form-steps-nav button[type="submit"] { width: auto; flex: 2; }
+
+  .form-summary__title { display: block; margin: 0 0 10px; font-size: var(--fs-md, 1rem); }
+  .form-step[data-title="Confirm"] .form-summary {
+    display: grid;
+    gap: 0;
+    margin: 0 0 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .form-summary div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-summary div:last-child { border-bottom: 0; background: var(--blue-50); }
+  .form-summary dt { color: var(--text-muted); font-size: var(--fs-sm); flex-shrink: 0; }
+  .form-summary dd { margin: 0; text-align: right; font-weight: 600; color: var(--ink); font-size: var(--fs-sm); min-width: 0; overflow-wrap: anywhere; }
 }
 
 /* Three KPI cards sit in one compact row instead of 2 + an orphan. */

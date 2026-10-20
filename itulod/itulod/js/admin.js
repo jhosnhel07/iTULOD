@@ -30,6 +30,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wirePromoForm();
   wireSupportSubTabs();
   wireSettingsForm();
+  wireChartRange();
 
   await loadAnalytics();
   await loadCustomers();
@@ -146,6 +147,79 @@ function wireSettingsForm() {
 }
 
 // ---- analytics ----------------------------------------------------------
+// Revenue + bookings per day for the chosen period (7 or 30 days). The data
+// is fetched once by loadAnalytics; switching the period only redraws.
+let ANALYTICS_DATA = null;
+let CHART_DAYS = 7;
+
+function wireChartRange() {
+  const host = document.getElementById('chart-range');
+  if (!host) return;
+  host.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    CHART_DAYS = Number(btn.dataset.days) || 7;
+    host.querySelectorAll('.seg-btn').forEach((b) => {
+      b.classList.toggle('active', b === btn);
+      b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+    });
+    renderAnalyticsCharts();
+  });
+}
+
+// One bar per day. Dense (30-day) charts drop the value captions and label
+// every 5th day; every bar keeps a hover title with the exact value.
+function drawBarChart(chartId, labelsId, days, values, fmt) {
+  const dense = days.length > 10;
+  const max = Math.max(1, ...values);
+  const chart = document.getElementById(chartId);
+  chart.classList.toggle('bar-chart--dense', dense);
+  chart.innerHTML = values.map((v, i) => {
+    const day = days[i].toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
+    return `<div class="bar" style="height:${Math.max(4, (v / max) * 100)}%" title="${day}: ${fmt(v)}"><span>${!dense && v > 0 ? fmt(v) : ''}</span></div>`;
+  }).join('');
+  const labels = document.getElementById(labelsId);
+  labels.classList.toggle('bar-labels--dense', dense);
+  labels.innerHTML = days.map((d, i) => {
+    if (!dense) return `<span>${d.toLocaleDateString('en-PH', { weekday: 'short' })}</span>`;
+    const show = i === days.length - 1 || (days.length - 1 - i) % 5 === 0;
+    return `<span>${show ? d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}</span>`;
+  }).join('');
+}
+
+function renderAnalyticsCharts() {
+  if (!ANALYTICS_DATA) return;
+  const { pays, bookings } = ANALYTICS_DATA;
+  const n = CHART_DAYS;
+  const days = [...Array(n)].map((_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (n - 1 - i)); return d; });
+  const start = days[0].getTime();
+  const sameDay = (iso, d) => new Date(iso).toDateString() === d.toDateString();
+  const inRange = (iso) => new Date(iso).getTime() >= start;
+
+  const revenue = days.map(d => pays.filter(p => sameDay(p.created_at, d))
+    .reduce((a, p) => a + Number(p.platform_commission || 0), 0));
+  const created = days.map(d => bookings.filter(b => sameDay(b.created_at, d)).length);
+  drawBarChart('revenue-chart', 'revenue-labels', days, revenue, peso);
+  drawBarChart('bookings-chart', 'bookings-labels', days, created, (v) => String(v));
+
+  const revTotal = revenue.reduce((a, v) => a + v, 0);
+  document.getElementById('revenue-range-total').textContent = peso(revTotal);
+  document.getElementById('bookings-range-total').textContent = created.reduce((a, v) => a + v, 0);
+  document.querySelectorAll('[data-range-label]').forEach((el) => { el.textContent = `last ${n} days`; });
+
+  // "In this period" — bookings created in the period, commission earned in it.
+  const recent = bookings.filter(b => inRange(b.created_at));
+  const done = recent.filter(b => b.status === 'completed');
+  const commissionRows = pays.filter(p => inRange(p.created_at) && Number(p.platform_commission || 0) > 0);
+  document.getElementById('rs-completed').textContent = done.length;
+  const cancelled = recent.filter(b => b.status === 'cancelled').length;
+  document.getElementById('rs-cancelled').textContent = recent.length
+    ? `${cancelled} (${Math.round((cancelled / recent.length) * 100)}%)`
+    : '0';
+  document.getElementById('rs-fares').textContent = peso(done.reduce((a, b) => a + Number(b.final_fare || 0), 0));
+  document.getElementById('rs-avg').textContent = commissionRows.length ? peso(revTotal / commissionRows.length) : '—';
+}
+
 async function loadAnalytics() {
   const [{ count: customerCount }, { count: riderCount }, { count: pendingApps }] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'customer'),
@@ -173,13 +247,8 @@ async function loadAnalytics() {
   const svs = document.getElementById('stat-revenue-sub');
   if (svs) svs.textContent = `from ${peso(faresTotal)} in fares`;
 
-  // revenue chart, last 7 days
-  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (6 - i)); return d; });
-  const totals = days.map(d => pays.filter(p => new Date(p.created_at).toDateString() === d.toDateString())
-    .reduce((a, p) => a + Number(p.platform_commission || 0), 0));
-  const max = Math.max(1, ...totals);
-  document.getElementById('revenue-chart').innerHTML = totals.map(t => `<div class="bar" style="height:${Math.max(4, (t/max)*100)}%"><span>${t > 0 ? peso(t) : ''}</span></div>`).join('');
-  document.getElementById('revenue-labels').innerHTML = days.map(d => `<span>${d.toLocaleDateString('en-PH',{weekday:'short'})}</span>`).join('');
+  ANALYTICS_DATA = { pays, bookings: allBookings };
+  renderAnalyticsCharts();
 
   // status breakdown — donut chart + legend
   const statuses = ['pending', 'completed', 'cancelled', 'ongoing', 'accepted'];

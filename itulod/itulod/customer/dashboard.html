@@ -192,7 +192,7 @@
             <div class="card">
               <div class="card-head"><h3>Trip details</h3></div>
               <form id="ride-form">
-                <div class="field">
+                <div class="field" data-step="Where">
                   <label>Pickup location</label>
                   <div class="input-map">
                     <input
@@ -262,7 +262,7 @@
                   </button>
                 </div>
 
-                <div class="field">
+                <div class="field" data-step="Vehicle">
                   <label>Vehicle type</label>
                   <select id="ride-vehicle" required></select>
                 </div>
@@ -298,7 +298,7 @@
                   </div>
                 </div>
 
-                <div class="field">
+                <div class="field" data-step="Payment">
                   <label>Payment method</label>
                   <select id="ride-payment">
                     <option value="cash">Cash</option>
@@ -556,7 +556,7 @@
             <div class="card">
               <div class="card-head"><h3>Parcel delivery request</h3></div>
               <form id="parcel-form">
-                <div class="field-group">
+                <div class="field-group" data-step="Where">
                   <div class="field-group__title"><i class="fa-solid fa-user"></i> Sender</div>
                   <div class="field-row">
                     <div class="field">
@@ -642,7 +642,7 @@
                   </div>
                 </div>
 
-                <div class="field-group">
+                <div class="field-group" data-step="Parcel">
                   <div class="field-group__title"><i class="fa-solid fa-box-open"></i> Parcel</div>
                 <!-- Parcel size radio cards -->
                 <div class="field">
@@ -726,7 +726,7 @@
                 </div>
                 </div>
 
-                <div class="field">
+                <div class="field" data-step="Vehicle">
                   <label>Vehicle type</label>
                   <select id="parcel-vehicle" required></select>
                 </div>
@@ -746,7 +746,7 @@
                   </div>
                 </div>
 
-                <div class="field">
+                <div class="field" data-step="Payment">
                   <label>Payment method</label>
                   <select id="parcel-payment">
                     <option value="cash">Cash on delivery</option>
@@ -841,7 +841,7 @@
             <div class="card">
               <div class="card-head"><h3>Hauling request</h3></div>
               <form id="hauling-form">
-                <div class="field-group">
+                <div class="field-group" data-step="Where">
                   <div class="field-group__title"><i class="fa-solid fa-location-dot"></i> Pickup</div>
                   <div class="field-row">
                     <div class="field">
@@ -893,7 +893,7 @@
                   </div>
                 </div>
 
-                <div class="field-group">
+                <div class="field-group" data-step="Load">
                   <div class="field-group__title"><i class="fa-solid fa-boxes-stacked"></i> What are we moving?</div>
                   <div class="field">
                     <label>Category</label>
@@ -933,7 +933,7 @@
                   </div>
                 </div>
 
-                <div class="field">
+                <div class="field" data-step="Vehicle">
                   <label>Vehicle</label>
                   <select id="hauling-vehicle" required></select>
                 </div>
@@ -971,7 +971,7 @@
                   </div>
                 </div>
 
-                <div class="field">
+                <div class="field" data-step="Payment">
                   <label>Payment method</label>
                   <select id="hauling-payment">
                     <option value="cash">Cash on delivery</option>

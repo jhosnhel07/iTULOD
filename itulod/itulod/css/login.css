@@ -353,7 +353,7 @@
       .input-icon {
         position: absolute;
         left: 14px;
-        color: #9aa6b2;
+        color: #687482;
         font-size: var(--fs-base);
         pointer-events: none;
         transition: color 0.2s;
@@ -392,7 +392,7 @@
         background: none;
         border: none;
         cursor: pointer;
-        color: #9aa6b2;
+        color: #687482;
         font-size: var(--fs-sm);
         padding: 4px;
         border-radius: var(--radius-xs);
@@ -499,7 +499,7 @@
         align-items: center;
         gap: 14px;
         margin: 24px 0;
-        color: #9aa6b2;
+        color: #687482;
         font-size: var(--fs-sm);
         font-weight: 500;
       }

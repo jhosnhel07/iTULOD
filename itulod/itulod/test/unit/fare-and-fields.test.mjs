@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadClassicScripts } from '../helpers/load-classic.mjs';
 
-const g = loadClassicScripts(['js/utils.js']);
+const g = loadClassicScripts(['js/config.js', 'js/utils.js']);
 
 test('simulateDistanceKm: deterministic, clamped to 1–15 km', () => {
   assert.equal(

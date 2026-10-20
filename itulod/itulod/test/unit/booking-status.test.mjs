@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadClassicScripts } from '../helpers/load-classic.mjs';
 
-const g = loadClassicScripts(['js/utils.js']);
+const g = loadClassicScripts(['js/config.js', 'js/utils.js']);
 
 test('statusBadge: every booking status renders a badge with no throw', () => {
   const statuses = ['pending', 'accepted', 'ongoing', 'completed', 'cancelled', 'expired', 'no_show'];

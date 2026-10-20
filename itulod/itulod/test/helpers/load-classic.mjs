@@ -44,6 +44,7 @@ export function loadClassicScripts(files) {
       querySelectorAll: () => [],
       addEventListener: () => {},
       body: fakeElement(),
+      documentElement: { dataset: {} }, // js/utils.js reads the theme on load
     },
   };
   ctx.window = ctx;

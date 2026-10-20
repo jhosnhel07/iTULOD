@@ -26,6 +26,7 @@ let RATING_TARGET = null; // { kind, id }
   wireFoodForm();
   wireParcelForm();
   wireHaulingForm();
+  setupBookingSteps();
   wireHistoryTabs();
   wireProfileForm();
   wireChangePasswordForm();
@@ -87,6 +88,123 @@ function setBookingService(svc) {
   // its own map, vehicle and pickup).
   if (typeof startNearbyRidersWatch === 'function') startNearbyRidersWatch(svc);
 }
+// ---- step-by-step booking on phones -------------------------------------
+// On a phone the ride, parcel and hauling forms go one step at a time
+// (Where → … → Payment → Confirm) with the fare always in view. The steps
+// start at the elements marked data-step="…" in customer/dashboard.html.
+// On wider screens CSS shows every step at once, so nothing changes there.
+const BOOKING_STEPS = {
+  'ride-form': {
+    fare: 'ride-fare',
+    summary: [['Pickup', 'ride-pickup'], ['Destination', 'ride-destination'], ['Vehicle', 'ride-vehicle'],
+      ['Payment', 'ride-payment'], ['Estimated fare', 'ride-fare']],
+  },
+  'parcel-form': {
+    fare: 'parcel-fare',
+    summary: [['Pickup', 'parcel-sender-address'], ['Drop-off', 'parcel-receiver-address'], ['Receiver', 'parcel-receiver-name'],
+      ['Vehicle', 'parcel-vehicle'], ['Payment', 'parcel-payment'], ['Estimated fare', 'parcel-fare']],
+  },
+  'hauling-form': {
+    fare: 'hauling-fare',
+    summary: [['Pickup', 'hauling-pickup-address'], ['Drop-off', 'hauling-dropoff-address'], ['Items', 'hauling-description'],
+      ['Vehicle', 'hauling-vehicle'], ['Payment', 'hauling-payment'], ['Estimated fare', 'hauling-fare']],
+  },
+};
+const STEPPED_QUERY = window.matchMedia('(max-width: 720px)');
+
+function setupBookingSteps() {
+  Object.entries(BOOKING_STEPS).forEach(([formId, cfg]) => setupFormSteps(formId, cfg));
+}
+
+function setupFormSteps(formId, cfg) {
+  const form = document.getElementById(formId);
+  if (!form || form.dataset.stepped) return;
+  form.dataset.stepped = '1';
+  const submit = form.querySelector('button[type="submit"]');
+
+  // Group the form's children into steps, each starting at a data-step marker.
+  const steps = [];
+  [...form.children].forEach((el) => {
+    if (el === submit) return;
+    if (el.dataset.step || !steps.length) {
+      const step = document.createElement('div');
+      step.className = 'form-step';
+      step.dataset.title = el.dataset.step || 'Details';
+      steps.push(step);
+    }
+    steps[steps.length - 1].appendChild(el);
+  });
+  const confirm = document.createElement('div');
+  confirm.className = 'form-step';
+  confirm.dataset.title = 'Confirm';
+  confirm.innerHTML = '<h4 class="form-summary__title">Check your booking</h4><dl class="form-summary"></dl>';
+  steps.push(confirm);
+
+  const bar = document.createElement('div');
+  bar.className = 'form-steps-bar';
+  bar.innerHTML = `
+    <ol class="form-steps-dots">${steps.map((s, i) => `<li><span>${i + 1}</span>${escapeHtml(s.dataset.title)}</li>`).join('')}</ol>
+    <div class="form-steps-fare"><span>Fare</span><strong>₱0.00</strong></div>`;
+  const nav = document.createElement('div');
+  nav.className = 'form-steps-nav';
+  nav.innerHTML = `
+    <button type="button" class="btn btn-outline" data-step-back><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <button type="button" class="btn btn-primary" data-step-next>Next <i class="fa-solid fa-arrow-right"></i></button>`;
+  if (submit) nav.appendChild(submit);
+
+  form.append(bar, ...steps, nav);
+
+  // The fare in the bar mirrors the form's own estimate.
+  const fareEl = document.getElementById(cfg.fare);
+  const fareMirror = bar.querySelector('.form-steps-fare strong');
+  const syncFare = () => { fareMirror.textContent = fareEl?.textContent.trim() || '₱0.00'; };
+  if (fareEl) new MutationObserver(syncFare).observe(fareEl, { childList: true, characterData: true, subtree: true });
+  syncFare();
+
+  let current = 0;
+  const go = (i) => {
+    current = Math.max(0, Math.min(steps.length - 1, i));
+    steps.forEach((s, j) => s.classList.toggle('is-current', j === current));
+    bar.querySelectorAll('.form-steps-dots li').forEach((li, j) => {
+      li.classList.toggle('is-done', j < current);
+      li.classList.toggle('is-current', j === current);
+    });
+    form.classList.toggle('on-first-step', current === 0);
+    form.classList.toggle('on-last-step', current === steps.length - 1);
+    if (current === steps.length - 1) renderSummary();
+  };
+  const renderSummary = () => {
+    const rows = cfg.summary.map(([label, id]) => {
+      const el = document.getElementById(id);
+      if (!el) return '';
+      const value = el.tagName === 'SELECT' ? el.selectedOptions[0]?.text
+        : 'value' in el ? el.value : el.textContent;
+      return value && value.trim() ? `<div><dt>${label}</dt><dd>${escapeHtml(value.trim())}</dd></div>` : '';
+    }).join('');
+    confirm.querySelector('.form-summary').innerHTML = rows;
+  };
+  const scrollToForm = () => {
+    if (STEPPED_QUERY.matches) form.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  nav.querySelector('[data-step-next]').addEventListener('click', () => {
+    // Check this step's fields before moving on.
+    for (const f of steps[current].querySelectorAll('input, select, textarea')) {
+      if (!f.checkValidity()) { f.reportValidity(); return; }
+    }
+    go(current + 1);
+    scrollToForm();
+  });
+  nav.querySelector('[data-step-back]').addEventListener('click', () => { go(current - 1); scrollToForm(); });
+  // A field the browser rejects on submit → show the step it's on.
+  form.addEventListener('invalid', (e) => {
+    const at = steps.findIndex((s) => s.contains(e.target));
+    if (at >= 0 && at !== current) go(at);
+  }, true);
+  form.addEventListener('reset', () => go(0));
+  go(0);
+}
+
 // Home screen service tiles → straight to that booking form.
 function startService(svc) {
   activateTab('book');
@@ -539,13 +657,13 @@ function wireRideForm() {
     // by itself. A GCash payment is something the customer does afterward,
     // as a separate step, from the "Pay ₱X" button on Home or Booking
     // history (renderHomeActive / renderHistoryCard's needsPaymentRetry).
-    toast(
+    celebrate(
+      scheduledFor ? 'Ride scheduled' : 'Ride booked!',
       scheduledFor
-        ? `Ride scheduled for ${formatDate(scheduledFor)}. We'll line up a rider closer to the time.`
+        ? `For ${formatDate(scheduledFor)}. We'll line up a rider closer to the time.`
         : paymentMethod === 'gcash'
-          ? 'Ride booked! Pay with GCash from Home or Booking history whenever you’re ready.'
-          : 'Ride booked! Waiting for a rider to accept.',
-      'success'
+          ? 'Pay with GCash from Home or Booking history whenever you’re ready.'
+          : 'Waiting for a rider to accept.'
     );
     await applyPromoIfEntered('transport', booking.id, 'ride-promo');
     // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
@@ -734,11 +852,11 @@ function wireFoodForm() {
     );
     if (itemsErr) toast(`Order placed, but the item list didn't save: ${itemsErr.message}`, 'error');
 
-    toast(
+    celebrate(
+      'Order placed!',
       paymentMethod === 'gcash'
-        ? `Order placed (${peso(total)})! We'll ask you to pay by GCash once the rider confirms the fare at pickup.`
-        : `Order placed! You'll pay ${peso(total)} cash on delivery.`,
-      'success'
+        ? `Total ${peso(total)}. We'll ask you to pay by GCash once the rider confirms the fare at pickup.`
+        : `You'll pay ${peso(total)} cash on delivery.`
     );
 
     clearFormDraft('itulod-customer-food');
@@ -993,11 +1111,11 @@ function wireParcelForm() {
     // knows the real price once they see the parcel, so payment waits for
     // finalize-fare to set final_fare, which is what reveals "Pay ₱X" in
     // Booking history.
-    toast(
+    celebrate(
+      'Parcel delivery requested!',
       paymentMethod === 'gcash'
-        ? "Parcel delivery requested! We'll ask you to pay by GCash once the rider confirms the fare at pickup."
-        : 'Parcel delivery requested!',
-      'success'
+        ? "We'll ask you to pay by GCash once the rider confirms the fare at pickup."
+        : 'Waiting for a rider to accept.'
     );
     clearFormDraft('itulod-customer-parcel');
     e.target.reset(); distanceEl.textContent = '—'; fareEl.textContent = '₱0.00'; if (breakdownEl) breakdownEl.textContent = '';
@@ -1141,13 +1259,13 @@ function wireHaulingForm() {
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
-    toast(
+    celebrate(
+      payload.scheduled_for ? 'Hauling scheduled' : 'Hauling booked!',
       payload.scheduled_for
-        ? `Hauling scheduled for ${formatDate(payload.scheduled_for)}. We'll find a driver closer to the time.`
+        ? `For ${formatDate(payload.scheduled_for)}. We'll find a driver closer to the time.`
         : payload.payment_method === 'cash'
-          ? 'Hauling booked! Waiting for a driver to accept.'
-          : "Hauling booked! We'll ask you to pay once the driver confirms the fare at pickup.",
-      'success'
+          ? 'Waiting for a driver to accept.'
+          : "We'll ask you to pay once the driver confirms the fare at pickup."
     );
     clearFormDraft('itulod-customer-hauling');
     e.target.reset();
@@ -1635,12 +1753,24 @@ function wireWalletTopupForm() {
 // populateProfileForm() and wireProfileForm() are in js/dashboard-common.js.
 
 // ---- realtime: refresh history/notifications when rows change --------------
+// A booking that just turned 'completed' gets the success moment once.
+// updated_at must be fresh so later edits (e.g. a rating) don't replay it.
+const CELEBRATED_DONE = new Set();
+function celebrateIfJustCompleted(payload, kind) {
+  const row = payload?.new;
+  if (payload?.eventType !== 'UPDATE' || row?.status !== 'completed' || CELEBRATED_DONE.has(row.id)) return;
+  CELEBRATED_DONE.add(row.id);
+  if (Date.now() - Date.parse(row.updated_at) > 90 * 1000) return;
+  if (kind === 'transport') celebrate("You've arrived!", 'Thanks for riding with iTULOD. Rate your rider from Booking history.');
+  else celebrate('Delivered!', 'Your delivery is complete. Rate your rider from Booking history.');
+}
+
 function subscribeRealtime() {
   supabase.channel('customer-updates')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'transport') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'food') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'parcel') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, () => { loadHome(); if (HISTORY_KIND === 'hauling') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transport_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'transport'); loadHome(); if (HISTORY_KIND === 'transport') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'food'); loadHome(); if (HISTORY_KIND === 'food') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'parcel'); loadHome(); if (HISTORY_KIND === 'parcel') loadHistory(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'hauling'); loadHome(); if (HISTORY_KIND === 'hauling') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => loadNotifications())
     .subscribe();
 }
