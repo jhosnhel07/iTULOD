@@ -38,7 +38,9 @@ const PAGE_SIZE = 6;
   await loadHistory();
   await loadVehicleInfo();
   await loadRiderHome();
+  await loadNotifications();
   subscribeRealtime();
+  watchNotifications();
   startBookingExpiryWatch();
   // Realtime only fires on INSERT/UPDATE, so a scheduled ride crossing into
   // its 30-minute visibility window (loadRequests()) wouldn't otherwise
@@ -97,6 +99,7 @@ const TAB_TITLES = {
   accepted: ['Accepted bookings', 'Your current rides and deliveries.'],
   earnings: ['Earnings', 'Track your daily, weekly, and monthly income.'],
   history: ['History', 'Completed, cancelled, expired and no-show bookings.'],
+  notifications: ['Notifications', 'Updates about your jobs, tips and account.'],
   vehicle: ['Vehicle info', 'Your application and vehicle details.'],
   profile: ['Profile', 'Manage your account details.'],
 };

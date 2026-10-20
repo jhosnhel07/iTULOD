@@ -46,6 +46,10 @@
       </button>
 
       <span class="side-nav-label">Account</span>
+      <button class="side-link" data-tab="notifications">
+        <i class="fa-solid fa-bell"></i> Notifications
+        <span class="badge badge--danger js-notif-count" style="display: none; margin-left: auto"></span>
+      </button>
       <button class="side-link" data-tab="vehicle">
         <i class="fa-solid fa-car"></i> Vehicle info
       </button>
@@ -79,7 +83,10 @@
       <span class="brand" style="font-size:var(--fs-lg);color:var(--blue)">
         iTULOD<span class="dot">.</span>
       </span>
-      <span></span>
+      <button class="topbar-action" onclick="activateTab('notifications')" aria-label="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="badge badge--danger js-notif-count" style="display: none"></span>
+      </button>
     </div>
 
     <div class="page-head">
@@ -292,6 +299,19 @@
     </section>
 
     <!-- ===================== VEHICLE INFO ===================== -->
+    <!-- ===================== NOTIFICATIONS ===================== -->
+    <section class="tab-panel" id="tab-notifications">
+      <div class="card">
+        <div class="card-head">
+          <h3>Notifications</h3>
+          <button type="button" class="btn btn-outline btn-sm" id="notif-mark-all" onclick="markAllNotificationsRead()" style="display: none">
+            <i class="fa-solid fa-check-double"></i> Mark all as read
+          </button>
+        </div>
+        <div id="notif-list"></div>
+      </div>
+    </section>
+
     <section class="tab-panel" id="tab-vehicle">
       <div class="card card--narrow">
         <div class="card-head">
@@ -423,6 +443,17 @@
     <button data-tab="earnings"><i class="fa-solid fa-sack-dollar"></i><span>Earnings</span></button>
     <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
   </nav>
+</div>
+
+<!-- One notification, opened from the Notifications tab (dashboard-common.js openNotification) -->
+<div class="modal-overlay" id="notif-modal" onclick="closeNotification()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="notif-modal-title" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h3>Notification</h3>
+      <button class="modal-close" onclick="closeNotification()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="notif-modal-body"></div>
+  </div>
 </div>
 
 <!-- Proof of delivery — hidden, reused for whichever booking's "Take proof

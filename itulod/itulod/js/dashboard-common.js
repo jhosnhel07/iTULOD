@@ -240,3 +240,139 @@ function startProfileSync() {
     if (data) applyProfileUpdate(data);
   });
 }
+
+// ---- Notifications (customer + rider) ---------------------------------------
+// Unread count on every .js-notif-count badge (sidebar, phone top bar, nav).
+function setNotifCount(unread) {
+  document.querySelectorAll('.js-notif-count').forEach(el => {
+    el.textContent = unread;
+    el.style.display = unread > 0 ? 'inline-block' : 'none';
+  });
+}
+
+// ---- notifications ----------------------------------------------------------
+// Each notification stays unread until the customer opens it; opening one
+// marks just that one read and shows it in full (the app does the same).
+let NOTIFS = [];
+
+async function loadNotifications() {
+  const list = document.getElementById('notif-list');
+  showSkeleton(list, skeletonList(3));
+  const { data, error } = await supabase.from('notifications').select('*').eq('user_id', CURRENT_PROFILE.id).order('created_at', { ascending: false }).limit(30);
+  if (error || !data || data.length === 0) {
+    list.innerHTML = error
+      ? emptyState({
+          icon: 'fa-triangle-exclamation',
+          title: 'Could not load notifications',
+          body: error.message,
+          tone: 'error'
+        })
+      : emptyState({
+          icon: 'fa-bell-slash',
+          title: 'No notifications yet',
+          body: CURRENT_PROFILE?.role === 'rider'
+            ? "We'll let you know here about your jobs, tips and your account."
+            : "We'll let you know here when there's an update on a booking."
+        });
+    NOTIFS = [];
+    setNotifCount(0);
+    syncNotifMarkAll();
+    return;
+  }
+  NOTIFS = data;
+  setNotifCount(data.filter(n => !n.is_read).length);
+  syncNotifMarkAll();
+
+  list.innerHTML = data.map(n => `
+    <div class="notif-item ${n.is_read ? 'read' : ''}" data-id="${n.id}" role="button" tabindex="0"
+         aria-label="${escapeHtml(n.title)}${n.is_read ? '' : ' (unread)'}"
+         onclick="openNotification('${n.id}')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openNotification('${n.id}')}">
+      <div class="notif-icon"><i class="fa-solid ${notifIcon(n)}"></i></div>
+      <div class="notif-text">
+        <h4>${escapeHtml(n.title)}</h4>
+        <p>${escapeHtml(n.message)}</p>
+        <time>${formatDate(n.created_at)}</time>
+      </div>
+      <span class="dot" aria-hidden="true"></span>
+    </div>`).join('');
+}
+
+function syncNotifMarkAll() {
+  const btn = document.getElementById('notif-mark-all');
+  if (btn) btn.style.display = NOTIFS.some(n => !n.is_read) ? '' : 'none';
+}
+
+// Booking updates get a shortcut to Booking history in the details.
+const NOTIF_BOOKING_RE = /\b(ride|delivery|hauling|booking|rider|trip|parcel|food|payment|refund|fee|cod|tip|no-show|expired|cancell?ed)\b/i;
+
+function notifIcon(n) {
+  const t = `${n.title} ${n.message}`.toLowerCase();
+  if (/refund|wallet|payment|fee|tip|bonus/.test(t)) return 'fa-wallet';
+  if (/cancel|expired|no-show|not approved/.test(t)) return 'fa-circle-exclamation';
+  if (/completed|approved|accepted/.test(t)) return 'fa-circle-check';
+  return 'fa-bell';
+}
+
+async function openNotification(id) {
+  const n = NOTIFS.find(x => x.id === id);
+  if (!n) return;
+  const when = new Date(n.created_at);
+  const fullDate = isNaN(when) ? '' : when.toLocaleString('en-PH', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+  const bookingRelated = NOTIF_BOOKING_RE.test(`${n.title} ${n.message}`);
+  document.getElementById('notif-modal-body').innerHTML = `
+    <div class="notif-detail">
+      <div class="notif-detail__icon"><i class="fa-solid ${notifIcon(n)}"></i></div>
+      <h4 id="notif-modal-title">${escapeHtml(n.title)}</h4>
+      <time datetime="${escapeHtml(n.created_at || '')}"><i class="fa-regular fa-clock"></i> ${escapeHtml(fullDate)}</time>
+      <p>${escapeHtml(n.message)}</p>
+      <div class="notif-detail__actions">
+        ${bookingRelated ? `<button type="button" class="btn btn-primary btn-block" onclick="closeNotification(); activateTab('history')"><i class="fa-solid fa-clock-rotate-left"></i> ${CURRENT_PROFILE?.role === 'rider' ? 'View history' : 'View booking history'}</button>` : ''}
+        <button type="button" class="btn btn-outline btn-block" onclick="closeNotification()">Close</button>
+      </div>
+    </div>`;
+  document.getElementById('notif-modal').classList.add('open');
+
+  if (n.is_read) return;
+  // Mark just this one read — right away on screen, then in the database.
+  n.is_read = true;
+  document.querySelector(`.notif-item[data-id="${id}"]`)?.classList.add('read');
+  setNotifCount(NOTIFS.filter(x => !x.is_read).length);
+  syncNotifMarkAll();
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  if (error) console.warn('Could not mark notification read:', error.message);
+}
+
+function closeNotification() {
+  document.getElementById('notif-modal')?.classList.remove('open');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('notif-modal')?.classList.contains('open')) closeNotification();
+});
+
+async function markAllNotificationsRead() {
+  const btn = document.getElementById('notif-mark-all');
+  if (btn) setLoading(btn, true);
+  const { error } = await supabase.from('notifications').update({ is_read: true })
+    .eq('user_id', CURRENT_PROFILE.id).eq('is_read', false);
+  if (btn) setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  NOTIFS.forEach(n => { n.is_read = true; });
+  document.querySelectorAll('.notif-item').forEach(el => el.classList.add('read'));
+  setNotifCount(0);
+  syncNotifMarkAll();
+  toast('All notifications marked as read.', 'success');
+}
+
+// Live: refresh the list when a notification arrives or changes.
+let _notifWatchStarted = false;
+function watchNotifications() {
+  if (_notifWatchStarted || !CURRENT_PROFILE?.id) return;
+  _notifWatchStarted = true;
+  supabase.channel(`notifications-${CURRENT_PROFILE.id}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => loadNotifications())
+    .subscribe();
+}
