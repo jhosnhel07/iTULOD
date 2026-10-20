@@ -1571,3 +1571,49 @@ button {
 }
 .get-app-link:hover { background: var(--surface); border-style: solid; }
 .get-app-card .card-head h3 i { color: var(--blue); margin-right: 4px; }
+
+/* ---- How it works (index.html #how-it-works) ---------------------------- */
+.steps-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  counter-reset: none;
+}
+.step-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 26px 22px 24px;
+  box-shadow: var(--shadow-sm);
+}
+.step-card .step-num {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--blue);
+  opacity: .18;
+}
+.step-card .icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-size: var(--fs-lg);
+  margin-bottom: 16px;
+  box-shadow: 0 8px 18px rgba(43, 52, 64, 0.16);
+}
+.step-card h3 { font-size: var(--fs-lg); margin-bottom: 6px; }
+.step-card p { color: var(--slate-500); font-size: var(--fs-sm); line-height: 1.55; margin: 0; }
+@media (max-width: 960px) { .steps-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .steps-grid { grid-template-columns: 1fr; } }

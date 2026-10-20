@@ -4848,3 +4848,117 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 .fee-alert strong { color: var(--ink); font-size: var(--fs-sm); }
 .fee-alert span { color: var(--text-muted); font-size: var(--fs-xs); line-height: 1.4; }
 @media (max-width: 560px) { .fee-alert { flex-wrap: wrap; } .fee-alert .btn { width: 100%; } }
+
+/* ── Customer home: service tiles (customer.js startService) ── */
+.service-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.service-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.service-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border-blue, #cfe5fb); }
+.service-tile:active { transform: translateY(0) scale(.98); }
+.service-tile:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.service-tile__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--tile);
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--tile) 30%, transparent);
+}
+.service-tile__label { font-weight: 700; font-size: var(--fs-sm); }
+@media (max-width: 420px) {
+  .service-tiles { gap: 8px; }
+  .service-tile { padding: 12px 4px 10px; }
+  .service-tile__icon { width: 42px; height: 42px; font-size: 1.1rem; }
+}
+
+/* ── Rider home: Online card (rider.js setOnlineUI) ── */
+.online-hero {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  transition: background .25s ease, border-color .25s ease, color .25s ease;
+}
+.online-hero__top { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.online-hero__text { min-width: 0; }
+.online-hero__status { display: inline-flex; align-items: center; gap: 8px; }
+.online-hero__status strong { font-size: var(--fs-lg); }
+.online-hero__dot { width: 10px; height: 10px; border-radius: 50%; background: #9aa6b2; flex: none; }
+.online-hero__text p { margin: 4px 0 0; color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.45; }
+.online-hero__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.online-hero__stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+.online-hero__stats span { font-size: var(--fs-xs); color: var(--text-muted); }
+.online-hero__stats strong { font-size: var(--fs-xl); font-family: var(--font-display); }
+
+.online-switch {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 36px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: #cfd6de;
+  transition: background .25s ease;
+}
+.online-switch__knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+  transition: transform .25s ease;
+}
+.online-switch[aria-checked="true"] { background: #1a9d63; }
+.online-switch[aria-checked="true"] .online-switch__knob { transform: translateX(28px); }
+.online-switch:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.online-switch:disabled { opacity: .5; cursor: not-allowed; }
+
+.online-hero.is-online {
+  background: linear-gradient(135deg, #1a9d63, #12784b);
+  border-color: transparent;
+  color: #fff;
+}
+.online-hero.is-online .online-hero__dot { background: #b8f5d6; box-shadow: 0 0 0 4px rgba(184, 245, 214, .25); animation: online-pulse 1.8s ease-out infinite; }
+.online-hero.is-online .online-hero__text p,
+.online-hero.is-online .online-hero__stats span { color: rgba(255, 255, 255, .85); }
+.online-hero.is-online .online-hero__stats > div { background: rgba(255, 255, 255, .14); }
+.online-hero.is-online .online-switch { background: rgba(255, 255, 255, .35); }
+@keyframes online-pulse { 0% { box-shadow: 0 0 0 0 rgba(184, 245, 214, .6); } 100% { box-shadow: 0 0 0 10px rgba(184, 245, 214, 0); } }
+@media (prefers-reduced-motion: reduce) { .online-hero.is-online .online-hero__dot { animation: none; } }

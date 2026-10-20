@@ -87,6 +87,12 @@ function setBookingService(svc) {
   // its own map, vehicle and pickup).
   if (typeof startNearbyRidersWatch === 'function') startNearbyRidersWatch(svc);
 }
+// Home screen service tiles → straight to that booking form.
+function startService(svc) {
+  activateTab('book');
+  setBookingService(svc);
+}
+
 function wireBookingSwitch() {
   document.querySelectorAll('#booking-switch .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => setBookingService(btn.dataset.service));

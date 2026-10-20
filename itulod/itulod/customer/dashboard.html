@@ -120,6 +120,26 @@
           <div id="home-fee-alert"></div>
           <div id="home-active" class="home-active-slot"></div>
 
+          <!-- Start any booking in one tap (customer.js startService) -->
+          <div class="service-tiles" aria-label="Book a service">
+            <button type="button" class="service-tile" onclick="startService('ride')">
+              <span class="service-tile__icon" style="--tile: #2196f3"><i class="fa-solid fa-car-side"></i></span>
+              <span class="service-tile__label">Ride</span>
+            </button>
+            <button type="button" class="service-tile" onclick="startService('food')">
+              <span class="service-tile__icon" style="--tile: #e0455f"><i class="fa-solid fa-utensils"></i></span>
+              <span class="service-tile__label">Food</span>
+            </button>
+            <button type="button" class="service-tile" onclick="startService('parcel')">
+              <span class="service-tile__icon" style="--tile: #1a9d63"><i class="fa-solid fa-box"></i></span>
+              <span class="service-tile__label">Parcel</span>
+            </button>
+            <button type="button" class="service-tile" onclick="startService('hauling')">
+              <span class="service-tile__icon" style="--tile: #0d47a1"><i class="fa-solid fa-truck-moving"></i></span>
+              <span class="service-tile__label">Hauling</span>
+            </button>
+          </div>
+
           <div class="stat-grid">
             <div class="stat-card">
               <div class="top"><div class="icon icon--blue"><i class="fa-solid fa-route"></i></div></div>

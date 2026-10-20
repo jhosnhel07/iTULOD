@@ -158,8 +158,11 @@ async function loadRiderHome() {
   const payments = payRes.data || [];
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
   const todayPays = payments.filter(p => new Date(p.created_at) >= startOfDay);
-  document.getElementById('home-earn-today').textContent = peso(todayPays.reduce((a, p) => a + Number(p.rider_payout), 0));
-  document.getElementById('home-trips-today').textContent = todayPays.length;
+  const earnedToday = peso(todayPays.reduce((a, p) => a + Number(p.rider_payout), 0));
+  const heroEarn = document.getElementById('hero-earn-today');
+  if (heroEarn) heroEarn.textContent = earnedToday;
+  const heroTrips = document.getElementById('hero-trips-today');
+  if (heroTrips) heroTrips.textContent = todayPays.length;
 
   const reviews = revRes.data || [];
   document.getElementById('home-rating').textContent = reviews.length
@@ -556,14 +559,18 @@ function wireReceiptUpload() {
 function setOnlineUI(isOnline) {
   RIDER_ONLINE = isOnline;
   const label = document.getElementById('online-status-label');
+  const sub = document.getElementById('online-status-sub');
   const btn = document.getElementById('online-toggle-btn');
-  if (label) label.textContent = isOnline ? 'Online' : 'Offline';
+  document.getElementById('online-hero')?.classList.toggle('is-online', isOnline);
+  if (label) label.textContent = isOnline ? "You're online" : "You're offline";
+  if (sub) {
+    sub.textContent = isOnline
+      ? 'Customers nearby can see you, and new jobs for your vehicle come in.'
+      : 'Go online so nearby customers can see you before they book.';
+  }
   if (btn) {
-    btn.innerHTML = isOnline
-      ? '<i class="fa-solid fa-power-off"></i> Go offline'
-      : '<i class="fa-solid fa-power-off"></i> Go online';
-    btn.classList.toggle('btn-primary', isOnline);
-    btn.classList.toggle('btn-outline', !isOnline);
+    btn.setAttribute('aria-checked', isOnline ? 'true' : 'false');
+    btn.setAttribute('aria-label', isOnline ? 'Go offline' : 'Go online');
   }
 }
 

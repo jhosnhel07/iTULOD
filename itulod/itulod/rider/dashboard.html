@@ -104,16 +104,21 @@
     <!-- ===================== HOME ===================== -->
     <section class="tab-panel active" id="tab-home">
       <div id="push-prompt"></div>
-      <div class="card card--flush" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
-        <div>
-          <strong id="online-status-label">Offline</strong>
-          <p style="color:var(--text-muted);font-size:var(--fs-sm);margin:2px 0 0">
-            Go online so nearby customers can see you before they book.
-          </p>
+      <!-- Online / Offline — the rider's main switch (rider.js setOnlineUI) -->
+      <div class="card online-hero" id="online-hero">
+        <div class="online-hero__top">
+          <div class="online-hero__text">
+            <span class="online-hero__status"><span class="online-hero__dot"></span><strong id="online-status-label">Offline</strong></span>
+            <p id="online-status-sub">Go online so nearby customers can see you before they book.</p>
+          </div>
+          <button type="button" class="online-switch" id="online-toggle-btn" role="switch" aria-checked="false" aria-label="Go online">
+            <span class="online-switch__knob"></span>
+          </button>
         </div>
-        <button type="button" class="btn btn-outline btn-sm" id="online-toggle-btn" style="white-space:nowrap;flex-shrink:0">
-          <i class="fa-solid fa-power-off"></i> Go online
-        </button>
+        <div class="online-hero__stats">
+          <div><span>Earned today</span><strong id="hero-earn-today">₱0.00</strong></div>
+          <div><span>Trips today</span><strong id="hero-trips-today">0</strong></div>
+        </div>
       </div>
 
       <!-- Float / Capital Card -->
@@ -140,17 +145,8 @@
 
       <div id="home-active" class="home-active-slot"></div>
 
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="top"><div class="icon icon--green"><i class="fa-solid fa-sack-dollar"></i></div></div>
-          <strong id="home-earn-today">₱0.00</strong>
-          <span class="label">Earned today</span>
-        </div>
-        <div class="stat-card">
-          <div class="top"><div class="icon icon--blue"><i class="fa-solid fa-flag-checkered"></i></div></div>
-          <strong id="home-trips-today">0</strong>
-          <span class="label">Trips today</span>
-        </div>
+      <!-- Earned / trips today live in the Online card at the top. -->
+      <div class="stat-grid stat-grid--2">
         <div class="stat-card">
           <div class="top"><div class="icon icon--yellow"><i class="fa-solid fa-star"></i></div></div>
           <strong id="home-rating">—</strong>
