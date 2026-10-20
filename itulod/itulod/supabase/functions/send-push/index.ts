@@ -15,6 +15,8 @@
 // Deploy: supabase functions deploy send-push --no-verify-jwt
 // =============================================================================
 import { adminClient, json, CORS_HEADERS } from '../_shared/helpers.ts';
+// App push to device_tokens (sql/037) — secret FIREBASE_SERVICE_ACCOUNT_B64.
+import { fcmConfigured, sendFcm } from '../_shared/fcm.ts';
 
 const DASHBOARD_BY_ROLE: Record<string, string> = {
   customer: '/customer/dashboard.html',
@@ -82,6 +84,23 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Phone push to the user's app installs (Firebase Cloud Messaging).
+    let appPushed = 0;
+    if (fcmConfigured()) {
+      const { data: devices } = await admin
+        .from('device_tokens')
+        .select('token')
+        .eq('user_id', n.user_id);
+      for (const d of devices ?? []) {
+        const result = await sendFcm(d.token, n.title, n.message);
+        if (result === 'sent') appPushed++;
+        else if (result === 'invalid') {
+          await admin.from('device_tokens').delete().eq('token', d.token);
+          removed++;
+        }
+      }
+    }
+
     // Optional SMS (Semaphore, PH)
     const smsKey = Deno.env.get('SEMAPHORE_API_KEY');
     const number = normalizePH(profile?.phone);
@@ -102,7 +121,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return json({ ok: true, pushed, removed });
+    return json({ ok: true, pushed, appPushed, removed });
   } catch (err) {
     console.error(err);
     return json({ error: 'processing error' }, 500);
