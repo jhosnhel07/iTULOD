@@ -275,6 +275,9 @@ button {
 }
 .brand span.dot {
   color: var(--rose-deep);
+  /* .brand is a flex row with a gap (for the logo image) — keep the dot
+     tight against "iTULOD" instead of a gap away. */
+  margin-left: -10px;
 }
 .nav-links {
   display: flex;
@@ -572,6 +575,14 @@ button {
   font-size: var(--fs-xl);
   font-family: var(--font-display);
 }
+.board-fare .board-trip {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--fs-xs);
+  color: var(--slate-300);
+  font-weight: 500;
+}
+.board-fare strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ---- section scaffolding ---------------------------------------------- */
 .section {

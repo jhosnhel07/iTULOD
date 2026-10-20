@@ -48,6 +48,7 @@
 
 .sidebar .brand .dot {
   color: var(--orange) !important;
+  margin-left: -2px; /* the sidebar brand's gap is 2px */
 }
 
 /* Navigation */
@@ -2863,9 +2864,19 @@ table.data-table tbody tr:nth-child(even):hover td {
 }
 .mobile-topbar .topbar-action .badge {
   position: absolute;
-  top: -2px;
-  right: 0;
-  transform: scale(0.8);
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e0455f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid var(--surface);
 }
 
 @media (max-width: 900px) {

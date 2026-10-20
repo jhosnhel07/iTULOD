@@ -620,6 +620,24 @@ function paginate(items, page, pageSize) {
   };
 }
 
+// ---- Live vehicle count (landing, login and sign-up panels) -------------------
+// Fills every [data-vehicle-count] with how many vehicle types can be booked
+// right now, so the marketing copy never goes stale when the admin switches a
+// category on or off. The number in the HTML stays if the call fails.
+async function fillVehicleCount() {
+  const els = document.querySelectorAll('[data-vehicle-count]');
+  if (!els.length || typeof supabase === 'undefined') return;
+  try {
+    const { count, error } = await supabase.from('vehicles')
+      .select('id', { count: 'exact', head: true }).eq('is_available', true);
+    if (error || !count) return;
+    els.forEach(el => { el.textContent = count; });
+  } catch (_) { /* keep the built-in number */ }
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', fillVehicleCount);
+}
+
 // ---- Photo uploads -----------------------------------------------------------
 // Shrinks a picked photo before upload so it goes up quickly on weak signal:
 // longest side ≤ max px, re-encoded as JPEG. `square` centre-crops it first

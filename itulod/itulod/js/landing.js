@@ -24,6 +24,7 @@ document.querySelectorAll('.nav-links a').forEach(link => {
       .eq('is_available', true)
       .order('base_fare', { ascending: true });
     if (error || !data || data.length === 0) return;
+    showSampleFare(data);
 
     const grid = document.getElementById('vehicle-grid');
     grid.innerHTML = data.map(v => `
@@ -38,6 +39,33 @@ document.querySelectorAll('.nav-links a').forEach(link => {
     console.info('Vehicle list falling back to static markup:', e.message);
   }
 })();
+
+// The hero's "tracked live" card: a sample Laoag → Batac trip priced with
+// the live Motorcycle rates (the same formula as booking), counting up.
+const SAMPLE_TRIP_KM = 18.5;
+function showSampleFare(vehicles) {
+  const moto = vehicles.find(v => v.name === 'Motorcycle') || vehicles.find(v => (v.service || 'standard') !== 'hauling');
+  if (!moto) return;
+  const fare = Number(moto.base_fare) + Number(moto.per_km_rate) * SAMPLE_TRIP_KM;
+  const trip = document.getElementById('board-trip');
+  if (trip) trip.textContent = `Laoag City → Batac City · ${SAMPLE_TRIP_KM} km · ${moto.name}`;
+  countUpFare(fare);
+}
+function countUpFare(target) {
+  const el = document.getElementById('board-fare');
+  if (!el) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = peso(target);
+    return;
+  }
+  const start = performance.now(), dur = 1200;
+  const step = (t) => {
+    const p = Math.min(1, (t - start) / dur);
+    el.textContent = peso(target * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 // contact form: this is a marketing form, not an authenticated feature,
 // so it just confirms receipt (wire to a Supabase table or email
