@@ -1031,9 +1031,15 @@
           <div class="card">
             <div class="card-head">
               <h3>Notifications</h3>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted)"
-                >Most recent first</span
+              <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                id="notif-mark-all"
+                onclick="markAllNotificationsRead()"
+                style="display: none"
               >
+                <i class="fa-solid fa-check-double"></i> Mark all as read
+              </button>
             </div>
             <div id="notif-list">
               <div class="empty-state">
@@ -1384,6 +1390,25 @@
     </div>
 
     <!-- rating modal -->
+    <!-- One notification, opened from the Notifications tab (customer.js openNotification) -->
+    <div class="modal-overlay" id="notif-modal" onclick="closeNotification()">
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notif-modal-title"
+        onclick="event.stopPropagation()"
+      >
+        <div class="modal-head">
+          <h3>Notification</h3>
+          <button class="modal-close" onclick="closeNotification()" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body" id="notif-modal-body"></div>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="rate-modal">
       <div class="modal">
         <div class="modal-head">
