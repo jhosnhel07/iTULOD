@@ -1,5 +1,5 @@
 -- =====================================================================
--- iTULOD — Intelligent Transport and Unified Logistics On-Demand Delivery
+-- iTULOD — Ilocos Transport Utility and Logistics Operation for Delivery
 -- Supabase (PostgreSQL) schema
 -- Run this once in the Supabase SQL Editor on a fresh project.
 -- =====================================================================

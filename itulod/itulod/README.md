@@ -1,5 +1,5 @@
 # iTULOD
-**Intelligent Transport and Unified Logistics On-Demand Delivery**
+**Ilocos Transport Utility and Logistics Operation for Delivery**
 
 An all-in-one transportation booking and on-demand delivery platform: ride booking, food delivery, and parcel delivery in one app, with separate dashboards for Admin, Customer, and Rider. Built with vanilla HTML/CSS/JS on the frontend and Supabase (Auth, Postgres, Storage, Realtime) on the backend.
 
