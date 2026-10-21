@@ -142,22 +142,32 @@ function wireProfileForm() {
   });
 }
 
-// A logged-in session is enough authorization to change your own password —
-// Supabase Auth updates whoever the current access token belongs to, so
-// there's no separate "current password" check to do here.
+// Asks for the current password first, so someone holding an unlocked
+// phone or a logged-in laptop can't change it. The check is a fresh sign-in
+// with that password for the same account (app: profile_screen.dart).
 function wireChangePasswordForm() {
   const form = document.getElementById('change-password-form');
   if (!form) return;
+  attachPasswordChecklist(document.getElementById('new-password'));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('change-password-submit');
+    const current = document.getElementById('current-password').value;
     const password = document.getElementById('new-password').value;
     const confirm = document.getElementById('confirm-password').value;
-    if (!requireFields({ 'New password': password, 'Confirm new password': confirm })) return;
-    if (password.length < 8) { toast('Use at least 8 characters.', 'error'); return; }
+    if (!requireFields({ 'Current password': current, 'New password': password, 'Confirm new password': confirm })) return;
+    if (passwordProblem(password)) { toast(passwordProblem(password), 'error'); return; }
     if (password !== confirm) { toast('Those passwords don’t match.', 'error'); return; }
+    if (password === current) { toast('Choose a password different from your current one.', 'error'); return; }
 
     setLoading(btn, true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error: checkError } = await supabase.auth.signInWithPassword({ email: user?.email || '', password: current });
+    if (checkError) {
+      setLoading(btn, false);
+      toast('Your current password is incorrect.', 'error');
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }

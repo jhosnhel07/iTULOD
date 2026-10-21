@@ -324,6 +324,24 @@ To publish a new version of app_itulod:
 
 ---
 
+## 6b. Auth — password rule
+
+The web (js/utils.js `passwordProblem`) and the app (`Validators.password`)
+both require **8+ characters with an uppercase letter, a lowercase letter, a
+number and a special character**. Make Supabase Auth enforce the same rule so
+an old app build can't get around it: Dashboard → Authentication → Sign In /
+Providers → Email → **Minimum password length: 8**, **Password requirements:
+Lowercase, uppercase letters, digits and symbols** → Save (local equivalent:
+`supabase/config.toml` `minimum_password_length` / `password_requirements`).
+Existing accounts still log in with their old passwords; the rule applies to
+new sign-ups and password changes.
+
+Forgot password (web and app) emails a link to `/reset-password.html`, so
+`https://<your-site>/reset-password.html` must be in Authentication → URL
+Configuration → Redirect URLs (or covered by the Site URL).
+
+---
+
 ## 7. Frontend (Vercel)
 
 - Project root deploys as-is; `vercel.json` rewrites `/*` →

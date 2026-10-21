@@ -694,6 +694,12 @@
             );
           return;
         }
+        const pwProblem = passwordProblem(pw);
+        if (pwProblem) {
+          if (typeof toast === "function") toast(pwProblem, "error");
+          else alert(pwProblem);
+          return;
+        }
         if (pw !== pw2) {
           if (typeof toast === "function")
             toast("Passwords do not match.", "error");
@@ -748,6 +754,7 @@
           if (!GMAIL_RE.test(email)) {
             throw new Error("Only Gmail addresses (name@gmail.com) are accepted.");
           }
+          if (passwordProblem(password)) throw new Error(passwordProblem(password));
           if (!isValidPhoneMobile(phone)) {
             throw new Error(
               "Please enter a valid mobile number (09XX XXX XXXX).",
@@ -860,6 +867,7 @@
           if (!GMAIL_RE.test(email)) {
             throw new Error("Only Gmail addresses (name@gmail.com) are accepted.");
           }
+          if (passwordProblem(password)) throw new Error(passwordProblem(password));
           if (!isValidPhoneMobile(phone)) {
             throw new Error(
               "Please enter a valid mobile number (09XX XXX XXXX).",
@@ -1063,32 +1071,8 @@
         saveRegistrationDraft();
       }
 
-      // ── Password Strength ──────────────────────────────────────
-      function updateStrength(pw) {
-        const bar = document.getElementById("pw-strength");
-        if (!bar) return;
-        bar.style.display = pw.length ? "block" : "none";
-        const segs = [1, 2, 3, 4].map((i) =>
-          document.getElementById("ps-" + i),
-        );
-        const label = document.getElementById("ps-label");
-        let score = 0;
-        if (pw.length >= 6) score++;
-        if (pw.length >= 10) score++;
-        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
-        if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
-
-        const levels = ["", "weak", "fair", "good", "strong"];
-        const labels = ["", "Weak", "Fair", "Good", "Strong"];
-        segs.forEach((s, i) => {
-          s.className =
-            "pw-strength-seg" + (i < score ? " " + levels[score] : "");
-        });
-        if (label) {
-          label.className = "pw-strength-label " + (levels[score] || "");
-          label.textContent = labels[score] || "";
-        }
-      }
+      // ── Password rules checklist (js/utils.js) ─────────────────
+      attachPasswordChecklist(document.getElementById("password"));
 
       // ── Password Toggle ────────────────────────────────────────
       function togglePw(id, btn) {

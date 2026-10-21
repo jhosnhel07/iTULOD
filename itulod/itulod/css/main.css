@@ -1133,6 +1133,21 @@ button {
   opacity: 1;
   transform: translateX(0);
 }
+/* Password rules checklist (js/utils.js attachPasswordChecklist) */
+.pw-rules {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: var(--fs-xs, 0.8rem);
+  color: var(--text-muted);
+}
+.pw-rules li { display: flex; align-items: center; gap: 6px; }
+.pw-rules i { color: #c2410c; width: 14px; }
+.pw-rules li.is-met { color: #137a4d; }
+.pw-rules li.is-met i { color: #1a9d63; }
+
 /* Success moment (js/utils.js celebrate) */
 .celebrate {
   position: fixed;

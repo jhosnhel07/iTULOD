@@ -327,6 +327,47 @@ function formatPhoneMobile(v) {
 function normalizePhoneMobile(v) {
   return String(v == null ? '' : v).replace(/\D/g, '').slice(0, 11);
 }
+// ---- Password rule --------------------------------------------------------
+// Same rule on the web and the app (lib/core/utils/validators.dart), and
+// Supabase Auth enforces it too: at least 8 characters with an uppercase
+// letter, a lowercase letter, a number and a special character. The symbols
+// are exactly the ones Supabase Auth counts as special.
+const PASSWORD_SYMBOLS = "!@#$%^&*()_+-=[]{};'\\:\"|<>?,./`~";
+const PASSWORD_RULES = [
+  { label: 'At least 8 characters', test: (p) => p.length >= 8 },
+  { label: '1 uppercase letter (A–Z)', test: (p) => /[A-Z]/.test(p) },
+  { label: '1 lowercase letter (a–z)', test: (p) => /[a-z]/.test(p) },
+  { label: '1 number (0–9)', test: (p) => /[0-9]/.test(p) },
+  { label: '1 special character (! @ # $ …)', test: (p) => [...p].some((c) => PASSWORD_SYMBOLS.includes(c)) },
+];
+// null when the password meets every rule, otherwise what's still missing.
+function passwordProblem(pw) {
+  const missing = PASSWORD_RULES.filter((r) => !r.test(String(pw || '')));
+  if (!missing.length) return null;
+  return 'Your password needs: ' + missing.map((r) => r.label.replace(/ \(.*\)$/, '').toLowerCase()).join(', ') + '.';
+}
+// Live checklist under a password input; ticks each rule as it's met.
+function attachPasswordChecklist(input) {
+  if (!input || input.dataset.pwRules) return;
+  input.dataset.pwRules = '1';
+  const list = document.createElement('ul');
+  list.className = 'pw-rules';
+  list.setAttribute('aria-live', 'polite');
+  list.innerHTML = PASSWORD_RULES.map((r) => `<li><i class="fa-solid fa-circle-xmark"></i> ${r.label}</li>`).join('');
+  (input.closest('.input-wrap') || input).insertAdjacentElement('afterend', list);
+  const items = [...list.children];
+  const update = () => {
+    PASSWORD_RULES.forEach((r, i) => {
+      const ok = r.test(input.value);
+      items[i].classList.toggle('is-met', ok);
+      items[i].querySelector('i').className = ok ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark';
+    });
+  };
+  input.addEventListener('input', update);
+  input.form?.addEventListener('reset', () => setTimeout(update, 0));
+  update();
+}
+
 function isValidPhoneMobile(v) {
   return /^09\d{9}$/.test(normalizePhoneMobile(v));
 }

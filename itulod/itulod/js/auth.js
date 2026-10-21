@@ -145,6 +145,7 @@ document.getElementById('register-form')?.addEventListener('submit', async (e) =
   const password2 = document.getElementById('password2').value;
 
   if (!requireFields({ 'Full name': full_name, 'Phone number': phone, 'Email': email, 'Password': password })) return;
+  if (passwordProblem(password)) { toast(passwordProblem(password), 'error'); return; }
   if (password !== password2) { toast('Passwords do not match.', 'error'); return; }
   if (!document.getElementById('terms').checked) { toast('Please accept the Terms of Service.', 'error'); return; }
 

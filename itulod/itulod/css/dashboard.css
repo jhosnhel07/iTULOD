@@ -1575,6 +1575,11 @@ table.data-table tbody tr:nth-child(even):hover td {
   margin-top: 6px;
 }
 
+/* Password checklist colours that read on the dark dashboard theme too. */
+:root[data-theme="dark"] .pw-rules i { color: #fb923c; }
+:root[data-theme="dark"] .pw-rules li.is-met { color: #6ee7b7; }
+:root[data-theme="dark"] .pw-rules li.is-met i { color: #34d399; }
+
 /* Bookings chart: same bars in green. */
 .bar-chart--green .bar {
   background: linear-gradient(180deg, #2fb57a 0%, #1a9d63 100%);

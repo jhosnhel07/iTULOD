@@ -32,6 +32,8 @@ supabase.auth.getSession().then(({ data }) => {
   if (data.session) recoveryReady = true;
 });
 
+attachPasswordChecklist(document.getElementById('new-password'));
+
 document.getElementById('reset-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('reset-btn');
@@ -39,7 +41,7 @@ document.getElementById('reset-form').addEventListener('submit', async (e) => {
   const confirm = document.getElementById('confirm-password').value;
 
   if (!requireFields({ 'New password': password, 'Confirm new password': confirm })) return;
-  if (password.length < 8) { toast('Use at least 8 characters.', 'error'); return; }
+  if (passwordProblem(password)) { toast(passwordProblem(password), 'error'); return; }
   if (password !== confirm) { toast('Those passwords don’t match.', 'error'); return; }
 
   // A stale/expired/already-used link never establishes a session, so

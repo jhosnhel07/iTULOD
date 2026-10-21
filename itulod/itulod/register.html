@@ -329,7 +329,6 @@
                     placeholder="Create a password"
                     autocomplete="new-password"
                     required
-                    oninput="updateStrength(this.value)"
                   />
                   <button
                     type="button"
@@ -338,15 +337,6 @@
                   >
                     <i class="fa-solid fa-eye"></i>
                   </button>
-                </div>
-                <div class="pw-strength" id="pw-strength" style="display: none">
-                  <div class="pw-strength-bar">
-                    <div class="pw-strength-seg" id="ps-1"></div>
-                    <div class="pw-strength-seg" id="ps-2"></div>
-                    <div class="pw-strength-seg" id="ps-3"></div>
-                    <div class="pw-strength-seg" id="ps-4"></div>
-                  </div>
-                  <span class="pw-strength-label" id="ps-label"></span>
                 </div>
               </div>
               <div class="input-group">
