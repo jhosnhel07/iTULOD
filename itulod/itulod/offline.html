@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+    <script>try{var t=localStorage.getItem('itulod-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Offline — iTULOD</title>
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -23,6 +24,10 @@
       padding: 12px 20px; font-size: 1rem; font-weight: 600; cursor: pointer;
     }
     button:hover { background: #0D47A1; }
+    /* Dark mode, when picked with the theme switch (js/utils.js toggleTheme). */
+    :root[data-theme="dark"] { color-scheme: dark; }
+    :root[data-theme="dark"] body { background: #0b121c; color: #c3cdd9; }
+    :root[data-theme="dark"] h1 { color: #90caf9; }
   </style>
 </head>
 <body>

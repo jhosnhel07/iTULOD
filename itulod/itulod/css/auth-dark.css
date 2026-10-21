@@ -1,0 +1,137 @@
+/* =====================================================================
+   DARK MODE for login.html, register.html and reset-password.html.
+   login.css / register.css use fixed light colours, so this file swaps
+   them when the user picks dark (js/utils.js toggleTheme). The blue brand
+   panel stays blue but deepens so it doesn't glare next to the dark form.
+   ===================================================================== */
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .form-panel { background: #0b121c; color: #c3cdd9; }
+
+:root[data-theme="dark"] .brand-panel {
+  background: linear-gradient(145deg, #0a2a5e 0%, #0d47a1 45%, #13406f 80%, #172131 100%);
+}
+
+/* Card */
+:root[data-theme="dark"] .login-card,
+:root[data-theme="dark"] .reg-card {
+  background: #131c29;
+  border-color: #243246;
+  box-shadow: 0 30px 64px rgba(0, 0, 0, 0.5);
+}
+:root[data-theme="dark"] .card-logo-row span,
+:root[data-theme="dark"] .card-title,
+:root[data-theme="dark"] .panel-title,
+:root[data-theme="dark"] .role-card-title,
+:root[data-theme="dark"] .review-summary-title,
+:root[data-theme="dark"] .review-summary-item strong,
+:root[data-theme="dark"] .success-title { color: #e8eef6; }
+:root[data-theme="dark"] .card-sub,
+:root[data-theme="dark"] .panel-sub,
+:root[data-theme="dark"] .role-card-desc,
+:root[data-theme="dark"] .remember-label,
+:root[data-theme="dark"] .register-link,
+:root[data-theme="dark"] .login-link,
+:root[data-theme="dark"] .terms-row label,
+:root[data-theme="dark"] .success-message,
+:root[data-theme="dark"] .divider { color: #a9b5c4; }
+:root[data-theme="dark"] .input-group label,
+:root[data-theme="dark"] .upload-label,
+:root[data-theme="dark"] .review-summary-item { color: #c3cdd9; }
+:root[data-theme="dark"] .card-logo-row span em { color: #e2a3b1; }
+
+/* Links */
+:root[data-theme="dark"] .forgot-link,
+:root[data-theme="dark"] .register-link a,
+:root[data-theme="dark"] .login-link a,
+:root[data-theme="dark"] .terms-row label a { color: #6cb6ff; }
+:root[data-theme="dark"] .forgot-link:hover,
+:root[data-theme="dark"] .register-link a:hover,
+:root[data-theme="dark"] .login-link a:hover { color: #90caf9; }
+:root[data-theme="dark"] .divider::before,
+:root[data-theme="dark"] .divider::after { background: #243246; }
+
+/* Inputs */
+:root[data-theme="dark"] .input-wrap input,
+:root[data-theme="dark"] .input-wrap select {
+  background: #172131;
+  border-color: #2a384c;
+  color: #e8eef6;
+}
+:root[data-theme="dark"] .input-wrap input:focus,
+:root[data-theme="dark"] .input-wrap select:focus { background: #131c29; border-color: #2196f3; }
+:root[data-theme="dark"] .input-wrap input::placeholder { color: #6c7a8d; }
+:root[data-theme="dark"] .input-icon,
+:root[data-theme="dark"] .pw-toggle-btn { color: #8d9aab; }
+:root[data-theme="dark"] .pw-toggle-btn:hover { background: #102540; color: #90caf9; }
+:root[data-theme="dark"] .input-wrap input:-webkit-autofill {
+  -webkit-text-fill-color: #e8eef6;
+  -webkit-box-shadow: 0 0 0 1000px #172131 inset;
+}
+
+/* Sign-up steps */
+:root[data-theme="dark"] .step-item:not(:last-child)::after { background: #2a384c; }
+:root[data-theme="dark"] .step-item.active:not(:last-child)::after { background: linear-gradient(90deg, var(--step-accent), #2a384c); }
+:root[data-theme="dark"] .step-item.completed:not(:last-child)::after { background: #1a9d63; }
+:root[data-theme="dark"] .step-circle { background: #131c29; border-color: #2a384c; color: #8d9aab; }
+:root[data-theme="dark"] .step-item.active .step-circle { background: var(--step-accent); border-color: var(--step-accent); color: #fff; }
+:root[data-theme="dark"] .step-item.completed .step-circle { background: #1a9d63; border-color: #1a9d63; color: #fff; }
+:root[data-theme="dark"] .step-label { color: #8d9aab; }
+:root[data-theme="dark"] .step-item.completed .step-label { color: #6ee7a8; }
+
+/* Role cards */
+:root[data-theme="dark"] .role-card { background: #172131; border-color: #2a384c; }
+:root[data-theme="dark"] .role-card:hover:not(.selected) { border-color: #2b5c92; }
+:root[data-theme="dark"] .role-card.selected.customer { border-color: #2196f3; background: #102540; }
+:root[data-theme="dark"] .role-card.selected.rider { border-color: #e2a3b1; background: #221820; }
+:root[data-theme="dark"] .role-card.customer .role-card-icon { background: #102540; color: #90caf9; }
+:root[data-theme="dark"] .role-card.rider .role-card-icon { background: #221820; color: #e2a3b1; }
+:root[data-theme="dark"] .role-card.selected.customer .role-card-icon { background: #2196f3; color: #fff; }
+:root[data-theme="dark"] .role-card.selected.rider .role-card-icon { background: #b06b79; color: #fff; }
+
+/* Email check + password checklist */
+:root[data-theme="dark"] .email-status.available,
+:root[data-theme="dark"] .email-status-icon.fa-circle-check { color: #6ee7a8; }
+:root[data-theme="dark"] .email-status.taken,
+:root[data-theme="dark"] .email-status.invalid,
+:root[data-theme="dark"] .email-status-icon.fa-circle-xmark { color: #f58ea0; }
+:root[data-theme="dark"] .email-status.checking,
+:root[data-theme="dark"] .email-status-icon.checking { color: #8d9aab; }
+:root[data-theme="dark"] .pw-rules i { color: #fb923c; }
+:root[data-theme="dark"] .pw-rules li.is-met { color: #6ee7b7; }
+:root[data-theme="dark"] .pw-rules li.is-met i { color: #34d399; }
+
+/* Terms, review, success */
+:root[data-theme="dark"] .terms-row,
+:root[data-theme="dark"] .review-summary { background: #172131; border-color: #2a384c; }
+:root[data-theme="dark"] .success-badge { background: #221820; border-color: #3a2630; color: #e2a3b1; }
+
+/* Rider vehicle choices */
+:root[data-theme="dark"] .vehicle-card { background: #172131; border-color: #2a384c; }
+:root[data-theme="dark"] .vehicle-card:hover:not(.selected) { background: #102540; border-color: #2b5c92; }
+:root[data-theme="dark"] .vehicle-card.selected { background: #102540; border-color: #2196f3; }
+:root[data-theme="dark"] .vehicle-card .vc-icon,
+:root[data-theme="dark"] .vehicle-card .vc-name { color: #a9b5c4; }
+:root[data-theme="dark"] .vehicle-card.selected .vc-icon,
+:root[data-theme="dark"] .vehicle-card.selected .vc-name { color: #90caf9; }
+
+/* Document uploads */
+:root[data-theme="dark"] .upload-zone { background: #172131; border-color: #2a384c; }
+:root[data-theme="dark"] .upload-zone:hover,
+:root[data-theme="dark"] .upload-zone.dragging { background: #102540; border-color: #2196f3; }
+:root[data-theme="dark"] .upload-zone.has-file { background: #0f2a1f; border-color: #1a9d63; }
+:root[data-theme="dark"] .upload-zone.is-missing { background: #2f151b; border-color: #e5484d; }
+:root[data-theme="dark"] .upload-zone .upload-action { background: #102540; border-color: #2b5c92; color: #90caf9; }
+:root[data-theme="dark"] .upload-icon,
+:root[data-theme="dark"] .upload-hint { color: #8d9aab; }
+:root[data-theme="dark"] .upload-optional { background: #1c2839; color: #a9b5c4; }
+
+/* Customer photo */
+:root[data-theme="dark"] .signup-photo { background: #172131; border-color: #3a2630; }
+:root[data-theme="dark"] .signup-photo__circle { background: #102540; color: #90caf9; border-color: #131c29; box-shadow: 0 0 0 2px #2b5c92; }
+:root[data-theme="dark"] .signup-photo__title { color: #6cb6ff; }
+:root[data-theme="dark"] .signup-photo__optional { background: #1c2839; color: #a9b5c4; }
+:root[data-theme="dark"] .signup-photo__text small { color: #8d9aab; }
+:root[data-theme="dark"] .signup-photo__remove { color: #f58ea0; }
+
+/* Back button */
+:root[data-theme="dark"] .btn-back { background: #1c2839; border-color: #2a384c; color: #c3cdd9; }

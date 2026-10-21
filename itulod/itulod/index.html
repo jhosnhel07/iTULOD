@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>try{var t=localStorage.getItem('itulod-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iTULOD — Ride. Deliver. Send. All in one app.</title>
     <meta
@@ -29,7 +30,9 @@
           <a href="#features">Features</a>
           <a href="#how-it-works">How it works</a>
           <a href="#contact">Contact</a>
-          <a href="#get-app" class="nav-getapp"><i class="fa-brands fa-android"></i> Get the app</a>
+          <a href="#get-app" class="nav-getapp"
+            ><i class="fa-brands fa-android"></i> Get the app</a
+          >
           <a href="login.html" class="btn btn-outline btn-sm nav-login-mobile"
             >Log in</a
           >
@@ -38,6 +41,7 @@
         <div class="nav-actions">
           <a href="login.html" class="btn btn-outline btn-sm">Log in</a>
         </div>
+        <button type="button" class="nav-theme js-theme-toggle" onclick="toggleTheme()" aria-label="Switch to dark mode"><i class="fa-solid fa-moon"></i></button>
         <button class="nav-toggle"><i class="fa-solid fa-bars"></i></button>
       </div>
     </nav>
@@ -46,76 +50,260 @@
     <header class="hero">
       <!-- Ilocos Norte scene: Bangui windmills on the hills, a rider on the road. Decorative. -->
       <div class="hero-scene" aria-hidden="true">
-        <svg viewBox="0 0 1440 170" preserveAspectRatio="xMidYMax slice" focusable="false">
-          <path d="M0 112 C 160 84 300 92 430 104 S 700 80 860 96 S 1180 74 1440 98 L1440 170 L0 170 Z" fill="#90caf9" opacity="0.28" />
-          
+        <svg
+          viewBox="0 0 1440 170"
+          preserveAspectRatio="xMidYMax slice"
+          focusable="false"
+        >
+          <path
+            class="hs-hills"
+            d="M0 112 C 160 84 300 92 430 104 S 700 80 860 96 S 1180 74 1440 98 L1440 170 L0 170 Z"
+            fill="#90caf9"
+            opacity="0.28"
+          />
+
           <g transform="translate(150 46) scale(0.9)">
-            <path d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-            <g class="hs-blades" style="animation-duration:7s">
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(120)" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(240)" />
+            <path
+              d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z"
+              fill="#ffffff"
+              stroke="#90caf9"
+              stroke-width="0.6"
+            />
+            <g class="hs-blades" style="animation-duration: 7s">
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(120)"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(240)"
+              />
             </g>
             <circle r="2.4" fill="#2196f3" />
           </g>
           <g transform="translate(255 56) scale(0.75)">
-            <path d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-            <g class="hs-blades" style="animation-duration:9s">
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(120)" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(240)" />
+            <path
+              d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z"
+              fill="#ffffff"
+              stroke="#90caf9"
+              stroke-width="0.6"
+            />
+            <g class="hs-blades" style="animation-duration: 9s">
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(120)"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(240)"
+              />
             </g>
             <circle r="2.4" fill="#2196f3" />
           </g>
           <g transform="translate(1010 40) scale(1)">
-            <path d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-            <g class="hs-blades" style="animation-duration:6.5s">
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(120)" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(240)" />
+            <path
+              d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z"
+              fill="#ffffff"
+              stroke="#90caf9"
+              stroke-width="0.6"
+            />
+            <g class="hs-blades" style="animation-duration: 6.5s">
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(120)"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(240)"
+              />
             </g>
             <circle r="2.4" fill="#2196f3" />
           </g>
           <g transform="translate(1120 52) scale(0.82)">
-            <path d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-            <g class="hs-blades" style="animation-duration:8s">
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(120)" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(240)" />
+            <path
+              d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z"
+              fill="#ffffff"
+              stroke="#90caf9"
+              stroke-width="0.6"
+            />
+            <g class="hs-blades" style="animation-duration: 8s">
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(120)"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(240)"
+              />
             </g>
             <circle r="2.4" fill="#2196f3" />
           </g>
           <g transform="translate(1230 47) scale(0.9)">
-            <path d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-            <g class="hs-blades" style="animation-duration:7.5s">
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(120)" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(240)" />
+            <path
+              d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z"
+              fill="#ffffff"
+              stroke="#90caf9"
+              stroke-width="0.6"
+            />
+            <g class="hs-blades" style="animation-duration: 7.5s">
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(120)"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(240)"
+              />
             </g>
             <circle r="2.4" fill="#2196f3" />
           </g>
           <g transform="translate(1340 58) scale(0.7)">
-            <path d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-            <g class="hs-blades" style="animation-duration:10s">
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(120)" />
-              <path d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z" fill="#ffffff" stroke="#90caf9" stroke-width="0.6" transform="rotate(240)" />
+            <path
+              d="M-1.2 0 L1.2 0 L2.6 62 L-2.6 62 Z"
+              fill="#ffffff"
+              stroke="#90caf9"
+              stroke-width="0.6"
+            />
+            <g class="hs-blades" style="animation-duration: 10s">
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(120)"
+              />
+              <path
+                d="M0 0 L-1.8 -3 L-0.6 -30 L0.6 -30 L1.8 -3 Z"
+                fill="#ffffff"
+                stroke="#90caf9"
+                stroke-width="0.6"
+                transform="rotate(240)"
+              />
             </g>
             <circle r="2.4" fill="#2196f3" />
           </g>
-          <path d="M0 128 C 240 112 420 120 720 124 S 1200 110 1440 122 L1440 170 L0 170 Z" fill="#ffffff" opacity="0.85" />
-          <rect x="0" y="140" width="1440" height="18" fill="#0d47a1" opacity="0.07" />
-          <line x1="0" y1="149" x2="1440" y2="149" stroke="#ffffff" stroke-width="2" stroke-dasharray="18 16" />
+          <path
+            class="hs-ground"
+            d="M0 128 C 240 112 420 120 720 124 S 1200 110 1440 122 L1440 170 L0 170 Z"
+            fill="#ffffff"
+            opacity="0.85"
+          />
+          <rect
+            class="hs-road"
+            x="0"
+            y="140"
+            width="1440"
+            height="18"
+            fill="#0d47a1"
+            opacity="0.07"
+          />
+          <line
+            class="hs-lane"
+            x1="0"
+            y1="149"
+            x2="1440"
+            y2="149"
+            stroke="#ffffff"
+            stroke-width="2"
+            stroke-dasharray="18 16"
+          />
           <g class="hs-rider">
             <g transform="translate(0 116)">
-              <rect x="-22" y="4" width="16" height="14" rx="3" fill="#e2b4bd" />
+              <rect
+                x="-22"
+                y="4"
+                width="16"
+                height="14"
+                rx="3"
+                fill="#e2b4bd"
+              />
               <path d="M-14 4 L-14 18" stroke="#b06b79" stroke-width="1.5" />
               <path d="M-12 22 L8 22 L14 14 L4 14 L0 20 Z" fill="#2196f3" />
-              <path d="M10 14 L13 6" stroke="#0d47a1" stroke-width="2.4" stroke-linecap="round" />
-              <path d="M-4 20 L-2 8 L4 8" stroke="#0d47a1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+              <path
+                d="M10 14 L13 6"
+                stroke="#0d47a1"
+                stroke-width="2.4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M-4 20 L-2 8 L4 8"
+                stroke="#0d47a1"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                fill="none"
+              />
               <circle cx="0" cy="2" r="5" fill="#0d47a1" />
-              <circle cx="-10" cy="26" r="5" fill="#2b3440" /><circle cx="-10" cy="26" r="2" fill="#ffffff" />
-              <circle cx="12" cy="26" r="5" fill="#2b3440" /><circle cx="12" cy="26" r="2" fill="#ffffff" />
+              <circle cx="-10" cy="26" r="5" fill="#2b3440" />
+              <circle cx="-10" cy="26" r="2" fill="#ffffff" />
+              <circle cx="12" cy="26" r="5" fill="#2b3440" />
+              <circle cx="12" cy="26" r="2" fill="#ffffff" />
             </g>
           </g>
         </svg>
@@ -123,8 +311,8 @@
       <div class="container">
         <div>
           <span class="eyebrow"
-            ><i class="fa-solid fa-bolt"></i> Rides · Food · Parcels · Hauling in
-            Ilocos Norte</span
+            ><i class="fa-solid fa-bolt"></i> Rides · Food · Parcels · Hauling
+            in Ilocos Norte</span
           >
           <h1>
             One app to <span class="accent">ride</span>, eat, and
@@ -132,8 +320,9 @@
           </h1>
           <p class="lead">
             iTULOD connects riders and customers across Ilocos Norte for
-            transportation, food delivery, parcel sending, and hauling with fair fares,
-            live status tracking, and <span data-vehicle-count>10</span> vehicle types to choose from.
+            transportation, food delivery, parcel sending, and hauling with fair
+            fares, live status tracking, and
+            <span data-vehicle-count>10</span> vehicle types to choose from.
           </p>
           <div class="hero-cta">
             <a href="register.html" class="btn btn-primary">Book a ride now</a>
@@ -142,7 +331,9 @@
             >
           </div>
           <div class="hero-stats">
-            <div><strong data-vehicle-count>10</strong><span>Vehicle types</span></div>
+            <div>
+              <strong data-vehicle-count>10</strong><span>Vehicle types</span>
+            </div>
             <div><strong>4</strong><span>Services in one app</span></div>
             <div><strong>24/7</strong><span>On-demand support</span></div>
           </div>
@@ -177,7 +368,9 @@
           <div class="board-fare">
             <span>
               Estimated fare
-              <small class="board-trip" id="board-trip">Laoag City → Batac City · 18.5 km · Motorcycle</small>
+              <small class="board-trip" id="board-trip"
+                >Laoag City → Batac City · 18.5 km · Motorcycle</small
+              >
             </span>
             <strong id="board-fare">₱173.00</strong>
           </div>
@@ -325,8 +518,8 @@
             ><small>Cargo</small>
           </div>
           <div class="vehicle-chip">
-            <i class="fa-solid fa-truck-pickup"></i><span>Pickup / Multicab</span
-            ><small>Hauling</small>
+            <i class="fa-solid fa-truck-pickup"></i
+            ><span>Pickup / Multicab</span><small>Hauling</small>
           </div>
           <div class="vehicle-chip">
             <i class="fa-solid fa-van-shuttle"></i><span>L300 Van</span
@@ -426,27 +619,47 @@
         <ol class="steps-grid">
           <li class="step-card">
             <span class="step-num">1</span>
-            <div class="icon" style="background: var(--blue)"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="icon" style="background: var(--blue)">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
             <h3>Book</h3>
-            <p>Pin your pickup and drop-off on the map, choose a vehicle and see the fare before you confirm.</p>
+            <p>
+              Pin your pickup and drop-off on the map, choose a vehicle and see
+              the fare before you confirm.
+            </p>
           </li>
           <li class="step-card">
             <span class="step-num">2</span>
-            <div class="icon" style="background: var(--rose-deep, #b06b79)"><i class="fa-solid fa-motorcycle"></i></div>
+            <div class="icon" style="background: var(--rose-deep, #b06b79)">
+              <i class="fa-solid fa-motorcycle"></i>
+            </div>
             <h3>A rider accepts</h3>
-            <p>Nearby riders with the right vehicle get your request; you're notified with their name, photo and plate.</p>
+            <p>
+              Nearby riders with the right vehicle get your request; you're
+              notified with their name, photo and plate.
+            </p>
           </li>
           <li class="step-card">
             <span class="step-num">3</span>
-            <div class="icon" style="background: var(--green, #1a9d63)"><i class="fa-solid fa-map-location-dot"></i></div>
+            <div class="icon" style="background: var(--green, #1a9d63)">
+              <i class="fa-solid fa-map-location-dot"></i>
+            </div>
             <h3>Track it live</h3>
-            <p>Follow your rider on the map and chat with them until they arrive — or until your order is delivered.</p>
+            <p>
+              Follow your rider on the map and chat with them until they arrive
+              — or until your order is delivered.
+            </p>
           </li>
           <li class="step-card">
             <span class="step-num">4</span>
-            <div class="icon" style="background: var(--blue-dark, #0d47a1)"><i class="fa-solid fa-wallet"></i></div>
+            <div class="icon" style="background: var(--blue-dark, #0d47a1)">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
             <h3>Pay &amp; rate</h3>
-            <p>Pay with cash, GCash or your iTULOD wallet, get a receipt, then rate your rider and leave a tip.</p>
+            <p>
+              Pay with cash, GCash or your iTULOD wallet, get a receipt, then
+              rate your rider and leave a tip.
+            </p>
           </li>
         </ol>
       </div>
@@ -456,33 +669,58 @@
     <section class="section get-app" id="get-app">
       <div class="container get-app__grid">
         <div class="get-app__text">
-          <span class="eyebrow"><i class="fa-solid fa-mobile-screen-button"></i> Mobile app</span>
+          <span class="eyebrow"
+            ><i class="fa-solid fa-mobile-screen-button"></i> Mobile app</span
+          >
           <h2>Take iTULOD with you.</h2>
           <p class="get-app__lead">
-            The iTULOD app for Android: book a ride, order food, send a parcel or
-            book hauling in a few taps, track your rider live on the map, and get
-            notified the moment they arrive.
+            The iTULOD app for Android: book a ride, order food, send a parcel
+            or book hauling in a few taps, track your rider live on the map, and
+            get notified the moment they arrive.
           </p>
           <ul class="get-app__perks">
-            <li><i class="fa-solid fa-bolt"></i> Faster booking with your saved places</li>
-            <li><i class="fa-solid fa-location-crosshairs"></i> Live rider tracking</li>
-            <li><i class="fa-solid fa-bell"></i> Booking alerts on your phone</li>
+            <li>
+              <i class="fa-solid fa-bolt"></i> Faster booking with your saved
+              places
+            </li>
+            <li>
+              <i class="fa-solid fa-location-crosshairs"></i> Live rider
+              tracking
+            </li>
+            <li>
+              <i class="fa-solid fa-bell"></i> Booking alerts on your phone
+            </li>
           </ul>
           <div class="get-app-inline" id="get-app-block" data-get-app></div>
         </div>
         <!-- Real screens (assets/screens/, captured at 390×844) -->
         <div class="get-app__phones">
           <figure class="phone phone--left">
-            <img src="assets/screens/trip-details.webp" width="390" height="844" loading="lazy"
-              alt="Booking details: the rider's name, rating and plate, with Call and Message buttons and the trip's progress">
+            <img
+              src="assets/screens/trip-details.webp"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Booking details: the rider's name, rating and plate, with Call and Message buttons and the trip's progress"
+            />
           </figure>
           <figure class="phone phone--main">
-            <img src="assets/screens/customer-home.webp" width="390" height="844" loading="lazy"
-              alt="Customer home: the ride in progress and one-tap Ride, Food, Parcel and Hauling buttons">
+            <img
+              src="assets/screens/customer-home.webp"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Customer home: the ride in progress and one-tap Ride, Food, Parcel and Hauling buttons"
+            />
           </figure>
           <figure class="phone phone--right">
-            <img src="assets/screens/rider-home.webp" width="390" height="844" loading="lazy"
-              alt="Rider home: the online switch with today's earnings and trips">
+            <img
+              src="assets/screens/rider-home.webp"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Rider home: the online switch with today's earnings and trips"
+            />
           </figure>
         </div>
       </div>

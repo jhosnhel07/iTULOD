@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>try{var t=localStorage.getItem('itulod-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Log In — iTULOD | Ilocos Transport, Delivery & Logistics</title>
     <meta
@@ -22,8 +23,10 @@
     <link rel="icon" href="assets/favicon-32.png" sizes="32x32" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
     <link rel="stylesheet" href="css/login.css" />
+    <link rel="stylesheet" href="css/auth-dark.css" />
   </head>
   <body>
+    <button type="button" class="theme-fab js-theme-toggle" onclick="toggleTheme()" aria-label="Switch to dark mode"><i class="fa-solid fa-moon"></i></button>
     <div class="auth-page">
       <!-- ═══════════════ LEFT BRANDING PANEL ═══════════════ -->
       <aside class="brand-panel">

@@ -101,6 +101,92 @@
   --container: 1200px;
 }
 
+/* =====================================================================
+   DARK MODE — only when the user picks it (js/utils.js toggleTheme); light
+   is the default. Shared by every page; the choice is saved per device.
+   ===================================================================== */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #131c29;
+  --surface-2: #172131;
+  --bg: #0b121c;
+  --ink: #e8eef6;
+  --text-body: #c3cdd9;
+  --text-muted: #8d9aab;
+  --border: #243246;
+  --border-strong: #34455d;
+  --border-blue: #2b5c92;
+  --blue-ink: #90caf9;
+  --blue-50: #102540;
+  --blue-100: #15304f;
+  --blue-tint: #102540;
+  --rose-50: #221820;
+  --rose-100: #3a2630;
+  --orange-tint: #221820;
+  --rose-deep: #e2a3b1;
+  --slate-50: #162030;
+  --slate-100: #1c2839;
+  --slate-300: #46566c;
+  --slate-500: #8d9aab;
+  --slate-700: #c3cdd9;
+  --green-tint: #0f2a1f;
+  --yellow-tint: #2b2210;
+  --red-tint: #2f151b;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 30px 64px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme="dark"] body { background: var(--bg); color: var(--text-body); }
+
+/* Toast sat on --ink (now light) — give it its own dark slate. */
+:root[data-theme="dark"] .toast { background: #22314a; color: #ffffff; }
+
+/* Form controls */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea { color: var(--ink); background-color: var(--surface); border-color: var(--border); }
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder { color: #6c7a8d; }
+
+/* Home page (index.html) in dark mode */
+:root[data-theme="dark"] .nav { background: rgba(11, 18, 28, 0.85); border-bottom-color: #243246; }
+:root[data-theme="dark"] .nav-links { color: #c3cdd9; }
+:root[data-theme="dark"] .nav-links a:hover { color: #90caf9; }
+:root[data-theme="dark"] .nav-toggle { color: #c3cdd9; }
+:root[data-theme="dark"] .hero {
+  background:
+    radial-gradient(1100px 460px at 85% -10%, rgba(33, 150, 243, 0.22), transparent 60%),
+    radial-gradient(900px 420px at 0% 110%, rgba(226, 180, 189, 0.08), transparent 55%),
+    #0e1a2b;
+}
+:root[data-theme="dark"] .hero::before {
+  background-image:
+    linear-gradient(rgba(144, 202, 249, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(144, 202, 249, 0.05) 1px, transparent 1px);
+}
+/* The dark pill label on light pages turns light in dark mode. */
+:root[data-theme="dark"] .eyebrow { background: #22314a; color: #e8eef6; }
+:root[data-theme="dark"] .section-head .eyebrow { background: #102540; color: #90caf9; }
+/* The route board is always navy — keep its small text light. */
+:root[data-theme="dark"] .route-board .board-label,
+:root[data-theme="dark"] .route-stop span.label,
+:root[data-theme="dark"] .board-fare .board-trip { color: #a9b5c4; }
+:root[data-theme="dark"] .route-stop .pin { background: #22314a; color: #e8eef6; }
+/* Hills, ground and road under the hero */
+:root[data-theme="dark"] .hs-hills { fill: #1a3a63; }
+:root[data-theme="dark"] .hs-ground { fill: #131c29; opacity: 1; }
+:root[data-theme="dark"] .hs-road { fill: #ffffff; opacity: 0.04; }
+:root[data-theme="dark"] .hs-lane { stroke: #46566c; }
+:root[data-theme="dark"] .section--muted { background: #0f1826; }
+:root[data-theme="dark"] .cta-band p { color: #a9b5c4; }
+/* The light accent button stays light on the navy band. */
+:root[data-theme="dark"] .btn-accent { background: #f7d6d0; color: #0d47a1; border-color: #e2b4bd; }
+:root[data-theme="dark"] .btn-accent:hover { background: #e2b4bd; }
+
+
 * {
   box-sizing: border-box;
 }
@@ -300,6 +386,43 @@ button {
   font-size: var(--fs-2xl);
   cursor: pointer;
   color: var(--slate-700);
+}
+
+/* Light / dark switch: in the home page nav, and floating top-right on the
+   login, sign-up and reset pages (js/utils.js toggleTheme). */
+.nav-theme,
+.theme-fab {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--blue);
+  font-size: var(--fs-md);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.nav-theme { margin-left: 12px; }
+.nav-theme:hover,
+.theme-fab:hover { background: var(--blue-50); border-color: var(--border-blue); }
+.theme-fab {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 60;
+}
+/* Phones: the menu button is the only other item in the nav, so keep the
+   theme switch next to it; the auth pages' card fills the top, so the
+   floating switch moves to the bottom corner. */
+@media (max-width: 860px) {
+  .nav-theme { margin-left: auto; margin-right: 10px; }
+}
+@media (max-width: 900px) {
+  .theme-fab { top: auto; bottom: 16px; }
 }
 
 .nav-login-mobile {

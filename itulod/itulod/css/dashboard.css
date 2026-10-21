@@ -4452,41 +4452,10 @@ body {
    which keep their light brand look. Built on the navy #0D47A1 family.
    ===================================================================== */
 /* The user picked dark with the theme switch (js/utils.js toggleTheme). */
-  :root[data-theme="dark"] {
-  color-scheme: dark;
-  --surface: #131c29;
-  --surface-2: #172131;
-  --bg: #0b121c;
-  --ink: #e8eef6;
-  --text-body: #c3cdd9;
-  --text-muted: #8d9aab;
-  --border: #243246;
-  --border-strong: #34455d;
-  --border-blue: #2b5c92;
-  --blue-ink: #90caf9;
-  --blue-50: #102540;
-  --blue-100: #15304f;
-  --blue-tint: #102540;
-  --rose-50: #221820;
-  --rose-100: #3a2630;
-  --orange-tint: #221820;
-  --rose-deep: #e2a3b1;
-  --slate-50: #162030;
-  --slate-100: #1c2839;
-  --slate-300: #46566c;
-  --slate-500: #8d9aab;
-  --slate-700: #c3cdd9;
-  --green-tint: #0f2a1f;
-  --yellow-tint: #2b2210;
-  --red-tint: #2f151b;
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 30px 64px rgba(0, 0, 0, 0.55);
-}
+/* The dark colour tokens and the base body/input/toast rules live in main.css
+   (shared with the home, login and sign-up pages); dashboard extras follow. */
 
 
-:root[data-theme="dark"] body { background: var(--bg); color: var(--text-body); }
 
 :root[data-theme="dark"] .main {
   background:
@@ -4502,17 +4471,8 @@ body {
 
 
 
-/* Toast sat on --ink (now light) — give it its own dark slate. */
-:root[data-theme="dark"] .toast { background: #22314a; color: #ffffff; }
 
 
-/* Form controls */
-:root[data-theme="dark"] input,
-:root[data-theme="dark"] select,
-:root[data-theme="dark"] textarea { color: var(--ink); background-color: var(--surface); border-color: var(--border); }
-
-:root[data-theme="dark"] input::placeholder,
-:root[data-theme="dark"] textarea::placeholder { color: #6c7a8d; }
 
 
 /* Status badges: brighter text on the darker tints */
