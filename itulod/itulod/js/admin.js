@@ -15,9 +15,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   CURRENT_PROFILE = await requireSession(['admin']);
   if (!CURRENT_PROFILE) return;
 
-  document.getElementById('side-name').textContent = CURRENT_PROFILE.full_name;
-  document.getElementById('side-avatar').textContent = initials(CURRENT_PROFILE.full_name);
-  renderAccountMenus(CURRENT_PROFILE);
+  renderAccountMenus(CURRENT_PROFILE); // name, Dark mode and Log out live in the profile picture menu
 
   wireTabNav();
   wireRiderSubTabs();

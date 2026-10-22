@@ -340,6 +340,14 @@ Forgot password (web and app) emails a link to `/reset-password.html`, so
 `https://<your-site>/reset-password.html` must be in Authentication → URL
 Configuration → Redirect URLs (or covered by the Site URL).
 
+Applied to the live project on 2026-10-22 with `supabase config push` from a
+temporary copy of config.toml that matched every other live auth value:
+Site URL `https://i-tulod-pi.vercel.app`, Redirect URLs
+`https://i-tulod-pi.vercel.app/**`, minimum length 8, requirements
+`lower_upper_letters_digits_symbols`. Don't `config push` the repo's
+config.toml as-is — its site_url/redirects point at 127.0.0.1 for local dev
+and it would also change OTP length, email frequency and MFA.
+
 ---
 
 ## 7. Frontend (Vercel)

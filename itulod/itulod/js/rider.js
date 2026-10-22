@@ -15,8 +15,7 @@ const PAGE_SIZE = 6;
   CURRENT_PROFILE = await requireSession(['rider']);
   if (!CURRENT_PROFILE) return;
 
-  document.getElementById('side-name').textContent = CURRENT_PROFILE.full_name;
-  refreshSideAvatar();
+  refreshSideAvatar(); // the profile picture menu at the top
   if (typeof startProfileSync === 'function') startProfileSync();
 
   await checkApproval();

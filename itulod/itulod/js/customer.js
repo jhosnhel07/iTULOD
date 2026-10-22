@@ -12,8 +12,7 @@ let RATING_TARGET = null; // { kind, id }
   CURRENT_PROFILE = await requireSession(['customer']);
   if (!CURRENT_PROFILE) return;
 
-  document.getElementById('side-name').textContent = CURRENT_PROFILE.full_name;
-  refreshSideAvatar();
+  refreshSideAvatar(); // the profile picture menu at the top
   if (typeof startProfileSync === 'function') startProfileSync();
 
   await loadVehicleOptions();

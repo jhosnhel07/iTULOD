@@ -134,7 +134,6 @@ function wireProfileForm() {
     fileInput.value = '';
     const nameEl = document.getElementById('profile-avatar-filename');
     if (nameEl) nameEl.textContent = 'No file chosen';
-    document.getElementById('side-name').textContent = full_name;
     refreshSideAvatar();
     populateProfileForm();
     if (uploadFailed) toast('Profile saved, but the photo upload failed — try again later.', 'info');
