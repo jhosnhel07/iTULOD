@@ -4662,6 +4662,20 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 .account-pop [data-acct].is-danger,
 .account-pop [data-acct].is-danger > i { color: var(--red); }
 .account-pop [data-acct].is-danger:hover { background: var(--red-tint); }
+.account-count { margin-left: auto; }
+.account-btn { position: relative; }
+/* Unread notifications: a red dot on the profile picture. */
+.account-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--red);
+  border: 2px solid var(--surface);
+}
+.account-dot[hidden] { display: none; }
 .account-switch {
   margin-left: auto;
   width: 40px;

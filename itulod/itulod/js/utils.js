@@ -93,11 +93,14 @@ function renderAccountMenus(profile) {
     ? `<span class="${cls}"><img src="${escapeHtml(profile.avatar_url)}" alt=""></span>`
     : `<span class="${cls}">${escapeHtml(initialsOf(name))}</span>`;
   const hasProfileTab = !!document.getElementById('tab-profile');
+  const hasNotifTab = !!document.getElementById('tab-notifications');
+  const unread = Number(window.ITULOD_UNREAD || 0);
   document.querySelectorAll('.js-account-menu').forEach((host) => {
     const wasOpen = host.classList.contains('is-open');
     host.innerHTML = `
       <button type="button" class="account-btn" aria-haspopup="menu" aria-expanded="${wasOpen}" aria-label="Account menu for ${escapeHtml(name)}">
         ${face('account-avatar')}
+        ${hasNotifTab ? `<span class="account-dot js-notif-dot" ${unread > 0 ? '' : 'hidden'}></span>` : ''}
       </button>
       <div class="account-pop" role="menu" ${wasOpen ? '' : 'hidden'}>
         <div class="account-pop__head">
@@ -108,6 +111,7 @@ function renderAccountMenus(profile) {
           </div>
         </div>
         ${hasProfileTab ? '<button type="button" role="menuitem" data-acct="profile"><i class="fa-solid fa-user"></i><span>My profile</span></button>' : ''}
+        ${hasNotifTab ? `<button type="button" role="menuitem" data-acct="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span><span class="badge badge--danger js-notif-count account-count" style="display:${unread > 0 ? 'inline-block' : 'none'}">${unread}</span></button>` : ''}
         <button type="button" role="menuitemcheckbox" aria-checked="${currentTheme() === 'dark'}" data-acct="theme">
           <i class="fa-solid fa-moon"></i><span>Dark mode</span><span class="account-switch" aria-hidden="true"></span>
         </button>
@@ -123,6 +127,7 @@ function renderAccountMenus(profile) {
       if (act === 'theme') { toggleTheme(); return; } // stays open so the switch can be seen flipping
       setAccountMenuOpen(host, false);
       if (act === 'profile' && typeof activateTab === 'function') activateTab('profile');
+      if (act === 'notifications' && typeof activateTab === 'function') activateTab('notifications');
       if (act === 'logout' && typeof logout === 'function') logout();
     });
   });

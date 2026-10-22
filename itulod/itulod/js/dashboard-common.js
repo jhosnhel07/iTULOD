@@ -255,6 +255,8 @@ function startProfileSync() {
 // ---- Notifications (customer + rider) ---------------------------------------
 // Unread count on every .js-notif-count badge (sidebar, phone top bar, nav).
 function setNotifCount(unread) {
+  window.ITULOD_UNREAD = unread; // the profile menu's Notifications row reads this when it re-renders
+  document.querySelectorAll('.js-notif-dot').forEach((d) => { d.hidden = !(unread > 0); });
   document.querySelectorAll('.js-notif-count').forEach(el => {
     el.textContent = unread;
     el.style.display = unread > 0 ? 'inline-block' : 'none';
