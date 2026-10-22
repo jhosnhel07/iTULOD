@@ -3037,7 +3037,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   margin-bottom: 20px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
+  border-radius: 12px; /* rounded rectangle, like the inputs and service tiles */
 }
 .seg-btn {
   display: inline-flex;
@@ -3046,7 +3046,7 @@ table.data-table tbody tr:nth-child(even):hover td {
   gap: 7px;
   padding: 9px 20px;
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: 9px;
   background: none;
   font-family: inherit;
   font-size: var(--fs-sm);
@@ -3058,14 +3058,17 @@ table.data-table tbody tr:nth-child(even):hover td {
 .seg-btn i {
   font-size: 0.9em;
 }
-.seg-btn:hover {
+.seg-btn:hover:not(.active) {
   color: var(--blue-ink);
+  background: var(--blue-50);
 }
+/* The selected one is solid blue so it reads from across the room. */
 .seg-btn.active {
-  background: var(--surface);
-  color: var(--blue-ink);
-  box-shadow: var(--shadow-xs);
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.35);
 }
+.seg-btn.active i { color: #fff; }
 
 .booking-view {
   display: none;
