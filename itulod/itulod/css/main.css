@@ -425,6 +425,20 @@ button {
   .theme-fab { top: auto; bottom: 16px; }
 }
 
+/* Tricycle (motorcycle + sidecar) — Font Awesome has none, so this draws
+   assets/icons/tricycle.svg in the text colour. Use it like any FA icon:
+   <i class="fa-solid fa-tricycle"></i> (also the vehicles.icon value). */
+.fa-tricycle::before {
+  content: "";
+  display: inline-block;
+  width: 1.25em;
+  height: 1em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  -webkit-mask: url("../assets/icons/tricycle.svg") center / contain no-repeat;
+  mask: url("../assets/icons/tricycle.svg") center / contain no-repeat;
+}
+
 .nav-login-mobile {
   display: none;
 }

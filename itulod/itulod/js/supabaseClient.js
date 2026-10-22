@@ -22,7 +22,7 @@ var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // Vehicle type -> Font Awesome icon fallback map (used before vehicles table loads)
 const VEHICLE_ICONS = {
   Motorcycle: 'fa-motorcycle',
-  Tricycle: 'fa-bicycle',
+  Tricycle: 'fa-tricycle', // custom icon, css/main.css
   Bicycle: 'fa-bicycle',
   Car: 'fa-car',
   SUV: 'fa-car-side',

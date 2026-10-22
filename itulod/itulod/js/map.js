@@ -800,7 +800,7 @@ const NEARBY_RADIUS_KM = 10;
 const HAULING_RIDER_TYPES = ['Van', 'Pickup', 'Truck'];
 const NEARBY_VEHICLES = {
   Motorcycle: { icon: '<i class="fa-solid fa-motorcycle"></i>', one: 'motorcycle', many: 'motorcycles' },
-  Tricycle:   { icon: '<span class="nr-emoji" aria-hidden="true">🛺</span>', one: 'tricycle', many: 'tricycles' },
+  Tricycle:   { icon: '<i class="fa-solid fa-tricycle"></i>', one: 'tricycle', many: 'tricycles' },
   Car:        { icon: '<i class="fa-solid fa-car"></i>', one: 'car', many: 'cars' },
   SUV:        { icon: '<i class="fa-solid fa-car-side"></i>', one: 'SUV', many: 'SUVs' },
   Van:        { icon: '<i class="fa-solid fa-van-shuttle"></i>', one: 'van', many: 'vans' },
