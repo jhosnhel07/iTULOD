@@ -34,7 +34,20 @@
 .sidebar-header {
   padding: 20px 20px 16px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+
+/* Who is logged in: Customer / Rider / Admin next to the logo and in the
+   profile menu (colours: .badge--role-* in main.css). */
+.role-tag {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.mobile-topbar .brand .role-tag { font-family: var(--font-body); }
+.account-pop__who .role-tag { justify-self: start; margin-top: 5px; }
 
 .sidebar .brand {
   color: var(--blue);

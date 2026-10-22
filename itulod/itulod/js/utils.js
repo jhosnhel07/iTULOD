@@ -85,6 +85,7 @@ function syncThemeToggles() {
 // The profile picture at the top of each dashboard (where the sun/moon
 // button used to be). Opens a menu with the name and email, "My profile",
 // the dark-mode switch and Log out. Call again whenever the profile changes.
+const ROLE_LABEL = { customer: 'Customer', rider: 'Rider', admin: 'Admin' };
 function renderAccountMenus(profile) {
   if (!profile) return;
   const name = profile.full_name || 'My account';
@@ -107,7 +108,8 @@ function renderAccountMenus(profile) {
           ${face('account-avatar account-avatar--lg')}
           <div class="account-pop__who">
             <strong>${escapeHtml(name)}</strong>
-            <span>${escapeHtml(profile.email || profile.role || '')}</span>
+            <span>${escapeHtml(profile.email || '')}</span>
+            ${ROLE_LABEL[profile.role] ? `<span class="badge badge--role-${profile.role} role-tag">${ROLE_LABEL[profile.role]}</span>` : ''}
           </div>
         </div>
         ${hasProfileTab ? '<button type="button" role="menuitem" data-acct="profile"><i class="fa-solid fa-user"></i><span>My profile</span></button>' : ''}
