@@ -135,3 +135,7 @@
 
 /* Back button */
 :root[data-theme="dark"] .btn-back { background: #1c2839; border-color: #2a384c; color: #c3cdd9; }
+
+/* Bicycle note on the rider Vehicle step */
+:root[data-theme="dark"] .field-note { color: #8d9aab; }
+:root[data-theme="dark"] .bicycle-note { background: #221820; border-color: #3a2630; color: #e2a3b1; }

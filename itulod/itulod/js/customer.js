@@ -513,8 +513,9 @@ async function applyPromoIfEntered(kind, bookingId, promoInputId) {
 // ---- vehicle select + fare estimate -------------------------------------
 async function loadVehicleOptions() {
   const { data, error } = await supabase.from('vehicles').select('*').eq('is_available', true).order('base_fare');
-  VEHICLES = (data || []).filter(v => (v.service || 'standard') !== 'hauling');
-  HAULING_VEHICLES = (data || []).filter(v => v.service === 'hauling');
+  // Each form lists only the vehicles allowed for it (vehicles.services, sql/040).
+  VEHICLES = data || [];
+  HAULING_VEHICLES = VEHICLES.filter(v => vehicleAllows(v, 'hauling'));
   const haulSel = document.getElementById('hauling-vehicle');
   if (haulSel) {
     haulSel.innerHTML = HAULING_VEHICLES.length
@@ -523,12 +524,13 @@ async function loadVehicleOptions() {
   }
   if (typeof loadHaulingHelperFee === 'function') await loadHaulingHelperFee();
   if (typeof loadHaulingAvailability === 'function') loadHaulingAvailability();
-  const opts = error || VEHICLES.length === 0
-    ? `<option value="">No vehicles configured yet</option>`
-    : VEHICLES.map(v => `<option value="${v.id}">${v.name} — from ${peso(v.base_fare)}</option>`).join('');
-  ['ride-vehicle', 'food-vehicle', 'parcel-vehicle'].forEach(id => {
+  [['ride-vehicle', 'ride'], ['food-vehicle', 'food'], ['parcel-vehicle', 'parcel']].forEach(([id, service]) => {
     const sel = document.getElementById(id);
-    if (sel) sel.innerHTML = opts;
+    if (!sel) return;
+    const list = VEHICLES.filter(v => vehicleAllows(v, service));
+    sel.innerHTML = error || list.length === 0
+      ? `<option value="">No vehicles for this service yet</option>`
+      : list.map(v => `<option value="${v.id}">${v.name} — from ${peso(v.base_fare)}</option>`).join('');
   });
 }
 

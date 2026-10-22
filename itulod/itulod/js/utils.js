@@ -401,6 +401,23 @@ function formatPhoneMobile(v) {
 function normalizePhoneMobile(v) {
   return String(v == null ? '' : v).replace(/\D/g, '').slice(0, 11);
 }
+// ---- Vehicle services --------------------------------------------------------
+// Which services a vehicle can be booked for (vehicles.services, sql/040).
+// Falls back to the older vehicles.service split for rows from before 040.
+const SERVICE_ORDER = ['ride', 'food', 'parcel', 'hauling'];
+const SERVICE_LABELS = { ride: 'Ride', food: 'Food', parcel: 'Parcel', hauling: 'Hauling' };
+function vehicleServices(v) {
+  const s = Array.isArray(v?.services) && v.services.length
+    ? v.services
+    : (v?.service === 'hauling' ? ['hauling'] : ['ride', 'food', 'parcel']);
+  return SERVICE_ORDER.filter((x) => s.includes(x));
+}
+function vehicleAllows(v, service) { return vehicleServices(v).includes(service); }
+function vehicleServicesText(v) {
+  const s = vehicleServices(v);
+  return s.length === 1 ? SERVICE_LABELS[s[0]] + ' only' : s.map((x) => SERVICE_LABELS[x]).join(' · ');
+}
+
 // ---- Password rule --------------------------------------------------------
 // Same rule on the web and the app (lib/core/utils/validators.dart), and
 // Supabase Auth enforces it too: at least 8 characters with an uppercase

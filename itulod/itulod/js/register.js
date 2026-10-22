@@ -8,6 +8,14 @@
       let selectedVehicle = "Motorcycle";
       const REGISTER_DRAFT_KEY = "itulod-register-draft";
       const vehicleModelsByType = {
+        Bicycle: [
+          "Mountain bike",
+          "City / commuter bike",
+          "Road bike",
+          "Folding bike",
+          "Cargo bike",
+          "Other",
+        ],
         Motorcycle: [
           "Honda Click 125",
           "Honda Beat",
@@ -461,7 +469,7 @@
       // Every rider document is required except the NBI clearance (same as
       // the app's _missingDocuments). The face photo also becomes the rider's
       // profile picture — customers see it when the rider accepts a booking.
-      const REQUIRED_RIDER_DOCS = [
+      const ALL_RIDER_DOCS = [
         ["license_file", "uz-license", "Driver's License"],
         ["orcr_file", "uz-orcr", "OR / CR Paper"],
         ["selfie_file", "uz-selfie", "Profile Photo"],
@@ -471,7 +479,9 @@
       // Marks the empty required slots and returns their names.
       function missingRiderDocs() {
         const missing = [];
-        REQUIRED_RIDER_DOCS.forEach(([inputId, zoneId, label]) => {
+        const notForBicycle = ["license_file", "orcr_file"];
+        const required = ALL_RIDER_DOCS.filter(([id]) => !(isBicycle() && notForBicycle.includes(id)));
+        required.forEach(([inputId, zoneId, label]) => {
           const empty = !document.getElementById(inputId)?.files[0];
           document.getElementById(zoneId)?.classList.toggle("is-missing", empty);
           if (empty) missing.push(label);
@@ -537,6 +547,16 @@
 
       // ── Vehicle Step Validation ────────────────────────────────
       function submitVehicleStep() {
+        if (!isBicycle()) {
+          const license = document.getElementById("license_number").value.trim();
+          if (!license) {
+            const msg = `A driver's license is needed for a ${selectedVehicle.toLowerCase()}. Go Back and enter it on Personal info (bicycle riders don't need one).`;
+            if (typeof toast === "function") toast(msg, "error");
+            else alert(msg);
+            return;
+          }
+        }
+        if (isBicycle()) { goToStep(4); return; }
         const plate = document.getElementById("vehicle_plate").value.trim();
         if (!plate) {
           if (typeof toast === "function")
@@ -682,7 +702,8 @@
           else alert("Please enter a valid mobile number (09XX XXX XXXX).");
           return;
         }
-        if (selectedRole === "rider" && !isValidLicenseNumber(licenseNumber)) {
+        // Empty is fine here: bicycle riders don't need one (checked on the Vehicle step).
+        if (selectedRole === "rider" && licenseNumber && !isValidLicenseNumber(licenseNumber)) {
           if (typeof toast === "function")
             toast(
               "Please enter a valid driver's license number (e.g. N12-34-567890).",
@@ -873,12 +894,12 @@
               "Please enter a valid mobile number (09XX XXX XXXX).",
             );
           }
-          if (!isValidLicenseNumber(licenseNumberRaw)) {
+          if ((!isBicycle() || licenseNumberRaw.trim()) && !isValidLicenseNumber(licenseNumberRaw)) {
             throw new Error(
               "Please enter a valid driver's license number (e.g. N12-34-567890).",
             );
           }
-          if (!isValidPlateNumber(vehiclePlateRaw)) {
+          if (!isBicycle() && !isValidPlateNumber(vehiclePlateRaw)) {
             throw new Error(
               "Please enter a valid plate number (e.g. ABC 1234).",
             );
@@ -1055,7 +1076,23 @@
         }
       }
 
+      // Bicycle riders deliver food only (vehicles.services, sql/040): no plate,
+      // driver's license or OR / CR (app: register_screen.dart _isBicycle).
+      function isBicycle() { return selectedVehicle === "Bicycle"; }
+      function applyVehicleRequirements() {
+        const bike = isBicycle();
+        const plate = document.getElementById("plate-group");
+        if (plate) plate.hidden = bike;
+        const note = document.getElementById("bicycle-note");
+        if (note) note.hidden = !bike;
+        ["uz-license", "uz-orcr"].forEach((id) => {
+          const zone = document.getElementById(id);
+          if (zone) zone.hidden = bike;
+        });
+      }
+
       function syncVehicleSelectionUI() {
+        applyVehicleRequirements();
         document.querySelectorAll(".vehicle-card").forEach((card) => {
           card.classList.toggle(
             "selected",

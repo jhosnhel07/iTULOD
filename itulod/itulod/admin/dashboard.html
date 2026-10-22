@@ -320,6 +320,7 @@
                 <thead>
                   <tr>
                     <th>Vehicle</th>
+                    <th>Services</th>
                     <th>Capacity</th>
                     <th>Base fare</th>
                     <th>Per-km rate</th>
@@ -754,13 +755,16 @@
               <label>Icon (Font Awesome class)</label>
               <input type="text" id="vehicle-icon" placeholder="fa-motorcycle" />
             </div>
-            <div class="field">
-              <label>Service</label>
-              <select id="vehicle-service">
-                <option value="standard">Rides, food &amp; parcel</option>
-                <option value="hauling">Hauling (big / heavy loads)</option>
-              </select>
-            </div>
+            <fieldset class="field svc-fieldset">
+              <legend>Services this vehicle can be booked for</legend>
+              <div class="svc-toggles" id="vehicle-services">
+                <label class="svc-toggle svc--ride"><input type="checkbox" value="ride" /><i class="fa-solid fa-car-side"></i><span>Ride</span></label>
+                <label class="svc-toggle svc--food"><input type="checkbox" value="food" /><i class="fa-solid fa-utensils"></i><span>Food delivery</span></label>
+                <label class="svc-toggle svc--parcel"><input type="checkbox" value="parcel" /><i class="fa-solid fa-box"></i><span>Parcel delivery</span></label>
+                <label class="svc-toggle svc--hauling"><input type="checkbox" value="hauling" /><i class="fa-solid fa-truck-moving"></i><span>Hauling</span></label>
+              </div>
+              <p class="field-hint">Customers only see this vehicle on the forms switched on here, and riders with it only get those jobs.</p>
+            </fieldset>
             <div class="field-row">
               <div class="field">
                 <label>Capacity</label>

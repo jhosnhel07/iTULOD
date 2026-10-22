@@ -308,6 +308,7 @@
               style="display: none"
             >
               <label for="license_number">Driver's License Number</label>
+              <small class="field-note">Not needed if you'll deliver by bicycle.</small>
               <div class="input-wrap">
                 <i class="fa-solid fa-id-card input-icon"></i>
                 <input
@@ -398,6 +399,14 @@
 
             <div class="vehicle-grid" id="vehicle-grid">
               <div
+                class="vehicle-card"
+                data-vehicle="Bicycle"
+                onclick="selectVehicle(this, 'Bicycle')"
+              >
+                <span class="vc-icon"><i class="fa-solid fa-bicycle"></i></span>
+                <span class="vc-name">Bicycle</span>
+              </div>
+              <div
                 class="vehicle-card selected"
                 data-vehicle="Motorcycle"
                 onclick="selectVehicle(this, 'Motorcycle')"
@@ -463,7 +472,12 @@
               </div>
             </div>
 
-            <div class="input-group">
+            <p class="bicycle-note" id="bicycle-note" hidden>
+              <i class="fa-solid fa-circle-info"></i> Bicycles are for <strong>food delivery only</strong>.
+              No plate number, driver's license or OR / CR needed.
+            </p>
+
+            <div class="input-group" id="plate-group">
               <label for="vehicle_plate">Plate Number</label>
               <div class="input-wrap">
                 <i class="fa-solid fa-hashtag input-icon"></i>

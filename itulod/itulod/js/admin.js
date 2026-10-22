@@ -22,6 +22,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireBookingTabs();
   wireCustomerSearch();
   wireVehicleForm();
+  wireVehicleClicks();
   wireRestaurantForm();
   wireMenuItemForm();
   wireCatalogUploads();
@@ -745,7 +746,7 @@ async function loadVehicles() {
   ALL_VEHICLES = data || [];
   const tbody = document.querySelector('#vehicles-table tbody');
   if (ALL_VEHICLES.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6">${emptyState({
+    tbody.innerHTML = `<tr><td colspan="7">${emptyState({
       icon: 'fa-car',
       title: 'No vehicle categories',
       body: 'Add a category so customers have something to book.'
@@ -753,13 +754,14 @@ async function loadVehicles() {
     return;
   }
   tbody.innerHTML = ALL_VEHICLES.map(v => `
-    <tr>
-      <td><i class="fa-solid ${v.icon}" style="margin-right:8px;color:var(--blue)"></i>${escapeHtml(v.name)}${v.service === 'hauling' ? ' <span class="badge badge--pending">Hauling</span>' : ''}</td>
+    <tr class="is-clickable" data-vehicle-id="${v.id}" tabindex="0" title="Open ${escapeHtml(v.name)}">
+      <td><i class="fa-solid ${v.icon}" style="margin-right:8px;color:var(--blue)"></i>${escapeHtml(v.name)}</td>
+      <td>${serviceChips(v)}</td>
       <td>${v.capacity}</td><td>${peso(v.base_fare)}</td><td>${peso(v.per_km_rate)}</td>
       <td>${v.is_available ? '<span class="badge badge--completed">Yes</span>' : '<span class="badge badge--cancelled">No</span>'}</td>
       <td><div class="row-actions">
-        <button class="icon-btn" onclick='openVehicleModal(${JSON.stringify(v)})'><i class="fa-solid fa-pen"></i></button>
-        <button class="icon-btn danger" onclick="deleteVehicle('${v.id}')"><i class="fa-solid fa-trash"></i></button>
+        <button class="icon-btn" data-vehicle-id="${v.id}" aria-label="Edit ${escapeHtml(v.name)}"><i class="fa-solid fa-pen"></i></button>
+        <button class="icon-btn danger" onclick="event.stopPropagation(); deleteVehicle('${v.id}')" aria-label="Delete ${escapeHtml(v.name)}"><i class="fa-solid fa-trash"></i></button>
       </div></td>
     </tr>`).join('');
 
@@ -767,15 +769,38 @@ async function loadVehicles() {
   const chipGrid = document.getElementById('vehicle-chips');
   if (chipGrid) {
     chipGrid.innerHTML = ALL_VEHICLES.map(v => `
-      <div class="vehicle-chip-item">
+      <button type="button" class="vehicle-chip-item" data-vehicle-id="${v.id}" title="Open ${escapeHtml(v.name)}">
         <i class="fa-solid ${v.icon || 'fa-car'}"></i>
         <span>${escapeHtml(v.name)}</span>
         <small>${peso(v.base_fare)} base</small>
-      </div>`).join('');
+        <small class="vehicle-chip-item__services">${escapeHtml(vehicleServicesText(v))}</small>
+      </button>`).join('');
   }
 }
+
+// Ride / Food / Parcel / Hauling labels for a vehicle (vehicles.services, sql/040).
+const SERVICE_ICONS = { ride: 'fa-car-side', food: 'fa-utensils', parcel: 'fa-box', hauling: 'fa-truck-moving' };
+function serviceChips(v) {
+  return `<span class="svc-chips">${vehicleServices(v).map(s =>
+    `<span class="svc-chip svc--${s}"><i class="fa-solid ${SERVICE_ICONS[s]}"></i>${SERVICE_LABELS[s]}</span>`).join('')}</span>`;
+}
+
+// Clicking a vehicle (table row, its pen button, or a tile above the table)
+// opens it with its services.
+function wireVehicleClicks() {
+  const open = (e) => {
+    const el = e.target.closest('[data-vehicle-id]');
+    if (!el || e.target.closest('.danger')) return;
+    const v = ALL_VEHICLES.find(x => x.id === el.dataset.vehicleId);
+    if (v) openVehicleModal(v);
+  };
+  document.getElementById('vehicle-chips')?.addEventListener('click', open);
+  const table = document.getElementById('vehicles-table');
+  table?.addEventListener('click', open);
+  table?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-vehicle-id]')) open(e); });
+}
 function openVehicleModal(v) {
-  document.getElementById('vehicle-modal-title').textContent = v ? 'Edit vehicle category' : 'Add vehicle category';
+  document.getElementById('vehicle-modal-title').textContent = v ? `${v.name} — ${vehicleServicesText(v)}` : 'Add vehicle category';
   document.getElementById('vehicle-id').value = v?.id || '';
   document.getElementById('vehicle-name').value = v?.name || '';
   document.getElementById('vehicle-icon').value = v?.icon || 'fa-car';
@@ -783,7 +808,8 @@ function openVehicleModal(v) {
   document.getElementById('vehicle-available').value = String(v?.is_available ?? true);
   document.getElementById('vehicle-base').value = v?.base_fare || '';
   document.getElementById('vehicle-rate').value = v?.per_km_rate || '';
-  document.getElementById('vehicle-service').value = v?.service || 'standard';
+  const services = v ? vehicleServices(v) : ['ride', 'food', 'parcel'];
+  document.querySelectorAll('#vehicle-services input').forEach(cb => { cb.checked = services.includes(cb.value); });
   document.getElementById('vehicle-modal').classList.add('open');
 }
 function closeVehicleModal() { document.getElementById('vehicle-modal').classList.remove('open'); }
@@ -797,9 +823,10 @@ function wireVehicleForm() {
       is_available: document.getElementById('vehicle-available').value === 'true',
       base_fare: Number(document.getElementById('vehicle-base').value),
       per_km_rate: Number(document.getElementById('vehicle-rate').value),
-      service: document.getElementById('vehicle-service').value || 'standard',
+      services: [...document.querySelectorAll('#vehicle-services input:checked')].map(cb => cb.value),
     };
     if (!requireFields({ 'Name': payload.name, 'Base fare': payload.base_fare, 'Per-km rate': payload.per_km_rate })) return;
+    if (!payload.services.length) { toast('Switch on at least one service for this vehicle.', 'error'); return; }
 
     const { error } = id ? await supabase.from('vehicles').update(payload).eq('id', id) : await supabase.from('vehicles').insert(payload);
     if (error) { toast(error.message, 'error'); return; }

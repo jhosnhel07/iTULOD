@@ -890,6 +890,13 @@ button {
 .vehicle-chip small {
   color: var(--slate-500);
 }
+/* What the vehicle can be booked for (js/landing.js, vehicleServicesText) */
+.vehicle-chip small.vehicle-chip__services {
+  display: block;
+  margin-top: 4px;
+  color: var(--blue-ink);
+  font-weight: 600;
+}
 
 /* ---- testimonials ---------------------------------------------------- */
 .testimonial-grid {
