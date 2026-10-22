@@ -76,7 +76,74 @@ function syncThemeToggles() {
     b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
     b.setAttribute('aria-pressed', String(dark));
   });
+  document.querySelectorAll('.account-pop [data-acct="theme"]').forEach((row) => {
+    row.setAttribute('aria-checked', String(dark));
+  });
 }
+
+// ---- Account menu (dashboards) ------------------------------------------
+// The profile picture at the top of each dashboard (where the sun/moon
+// button used to be). Opens a menu with the name and email, "My profile",
+// the dark-mode switch and Log out. Call again whenever the profile changes.
+function renderAccountMenus(profile) {
+  if (!profile) return;
+  const name = profile.full_name || 'My account';
+  const initialsOf = (n) => (n || '?').split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+  const face = (cls) => profile.avatar_url
+    ? `<span class="${cls}"><img src="${escapeHtml(profile.avatar_url)}" alt=""></span>`
+    : `<span class="${cls}">${escapeHtml(initialsOf(name))}</span>`;
+  const hasProfileTab = !!document.getElementById('tab-profile');
+  document.querySelectorAll('.js-account-menu').forEach((host) => {
+    const wasOpen = host.classList.contains('is-open');
+    host.innerHTML = `
+      <button type="button" class="account-btn" aria-haspopup="menu" aria-expanded="${wasOpen}" aria-label="Account menu for ${escapeHtml(name)}">
+        ${face('account-avatar')}
+      </button>
+      <div class="account-pop" role="menu" ${wasOpen ? '' : 'hidden'}>
+        <div class="account-pop__head">
+          ${face('account-avatar account-avatar--lg')}
+          <div class="account-pop__who">
+            <strong>${escapeHtml(name)}</strong>
+            <span>${escapeHtml(profile.email || profile.role || '')}</span>
+          </div>
+        </div>
+        ${hasProfileTab ? '<button type="button" role="menuitem" data-acct="profile"><i class="fa-solid fa-user"></i><span>My profile</span></button>' : ''}
+        <button type="button" role="menuitemcheckbox" aria-checked="${currentTheme() === 'dark'}" data-acct="theme">
+          <i class="fa-solid fa-moon"></i><span>Dark mode</span><span class="account-switch" aria-hidden="true"></span>
+        </button>
+        <button type="button" role="menuitem" data-acct="logout" class="is-danger"><i class="fa-solid fa-right-from-bracket"></i><span>Log out</span></button>
+      </div>`;
+    if (host.dataset.wired) return;
+    host.dataset.wired = '1';
+    host.addEventListener('click', (e) => {
+      if (e.target.closest('.account-btn')) { setAccountMenuOpen(host, !host.classList.contains('is-open')); return; }
+      const item = e.target.closest('[data-acct]');
+      if (!item) return;
+      const act = item.dataset.acct;
+      if (act === 'theme') { toggleTheme(); return; } // stays open so the switch can be seen flipping
+      setAccountMenuOpen(host, false);
+      if (act === 'profile' && typeof activateTab === 'function') activateTab('profile');
+      if (act === 'logout' && typeof logout === 'function') logout();
+    });
+  });
+}
+function setAccountMenuOpen(host, open) {
+  document.querySelectorAll('.js-account-menu.is-open').forEach((h) => { if (h !== host) setAccountMenuOpen(h, false); });
+  host.classList.toggle('is-open', open);
+  host.querySelector('.account-btn')?.setAttribute('aria-expanded', String(open));
+  const pop = host.querySelector('.account-pop');
+  if (pop) pop.hidden = !open;
+}
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.js-account-menu.is-open').forEach((h) => { if (!h.contains(e.target)) setAccountMenuOpen(h, false); });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.js-account-menu.is-open').forEach((h) => {
+    setAccountMenuOpen(h, false);
+    h.querySelector('.account-btn')?.focus();
+  });
+});
 function toggleTheme() {
   const next = currentTheme() === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;

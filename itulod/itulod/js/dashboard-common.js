@@ -24,6 +24,7 @@ function setAvatarImg(el, url) {
 }
 
 function refreshSideAvatar() {
+  renderAccountMenus(CURRENT_PROFILE); // the profile picture menu at the top
   const el = document.getElementById('side-avatar');
   if (!el) return;
   if (CURRENT_PROFILE.avatar_url) setAvatarImg(el, CURRENT_PROFILE.avatar_url);
