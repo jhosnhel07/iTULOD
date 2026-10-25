@@ -628,6 +628,13 @@
                     <small class="hint">How far a rider's confirmed fare may go above the estimate.</small>
                   </div>
                 </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="set-debt-limit">Rider debt limit</label>
+                    <div class="input-adornment"><span class="adornment-prefix">₱</span><input type="number" id="set-debt-limit" min="0" max="100000" step="1" required /></div>
+                    <small class="hint">A rider who owes more commission than this (from cash trips) can't accept jobs until they settle. 0 = no limit.</small>
+                  </div>
+                </div>
 
                 <p class="settings-group">Contact details <span>(shown on the home page)</span></p>
                 <div class="field">

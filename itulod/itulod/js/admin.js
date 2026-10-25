@@ -90,6 +90,7 @@ async function loadSettings() {
   set('set-helper-fee', Number(c.hauling_helper_fee));
   set('set-fare-min', Number(c.fare_min));
   set('set-fare-max', Number(c.fare_max_multiplier));
+  set('set-debt-limit', Number(c.rider_debt_limit ?? 500));
   set('set-phone', c.support_phone);
   set('set-email', c.support_email);
   set('set-office', c.office_address);
@@ -106,7 +107,7 @@ function wireSettingsForm() {
     const text = (id) => document.getElementById(id).value.trim() || null;
     const values = {
       commission: num('set-commission'), cancel: num('set-cancel-fee'), helper: num('set-helper-fee'),
-      fareMin: num('set-fare-min'), fareMax: num('set-fare-max'),
+      fareMin: num('set-fare-min'), fareMax: num('set-fare-max'), debtLimit: num('set-debt-limit'),
     };
     const limits = [
       ['Platform commission', values.commission, 0, 50, '%'],
@@ -114,6 +115,7 @@ function wireSettingsForm() {
       ['Hauling helper fee', values.helper, 0, 5000, '₱'],
       ['Minimum fare', values.fareMin, 0, 1000, '₱'],
       ['Final fare limit', values.fareMax, 1, 10, '×'],
+      ['Rider debt limit', values.debtLimit, 0, 100000, '₱'],
     ];
     for (const [label, v, lo, hi, unit] of limits) {
       if (!Number.isFinite(v) || v < lo || v > hi) {
@@ -135,6 +137,7 @@ function wireSettingsForm() {
       hauling_helper_fee: values.helper,
       fare_min: values.fareMin,
       fare_max_multiplier: values.fareMax,
+      rider_debt_limit: values.debtLimit,
       support_phone: text('set-phone'),
       support_email: email,
       office_address: text('set-office'),
@@ -1450,8 +1453,12 @@ async function loadRiderBalances() {
   const tbody = document.querySelector('#rider-balances-table tbody');
   if (!tbody) return;
   showSkeleton(tbody, skeletonRows(4, 6));
-  const { data, error } = await supabase.rpc('admin_rider_balances');
+  const [{ data, error }, { data: cfg }] = await Promise.all([
+    supabase.rpc('admin_rider_balances'),
+    supabase.from('platform_config').select('rider_debt_limit').single(),
+  ]);
   if (error) { tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`; return; }
+  const debtLimit = Number(cfg?.rider_debt_limit || 0);
   const rows = (data || []).filter(r => Number(r.net) !== 0 || Number(r.cod_unremitted) > 0 || Number(r.online_earnings) > 0 || Number(r.cash_commission) > 0);
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6">${emptyState({ icon: 'fa-scale-balanced', title: 'All settled', body: 'No rider has an open balance.' })}</td></tr>`;
@@ -1463,6 +1470,7 @@ async function loadRiderBalances() {
       ? `<span class="badge badge--pending">Pay rider ${peso(net)}</span>`
       : net < 0
         ? `<span class="badge badge--cancelled">Collect ${peso(-net)}</span>`
+          + (debtLimit > 0 && -net > debtLimit ? ` <span class="badge badge--danger" title="Owes more than the ${peso(debtLimit)} limit">Can't take jobs</span>` : '')
         : '<span class="badge badge--completed">Settled</span>';
     return `<tr>
       <td><strong>${escapeHtml(r.full_name || '—')}</strong><div style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml(r.phone || '')}</div></td>

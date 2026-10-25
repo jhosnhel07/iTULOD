@@ -3,6 +3,8 @@
  */
 let CURRENT_PROFILE = null;
 let RIDER_APPROVED = false;
+// Commission owed on cash trips vs the admin's limit (sql/043 rider_debt_status)
+let RIDER_DEBT = { owed: 0, debt_limit: 0, blocked: false };
 let RIDER_HAS_ACTIVE_BOOKING = false;
 let RIDER_ONLINE = false;
 let HISTORY_KIND = 'transport';
@@ -244,6 +246,14 @@ async function loadRequests() {
     return q.order('created_at', { ascending: false }).then(r => ({ kind, rows: r.data || [] }));
   }));
   const merged = results.flatMap(r => r.rows.map(row => ({ ...row, _kind: r.kind }))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const { data: debt } = await supabase.rpc('rider_debt_status');
+  RIDER_DEBT = (debt && debt[0]) || { owed: 0, debt_limit: 0, blocked: false };
+  const debtBanner = RIDER_DEBT.blocked
+    ? `<div class="fee-alert" role="alert"><i class="fa-solid fa-circle-exclamation"></i><div>
+        <strong>You owe iTULOD ${peso(RIDER_DEBT.owed)} in commission</strong>
+        <span>That's more than the ${peso(RIDER_DEBT.debt_limit)} limit, so you can't accept jobs until you settle it with the admin (GCash or cash). Your balance is on the Earnings page.</span>
+      </div></div>`
+    : '';
 
   if (merged.length === 0) {
     list.innerHTML = emptyState({
@@ -251,9 +261,10 @@ async function loadRequests() {
       title: 'No requests right now',
       body: 'New booking requests appear here the moment a customer books.'
     });
+    if (debtBanner) list.insertAdjacentHTML('afterbegin', debtBanner);
     return;
   }
-  list.innerHTML = merged.map(b => renderRequestCard(b, b._kind)).join('');
+  list.innerHTML = debtBanner + merged.map(b => renderRequestCard(b, b._kind)).join('');
 }
 
 // Hauling vehicle names by id, so cards can say which vehicle a job needs.
@@ -279,7 +290,9 @@ function renderRequestCard(b, kind) {
     ? 'disabled title="Wait for admin approval"'
     : RIDER_HAS_ACTIVE_BOOKING
       ? 'disabled title="Finish your current booking before accepting another"'
-      : '';
+      : RIDER_DEBT.blocked
+        ? 'disabled title="Settle what you owe iTULOD to accept jobs"'
+        : '';
   const acceptBlock = disabledReason || (kind === 'food' && Number(b.item_subtotal || 0) > Number(CURRENT_PROFILE.float_amount || 0)
     ? 'disabled title="Not enough cash on hand for this order"' : '');
   const sub = b.scheduled_for
