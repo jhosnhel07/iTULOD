@@ -151,7 +151,7 @@
 
         vehicleId
           ? supabase.from('vehicles')
-              .select('name, icon, base_fare, per_km_rate')
+              .select('name, icon, base_fare, per_km_rate, ride_base_fare, ride_per_km_rate, ride_base_km, extra_passenger_fee, fare_per_passenger')
               .eq('id', vehicleId)
               .maybeSingle()
           : Promise.resolve({ data: null }),
@@ -286,6 +286,7 @@
           ${booking.final_fare || booking.estimated_fare ? `<div class="bd-row bd-row--total"><span>${booking.final_fare ? 'Final fare' : 'Estimated fare'}</span><strong>${peso(booking.final_fare ?? booking.estimated_fare)}</strong></div>` : ''}
           ${!booking.estimated_fare && !booking.final_fare ? row('Fare', '—') : ''}
           ${booking.distance_km && kind === 'transport' ? row('Distance', booking.distance_km + ' km') : ''}
+          ${kind === 'transport' ? row('Passengers', String(booking.passengers || 1)) : ''}
           ${booking.payment_method ? row('Payment method', paymentMethodLabel(booking.payment_method)) : ''}
           ${booking.payment_status ? row('Payment status', paymentStatusBadge(booking.payment_status)) : ''}
           ${booking.tip_amount        ? row('Tip',                peso(booking.tip_amount))        : ''}
@@ -311,8 +312,9 @@
           ${row('Vehicle type',  escapeHtml(vehicleName))}
           ${vehiclePlate && showVehicleIdentity ? row('Plate number', escapeHtml(vehiclePlate)) : ''}
           ${vehicleLicense ? row('License number', escapeHtml(vehicleLicense)) : ''}
-          ${vehicle?.base_fare   ? row('Base fare',    peso(vehicle.base_fare)) : ''}
-          ${vehicle?.per_km_rate ? row('Rate per km',  peso(vehicle.per_km_rate) + '/km') : ''}
+          ${vehicle && kind === 'transport' ? row('Fare', escapeHtml(rideFareBreakdown(vehicle, booking.distance_km || 1, booking.passengers || 1))) : ''}
+          ${vehicle?.base_fare   && kind !== 'transport' ? row('Base fare',    peso(vehicle.base_fare)) : ''}
+          ${vehicle?.per_km_rate && kind !== 'transport' ? row('Rate per km',  peso(vehicle.per_km_rate) + '/km') : ''}
         </div>` : '';
 
       /* ---- 7. Rider section ---- */

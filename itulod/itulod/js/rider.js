@@ -309,7 +309,7 @@ function renderRequestCard(b, kind) {
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub,
-    footLeft: floatWarning || haulingNeeds(b, kind),
+    footLeft: floatWarning || haulingNeeds(b, kind) || passengersChip(b, kind),
     fare: b.estimated_fare,
     actions: `<button class="btn btn-primary btn-sm" ${acceptBlock} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
   });
@@ -456,7 +456,7 @@ function renderAcceptedCard(b, kind) {
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
-    footLeft: [paidBadge, haulingNeeds(b, kind)].filter(Boolean).join(' '),
+    footLeft: [paidBadge, haulingNeeds(b, kind), passengersChip(b, kind)].filter(Boolean).join(' '),
     actions: setFareAction + navigateAction + noShowAction + releaseAction + proofAction + nextAction,
   });
 }

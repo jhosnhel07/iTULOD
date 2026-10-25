@@ -321,7 +321,7 @@
                   <tr>
                     <th>Vehicle</th>
                     <th>Services</th>
-                    <th>Capacity</th>
+                    <th>Passengers &amp; ride fare</th>
                     <th>Base fare</th>
                     <th>Per-km rate</th>
                     <th>Available</th>
@@ -795,6 +795,43 @@
                 <input type="number" step="0.01" id="vehicle-rate" placeholder="0.00" required />
               </div>
             </div>
+            <p class="field-hint">Used for food, parcel and hauling.</p>
+            <!-- Rides: passenger range + ride fare (sql/044). Shown when Ride is switched on. -->
+            <fieldset class="vehicle-ride" id="vehicle-ride">
+              <legend>Rides: passengers &amp; fare</legend>
+              <div class="field-row">
+                <div class="field">
+                  <label for="vehicle-min-pax">Min passengers</label>
+                  <input type="number" id="vehicle-min-pax" min="1" max="60" value="1" />
+                </div>
+                <div class="field">
+                  <label for="vehicle-max-pax">Max passengers</label>
+                  <input type="number" id="vehicle-max-pax" min="1" max="60" value="1" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="vehicle-ride-base">Minimum fare (₱)</label>
+                  <input type="number" step="0.01" id="vehicle-ride-base" placeholder="0.00" />
+                </div>
+                <div class="field">
+                  <label for="vehicle-ride-km">km included</label>
+                  <input type="number" step="0.5" min="0" max="50" id="vehicle-ride-km" placeholder="0" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="vehicle-ride-rate">Per km after that (₱)</label>
+                  <input type="number" step="0.01" id="vehicle-ride-rate" placeholder="0.00" />
+                </div>
+                <div class="field">
+                  <label for="vehicle-extra-pax">Extra per passenger (₱)</label>
+                  <input type="number" step="0.01" min="0" id="vehicle-extra-pax" placeholder="0.00" />
+                </div>
+              </div>
+              <label class="vehicle-ride__check"><input type="checkbox" id="vehicle-per-person" /> Fare is per passenger (like jeepney and bus)</label>
+              <p class="field-hint">A ride is offered only to groups in this range. Fare = minimum fare + per-km after the included km — times the passengers when it's per passenger, otherwise plus the extra for each passenger after the first.</p>
+            </fieldset>
           </form>
         </div>
         <div class="modal-foot">

@@ -760,7 +760,9 @@ async function loadVehicles() {
     <tr class="is-clickable" data-vehicle-id="${v.id}" tabindex="0" title="Open ${escapeHtml(v.name)}">
       <td><i class="fa-solid ${v.icon}" style="margin-right:8px;color:var(--blue)"></i>${escapeHtml(v.name)}</td>
       <td>${serviceChips(v)}</td>
-      <td>${v.capacity}</td><td>${peso(v.base_fare)}</td><td>${peso(v.per_km_rate)}</td>
+      <td>${vehicleAllows(v, 'ride')
+        ? `<strong>${escapeHtml(passengerRangeText(v))}</strong><br><small style="color:var(--text-muted)">${escapeHtml(rideFareSummary(v))}</small>`
+        : '—'}</td><td>${peso(v.base_fare)}</td><td>${peso(v.per_km_rate)}</td>
       <td>${v.is_available ? '<span class="badge badge--completed">Yes</span>' : '<span class="badge badge--cancelled">No</span>'}</td>
       <td><div class="row-actions">
         <button class="icon-btn" data-vehicle-id="${v.id}" aria-label="Edit ${escapeHtml(v.name)}"><i class="fa-solid fa-pen"></i></button>
@@ -813,9 +815,25 @@ function openVehicleModal(v) {
   document.getElementById('vehicle-rate').value = v?.per_km_rate || '';
   const services = v ? vehicleServices(v) : ['ride', 'food', 'parcel'];
   document.querySelectorAll('#vehicle-services input').forEach(cb => { cb.checked = services.includes(cb.value); });
+  const set = (id, val) => { document.getElementById(id).value = val ?? ''; };
+  set('vehicle-min-pax', v?.min_passengers ?? 1);
+  set('vehicle-max-pax', v?.max_passengers ?? v?.capacity ?? 1);
+  set('vehicle-ride-base', v?.ride_base_fare ?? '');
+  set('vehicle-ride-km', v?.ride_base_km ?? 0);
+  set('vehicle-ride-rate', v?.ride_per_km_rate ?? '');
+  set('vehicle-extra-pax', v?.extra_passenger_fee ?? 0);
+  document.getElementById('vehicle-per-person').checked = !!v?.fare_per_passenger;
+  syncVehicleRideBox();
   document.getElementById('vehicle-modal').classList.add('open');
 }
 function closeVehicleModal() { document.getElementById('vehicle-modal').classList.remove('open'); }
+// The ride settings only matter when Ride is switched on for the vehicle.
+function syncVehicleRideBox() {
+  const ride = document.querySelector('#vehicle-services input[value="ride"]')?.checked;
+  const box = document.getElementById('vehicle-ride');
+  if (box) box.hidden = !ride;
+}
+document.addEventListener('change', (e) => { if (e.target.closest?.('#vehicle-services')) syncVehicleRideBox(); });
 function wireVehicleForm() {
   document.getElementById('vehicle-save').addEventListener('click', async () => {
     const id = document.getElementById('vehicle-id').value;
@@ -830,6 +848,21 @@ function wireVehicleForm() {
     };
     if (!requireFields({ 'Name': payload.name, 'Base fare': payload.base_fare, 'Per-km rate': payload.per_km_rate })) return;
     if (!payload.services.length) { toast('Switch on at least one service for this vehicle.', 'error'); return; }
+    // Ride passengers + fare (sql/044); blank ride fares fall back to the base fare / per-km.
+    const num = (id) => { const s = document.getElementById(id).value.trim(); return s === '' ? null : Number(s); };
+    Object.assign(payload, {
+      min_passengers: num('vehicle-min-pax') ?? 1,
+      max_passengers: num('vehicle-max-pax') ?? (payload.capacity || 1),
+      ride_base_fare: num('vehicle-ride-base'),
+      ride_base_km: num('vehicle-ride-km') ?? 0,
+      ride_per_km_rate: num('vehicle-ride-rate'),
+      extra_passenger_fee: num('vehicle-extra-pax') ?? 0,
+      fare_per_passenger: document.getElementById('vehicle-per-person').checked,
+    });
+    if (payload.min_passengers < 1 || payload.max_passengers < payload.min_passengers || payload.max_passengers > 60) {
+      toast('Passengers: min must be at least 1 and no more than max (up to 60).', 'error'); return;
+    }
+    if (payload.ride_base_km < 0 || payload.ride_base_km > 50) { toast('km included must be between 0 and 50.', 'error'); return; }
 
     const { error } = id ? await supabase.from('vehicles').update(payload).eq('id', id) : await supabase.from('vehicles').insert(payload);
     if (error) { toast(error.message, 'error'); return; }
@@ -1119,7 +1152,7 @@ async function loadBookings() {
       : BOOKING_KIND === 'parcel' ? `${b.sender_name} → ${b.receiver_name}`
       : bookingTitle(b, BOOKING_KIND);
     return `<tr>
-      <td>${escapeHtml(title)}</td>
+      <td>${escapeHtml(title)}${BOOKING_KIND === 'transport' ? '<br>' + passengersChip(b, 'transport') : ''}</td>
       <td>${escapeHtml(b.customer?.full_name || '—')}</td>
       <td>${escapeHtml(b.rider?.full_name || 'Unassigned')}</td>
       <td>${peso(b.final_fare ?? b.estimated_fare)}</td>

@@ -5216,6 +5216,20 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 #settings-save { margin-top: 6px; }
 
 /* ── Unpaid cancellation fee reminder (customer.js renderUnpaidFee) ── */
+/* Admin vehicle modal: ride passengers + fare */
+.vehicle-ride { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin: 14px 0 0; }
+.vehicle-ride legend { padding: 0 6px; font-weight: 700; font-size: var(--fs-sm); }
+.vehicle-ride[hidden] { display: none !important; }
+.vehicle-ride__check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); margin: 4px 0 6px; cursor: pointer; }
+
+/* Ride booking: passengers − / + (customer.js setPassengers) */
+.pax-stepper { display: inline-flex; align-items: center; gap: 6px; }
+.pax-stepper input { width: 70px; text-align: center; font-weight: 700; font-size: var(--fs-md); -moz-appearance: textfield; }
+.pax-stepper input::-webkit-outer-spin-button, .pax-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.pax-stepper__btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--blue); cursor: pointer; display: grid; place-items: center; }
+.pax-stepper__btn:hover { border-color: var(--blue); background: var(--blue-50); }
+.pax-chip { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--blue-ink); background: var(--blue-50); border-radius: 999px; padding: 2px 8px; }
+
 /* Rider → Earnings: split by payment method + records */
 .card-head--wrap { flex-wrap: wrap; gap: 10px; }
 .segmented--sm .seg-btn { padding: 6px 12px; font-size: var(--fs-xs); }

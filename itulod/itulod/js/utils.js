@@ -595,6 +595,67 @@ function estimateFare(vehicle, distanceKm) {
   if (!vehicle) return 0;
   return Number(vehicle.base_fare) + Number(vehicle.per_km_rate) * Number(distanceKm || 1);
 }
+
+// ---- Ride fares + passengers (sql/044) ------------------------------------
+// Rides use the vehicle's ride rates (Philippine fares): a minimum fare that
+// covers the first ride_base_km, then a per-km rate; jeepney and bus charge
+// per person, a tricycle adds a fee per extra passenger. Deliveries keep
+// estimateFare() above. Same formula as public.vehicle_fare() in the DB.
+function rideRates(v) {
+  return {
+    base: Number(v.ride_base_fare ?? v.base_fare ?? 0),
+    perKm: Number(v.ride_per_km_rate ?? v.per_km_rate ?? 0),
+    baseKm: Number(v.ride_base_km || 0),
+    extra: Number(v.extra_passenger_fee || 0),
+    perPerson: !!v.fare_per_passenger,
+  };
+}
+function estimateRideFare(vehicle, distanceKm, passengers = 1) {
+  if (!vehicle) return 0;
+  const r = rideRates(vehicle);
+  const pax = Math.max(1, Number(passengers) || 1);
+  // one person's (or one vehicle's) fare, rounded to the centavo before multiplying
+  const one = Math.round((r.base + r.perKm * Math.max(Number(distanceKm || 1) - r.baseKm, 0)) * 100) / 100;
+  const total = r.perPerson ? one * pax : one + Math.max(pax - 1, 0) * r.extra;
+  return Math.round(total * 100) / 100;
+}
+function rideFareBreakdown(vehicle, distanceKm, passengers = 1) {
+  if (!vehicle) return '';
+  const r = rideRates(vehicle);
+  const pax = Math.max(1, Number(passengers) || 1);
+  const km = Number(distanceKm || 1);
+  const extraKm = Math.max(km - r.baseKm, 0);
+  let s = peso(r.base) + (r.baseKm ? ` (first ${r.baseKm} km)` : ' base');
+  if (extraKm > 0) s += ` + ${extraKm.toFixed(1)} km × ${peso(r.perKm)}`;
+  if (r.perPerson) s += ` = ${peso(estimateRideFare(vehicle, km, 1))} per person × ${pax}`;
+  else if (r.extra && pax > 1) s += ` + ${pax - 1} extra passenger${pax > 2 ? 's' : ''} × ${peso(r.extra)}`;
+  return s;
+}
+function vehicleFitsPassengers(v, passengers) {
+  const pax = Number(passengers) || 1;
+  return pax >= Number(v.min_passengers || 1) && pax <= Number(v.max_passengers || v.capacity || 99);
+}
+function passengerRangeText(v) {
+  const min = Number(v.min_passengers || 1), max = Number(v.max_passengers || v.capacity || min);
+  return min === max ? `${min} passenger${min === 1 ? '' : 's'}` : `${min}–${max} passengers`;
+}
+// "👤 3 passengers" chip for a ride (rider cards, booking lists)
+function passengersChip(b, kind) {
+  if (kind !== 'transport') return '';
+  const n = Number(b.passengers) || 1;
+  return `<span class="pax-chip"><i class="fa-solid fa-user-group"></i> ${n} passenger${n === 1 ? '' : 's'}</span>`;
+}
+// "₱14 per person (first 4 km) + ₱2/km" — admin tables
+function rideFareSummary(v) {
+  const r = rideRates(v);
+  let s = peso(r.base) + (r.perPerson ? ' per person' : '') + (r.baseKm ? ` (first ${r.baseKm} km)` : '') + ` + ${peso(r.perKm)}/km`;
+  if (!r.perPerson && r.extra) s += ` · +${peso(r.extra)} per extra passenger`;
+  return s;
+}
+function rideVehicleLabel(v) {
+  const r = rideRates(v);
+  return `${v.name} — ${passengerRangeText(v)} · ${r.perPerson ? peso(r.base) + '/person' : 'from ' + peso(r.base)}`;
+}
 function simulateDistanceKm(pickup, destination) {
   // Deterministic placeholder distance (1–15km) so the same pickup/destination
   // pair always estimates the same fare until real geocoding is connected.

@@ -95,7 +95,7 @@ function setBookingService(svc) {
 const BOOKING_STEPS = {
   'ride-form': {
     fare: 'ride-fare',
-    summary: [['Pickup', 'ride-pickup'], ['Destination', 'ride-destination'], ['Vehicle', 'ride-vehicle'],
+    summary: [['Pickup', 'ride-pickup'], ['Destination', 'ride-destination'], ['Passengers', 'ride-passengers'], ['Vehicle', 'ride-vehicle'],
       ['Payment', 'ride-payment'], ['Estimated fare', 'ride-fare']],
   },
   'parcel-form': {
@@ -259,7 +259,7 @@ function wireTabNav() {
 
 // ---- fare estimator: real OSRM road distance when we can get it, the
 //      deterministic placeholder otherwise --------------------------------
-function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops, getMultiplier, getVehicles, onRender }) {
+function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl, fareEl, breakdownEl, getStops, getMultiplier, getVehicles, onRender, fareOf, breakdownOf }) {
   let route = null;        // { km, pickup:[lng,lat], dropoff:[lng,lat] } once a real route is known
   let lastKey = '';
   let timer = null;
@@ -286,10 +286,10 @@ function createFareEstimator({ tab, pickupEl, dropoffEl, vehicleSel, distanceEl,
     const effectiveKm = (km || 0) * multiplier();
     distanceEl.textContent = km ? effectiveKm.toFixed(1) + ' km' + (isReal ? '' : ' (est.)') : '—';
     const v = vehicle();
-    fareEl.textContent = km ? peso(estimateFare(v, effectiveKm)) : '₱0.00';
+    fareEl.textContent = km ? peso(fareOf ? fareOf(v, effectiveKm) : estimateFare(v, effectiveKm)) : '₱0.00';
     if (breakdownEl) {
       breakdownEl.textContent = (km && v)
-        ? `${peso(v.base_fare)} base + ${Math.max(effectiveKm, 1).toFixed(1)} km × ${peso(v.per_km_rate)}/km`
+        ? (breakdownOf ? breakdownOf(v, effectiveKm) : `${peso(v.base_fare)} base + ${Math.max(effectiveKm, 1).toFixed(1)} km × ${peso(v.per_km_rate)}/km`)
         : '';
     }
     if (typeof onRender === 'function') onRender(km ? effectiveKm : null, isReal, v);
@@ -535,6 +535,27 @@ async function loadVehicleOptions() {
       ? `<option value="">No vehicles for this service yet</option>`
       : list.map(v => `<option value="${v.id}">${v.name} — from ${peso(v.base_fare)}</option>`).join('');
   });
+  renderRideVehicleOptions();
+}
+
+// Rides: only vehicles whose passenger range fits the group (sql/044). Keeps
+// the chosen vehicle when it still fits, otherwise picks the first that does.
+function rideVehicleList() {
+  const pax = Number(document.getElementById('ride-passengers')?.value) || 1;
+  return VEHICLES.filter(v => vehicleAllows(v, 'ride') && vehicleFitsPassengers(v, pax));
+}
+function renderRideVehicleOptions() {
+  const sel = document.getElementById('ride-vehicle');
+  if (!sel) return;
+  const pax = Number(document.getElementById('ride-passengers')?.value) || 1;
+  const keep = sel.value;
+  const list = rideVehicleList();
+  sel.innerHTML = list.length
+    ? list.map(v => `<option value="${v.id}">${escapeHtml(rideVehicleLabel(v))}</option>`).join('')
+    : `<option value="">No vehicle fits ${pax} passenger${pax === 1 ? '' : 's'} right now</option>`;
+  if (list.some(v => v.id === keep)) sel.value = keep;
+  sel.dispatchEvent(new Event('change', { bubbles: true })); // fare + riders-near-you map follow
+  sel.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 const MAX_RIDE_STOPS = 3;
@@ -551,7 +572,22 @@ function wireRideForm() {
   const addStopBtn = document.getElementById('ride-add-stop-btn');
 
   const getStops = () => Array.from(stopsContainer?.querySelectorAll('input') || []).map(i => i.value.trim());
-  const est = createFareEstimator({ tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl, breakdownEl, getStops });
+  const paxEl = document.getElementById('ride-passengers');
+  const passengers = () => Math.min(40, Math.max(1, Math.round(Number(paxEl?.value) || 1)));
+  const est = createFareEstimator({
+    tab: 'ride', pickupEl: pickup, dropoffEl: dest, vehicleSel, distanceEl, fareEl, breakdownEl, getStops,
+    fareOf: (v, km) => estimateRideFare(v, km, passengers()),
+    breakdownOf: (v, km) => rideFareBreakdown(v, km, passengers()),
+  });
+  // Passengers − / + : the vehicle list and the fare follow the count.
+  const setPassengers = (n) => {
+    if (!paxEl) return;
+    paxEl.value = Math.min(40, Math.max(1, Math.round(Number(n) || 1)));
+    renderRideVehicleOptions();
+    est.recalc();
+  };
+  form?.querySelectorAll('[data-pax]').forEach(b => b.addEventListener('click', () => setPassengers(passengers() + Number(b.dataset.pax))));
+  paxEl?.addEventListener('change', () => setPassengers(paxEl.value));
 
   function updateAddStopBtn() {
     if (addStopBtn && stopsContainer) addStopBtn.style.display = stopsContainer.children.length >= MAX_RIDE_STOPS ? 'none' : '';
@@ -629,9 +665,10 @@ function wireRideForm() {
     ]))) return;
     // One fare value for both the inserted row and the confirmation modal, so
     // the amount shown can never drift from the amount charged.
-    const fare = estimateFare(vehicle, km);
+    const fare = estimateRideFare(vehicle, km, passengers());
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('transport_bookings').insert({
+      passengers: passengers(),
       customer_id: CURRENT_PROFILE.id,
       vehicle_id: vehicle.id,
       pickup_address: pickup.value.trim(),

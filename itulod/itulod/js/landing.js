@@ -31,7 +31,7 @@ document.querySelectorAll('.nav-links a').forEach(link => {
       <div class="vehicle-chip">
         <i class="fa-solid ${v.icon || 'fa-car'}"></i>
         <span>${escapeHtml(v.name)}</span>
-        <small>${vehicleAllows(v, 'ride') ? `${v.capacity} seat${v.capacity > 1 ? 's' : ''} · ` : ''}from ${peso(v.base_fare)}</small>
+        <small>${vehicleAllows(v, 'ride') ? `${passengerRangeText(v)} · from ${peso(rideRates(v).base)}${rideRates(v).perPerson ? '/person' : ''}` : `from ${peso(v.base_fare)}`}</small>
         <small class="vehicle-chip__services">${vehicleServicesText(v)}</small>
       </div>
     `).join('');
