@@ -46,10 +46,10 @@
         <i class="fa-solid fa-clock-rotate-left"></i> History
       </button>
 
-      <span class="side-nav-label">Account</span>
+      <span class="side-nav-label">Account</span>
       <button class="side-link" data-tab="vehicle">
         <i class="fa-solid fa-car"></i> Vehicle info
-      </button>
+      </button>
     </nav>
 
   </aside>
@@ -64,10 +64,6 @@
       <span class="brand" style="font-size:var(--fs-lg);color:var(--blue)">
         iTULOD<span class="dot">.</span><span class="badge badge--role-rider role-tag">Rider</span>
       </span>
-      <button class="topbar-action" onclick="activateTab('notifications')" aria-label="Notifications">
-        <i class="fa-solid fa-bell"></i>
-        <span class="badge badge--danger js-notif-count" style="display: none"></span>
-      </button>
     </div>
 
     <div class="page-head">
@@ -383,13 +379,6 @@
           <i class="fa-solid fa-right-from-bracket"></i> Log out
         </button>
       </div>
-      <div class="card card--narrow get-app-card">
-        <div class="card-head"><h3><i class="fa-solid fa-mobile-screen-button"></i> Get the iTULOD app</h3></div>
-        <p style="color: var(--text-muted); font-size: var(--fs-sm); margin: -6px 0 14px">
-          Faster booking, live tracking and notifications on your Android phone.
-        </p>
-        <div class="get-app-inline" data-get-app></div>
-      </div>
     </section>
 
     <!-- Booking details modal (for request / accepted / history card click) -->
@@ -422,7 +411,6 @@
     <button data-tab="requests"><i class="fa-solid fa-inbox"></i><span>Requests</span></button>
     <button data-tab="accepted"><i class="fa-solid fa-route"></i><span>Active</span></button>
     <button data-tab="earnings"><i class="fa-solid fa-sack-dollar"></i><span>Earnings</span></button>
-    <button data-tab="profile"><i class="fa-solid fa-user"></i><span>Profile</span></button>
   </nav>
 </div>
 
@@ -448,7 +436,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabaseClient.js"></script>
 <script src="../js/utils.js"></script>
-<script src="../js/app-download.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/map.js"></script>
 <script src="../js/bookingDetails.js"></script>

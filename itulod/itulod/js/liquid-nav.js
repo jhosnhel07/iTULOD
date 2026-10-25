@@ -36,7 +36,8 @@
 
   function place(animate) {
     const to = target();
-    if (!to) return;
+    // Profile / Notifications open from the profile menu, not the bar — no tab to highlight
+    if (!to) { blob.style.opacity = '0'; return; }
     blob.style.opacity = '1';
     if (!animate || !last || reduceMotion || Math.abs(to.x - last.x) < 1) {
       set(to);
