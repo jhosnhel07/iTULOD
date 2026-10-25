@@ -886,7 +886,44 @@ async function loadVehicleInfo() {
       <div style="display:flex;justify-content:space-between"><span>License number</span><strong>${escapeHtml(data.license_number || '—')}</strong></div>
       <div style="display:flex;justify-content:space-between"><span>Submitted</span><strong>${formatDate(data.created_at)}</strong></div>
       ${data.notes ? `<div style="background:var(--slate-50);padding:12px;border-radius:var(--radius-xs);font-size:var(--fs-sm)">Admin note: ${escapeHtml(data.notes)}</div>` : ''}
-    </div>`;
+    </div>
+    <h4 class="rider-docs__title"><i class="fa-solid fa-folder-open"></i> Uploaded documents</h4>
+    <div class="rider-docs" id="rider-docs">${skeletonList(1)}</div>`;
+  renderRiderDocs(data);
+}
+
+// The documents uploaded at sign-up. rider-documents is a private bucket, so
+// each one is shown through a short-lived signed link (riders may read their
+// own folder); a click opens it full size in a new tab.
+const RIDER_DOCS = [['license_url', "Driver's license"], ['or_cr_url', 'OR / CR'], ['selfie_url', 'Selfie'], ['vehicle_url', 'Vehicle photo'], ['nbi_url', 'NBI clearance']];
+async function renderRiderDocs(app) {
+  const box = document.getElementById('rider-docs');
+  if (!box) return;
+  const pathOf = (url) => (url && url.includes('/rider-documents/'))
+    ? decodeURIComponent(url.split('/rider-documents/')[1].split('?')[0]) : null;
+  const items = RIDER_DOCS.map(([col, label]) => ({ label, path: pathOf(app[col]) }));
+  const paths = items.filter(i => i.path).map(i => i.path);
+  let signed = {};
+  if (paths.length) {
+    const { data } = await supabase.storage.from('rider-documents').createSignedUrls(paths, 3600);
+    for (const s of data || []) if (s.signedUrl) signed[s.path] = s.signedUrl;
+  }
+  box.innerHTML = items.map(({ label, path }) => {
+    const url = path && signed[path];
+    const pdf = path && /\.pdf$/i.test(path);
+    const thumb = !path
+      ? '<span class="rider-doc__empty"><i class="fa-solid fa-ban"></i> Not uploaded</span>'
+      : !url
+        ? '<span class="rider-doc__empty"><i class="fa-solid fa-circle-exclamation"></i> Couldn&rsquo;t load</span>'
+        : pdf
+          ? '<span class="rider-doc__empty"><i class="fa-solid fa-file-pdf"></i> PDF</span>'
+          : `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" loading="lazy">`;
+    const inner = `<span class="rider-doc__thumb">${thumb}</span><span class="rider-doc__label">${escapeHtml(label)}</span>
+      <span class="rider-doc__hint">${url ? '<i class="fa-solid fa-arrow-up-right-from-square"></i> View' : path ? '' : 'Optional / not provided'}</span>`;
+    return url
+      ? `<a class="rider-doc" href="${escapeHtml(url)}" target="_blank" rel="noopener">${inner}</a>`
+      : `<div class="rider-doc rider-doc--none">${inner}</div>`;
+  }).join('');
 }
 
 // ---- profile ----

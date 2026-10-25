@@ -5199,6 +5199,21 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 #settings-save { margin-top: 6px; }
 
 /* ── Unpaid cancellation fee reminder (customer.js renderUnpaidFee) ── */
+/* Rider → Vehicle info: the documents uploaded at sign-up */
+.rider-docs__title { margin: 22px 0 10px; font-size: var(--fs-md); display: flex; align-items: center; gap: 8px; }
+.rider-docs__title i { color: var(--blue); }
+.rider-docs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.rider-doc { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; }
+.rider-doc__thumb { display: flex; align-items: center; justify-content: center; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+.rider-doc__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s ease; }
+a.rider-doc:hover .rider-doc__thumb img { transform: scale(1.04); }
+a.rider-doc:hover .rider-doc__thumb { border-color: var(--blue); }
+.rider-doc__empty { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: var(--fs-xs); }
+.rider-doc__empty i { font-size: var(--fs-lg); opacity: 0.7; }
+.rider-doc__label { font-weight: 600; font-size: var(--fs-sm); color: var(--ink); }
+.rider-doc__hint { font-size: var(--fs-xs); color: var(--blue); }
+.rider-doc--none .rider-doc__hint { color: var(--text-muted); }
+
 .fee-alert {
   display: flex;
   align-items: center;
