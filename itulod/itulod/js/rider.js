@@ -280,21 +280,25 @@ function renderRequestCard(b, kind) {
     : RIDER_HAS_ACTIVE_BOOKING
       ? 'disabled title="Finish your current booking before accepting another"'
       : '';
+  const acceptBlock = disabledReason || (kind === 'food' && Number(b.item_subtotal || 0) > Number(CURRENT_PROFILE.float_amount || 0)
+    ? 'disabled title="Not enough cash on hand for this order"' : '');
   const sub = b.scheduled_for
     ? `Scheduled · ${formatDate(b.scheduled_for)}`
     : `${KIND_LABEL[kind]} · ${formatDate(b.created_at)}`;
-  // The rider buys a food order with their own cash on hand (float) — flag
-  // orders that cost more than that, but still let them accept.
+  // The rider buys a food order with their own cash on hand (float), so an
+  // order costing more than that can't be accepted (sql/042 enforces it too).
+  // It stays listed with a note so they know to raise the amount on Home.
   const float = Number(CURRENT_PROFILE.float_amount || 0);
-  const floatWarning = kind === 'food' && Number(b.item_subtotal || 0) > float
-    ? `<span class="float-warning"><i class="fa-solid fa-triangle-exclamation"></i> Order costs ${peso(b.item_subtotal)} — more than your ${peso(float)} float</span>`
+  const shortOfCash = kind === 'food' && Number(b.item_subtotal || 0) > float;
+  const floatWarning = shortOfCash
+    ? `<span class="float-warning"><i class="fa-solid fa-triangle-exclamation"></i> Order costs ${peso(b.item_subtotal)} — more than your ${peso(float)} cash on hand. Raise it on Home to accept.</span>`
     : '';
   return bookingCardHTML({
     kind, id: b.id, iconBg: COLOR_BY_KIND[kind], icon: ICON_BY_KIND[kind],
     title, sub,
     footLeft: floatWarning || haulingNeeds(b, kind),
     fare: b.estimated_fare,
-    actions: `<button class="btn btn-primary btn-sm" ${disabledReason} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
+    actions: `<button class="btn btn-primary btn-sm" ${acceptBlock} onclick="event.stopPropagation(); acceptBooking('${kind}','${b.id}')"><i class="fa-solid fa-check"></i> Accept</button>`,
   });
 }
 
