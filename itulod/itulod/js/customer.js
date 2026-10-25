@@ -113,6 +113,7 @@ const STEPPED_QUERY = window.matchMedia('(max-width: 720px)');
 
 function setupBookingSteps() {
   Object.entries(BOOKING_STEPS).forEach(([formId, cfg]) => setupFormSteps(formId, cfg));
+  if (typeof placeBookingMapCards === 'function') placeBookingMapCards();
 }
 
 function setupFormSteps(formId, cfg) {
@@ -171,6 +172,8 @@ function setupFormSteps(formId, cfg) {
     form.classList.toggle('on-first-step', current === 0);
     form.classList.toggle('on-last-step', current === steps.length - 1);
     if (current === steps.length - 1) renderSummary();
+    // the riders map under the vehicle choice was sized while hidden
+    if (typeof resizeBookingMap === 'function') ['ride', 'parcel', 'hauling'].forEach(t => requestAnimationFrame(() => resizeBookingMap(t)));
   };
   const renderSummary = () => {
     const rows = cfg.summary.map(([label, id]) => {

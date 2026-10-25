@@ -512,6 +512,23 @@
 .map-card--picker .map-sheet-done {
   display: none;
 }
+/* Phones: the same card shown under the vehicle choice, just for availability */
+@media (max-width: 960px) {
+  .map-card--picker.map-card--inline {
+    display: block;
+    margin: 4px 0 14px;
+    padding: 14px;
+    box-shadow: none;
+    background: var(--surface-2);
+  }
+  .map-card--inline .card-head { margin-bottom: 10px; }
+  .map-card--inline .card-head h3 { font-size: var(--fs-md); }
+  .map-card--inline .map-step-indicator,
+  .map-card--inline [id$="map-mode-hint"],
+  .map-card--inline .map-sheet-close,
+  .map-card--inline .map-sheet-done { display: none !important; }
+  .map-card--inline .map-canvas { height: 220px; cursor: default; }
+}
 
 @media (max-width: 960px) {
   .map-card--picker {

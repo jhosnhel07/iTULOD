@@ -416,7 +416,12 @@ function onBookingRoute(tab, cb) {
 function _wireMapClick(tab) {
   const cfg = _maps[tab];
   cfg.map.getCanvas().style.cursor = 'crosshair';
-  cfg.map.on('click', (e) => _setStop(tab, [e.lngLat.lng, e.lngLat.lat]));
+  cfg.map.on('click', (e) => {
+    // Shown under the vehicle choice on phones it only shows who's nearby —
+    // pins are set from the full-screen map sheet instead.
+    if (cfg.map.getContainer().closest('.map-card--inline')) return;
+    _setStop(tab, [e.lngLat.lng, e.lngLat.lat]);
+  });
 }
 
 // Base Mapbox search box. When `onResult` is given it receives ([lng,lat],
@@ -575,6 +580,8 @@ function ensureBookingMaps() {
 // the map card is hidden) or scroll it into view (desktop, map beside the form).
 async function pinOnMap(tab, mode) {
   await ensureBookingMaps();
+  const inlineCard = document.getElementById(tab + '-map-card');
+  if (inlineCard) restoreBookingMapCard(inlineCard); // a sheet can't open from inside a hidden step
   setMapMode(mode, tab);
   const cfg = _maps[tab];
   const container = cfg && cfg.map && cfg.map.getContainer();
@@ -598,6 +605,41 @@ async function pinOnMap(tab, mode) {
 }
 
 // Close the mobile map sheet (the Done / ✕ buttons, and Escape).
+// ---- phones: riders-near-you map under the vehicle choice ----------------
+// On phones (MOBILE_MAP_MQ) the booking map card is otherwise only a
+// full-screen sheet for setting pins, so customers never saw who's available.
+// It now sits right under the vehicle select — in the step-by-step form that
+// is the Vehicle step — showing riders with the chosen vehicle within
+// NEARBY_RADIUS_KM of the pickup set in the step before. Desktop keeps the
+// map beside the form. Food has no vehicle step and stays as it was.
+const INLINE_MAP_CARDS = { ride: ['ride-map-card', 'ride-vehicle'], parcel: ['parcel-map-card', 'parcel-vehicle'], hauling: ['hauling-map-card', 'hauling-vehicle'] };
+function restoreBookingMapCard(card) {
+  if (!card._home || !card.classList.contains('map-card--inline')) return;
+  card.classList.remove('map-card--inline');
+  const h3 = card.querySelector('.card-head h3');
+  if (h3 && card._title) h3.textContent = card._title;
+  card._home.parent.insertBefore(card, card._home.next);
+}
+function placeBookingMapCards() {
+  const phone = window.matchMedia(MOBILE_MAP_MQ).matches;
+  for (const [tab, [cardId, selectId]] of Object.entries(INLINE_MAP_CARDS)) {
+    const card = document.getElementById(cardId);
+    const select = document.getElementById(selectId);
+    if (!card || !select) continue;
+    if (!card._home) card._home = { parent: card.parentNode, next: card.nextSibling };
+    if (phone && !card.classList.contains('map-sheet-open')) {
+      (select.closest('.field, .input-group') || select).after(card);
+      card.classList.add('map-card--inline');
+      const h3 = card.querySelector('.card-head h3');
+      if (h3) { card._title = card._title || h3.textContent; h3.textContent = 'Available near your pickup'; }
+    } else {
+      restoreBookingMapCard(card);
+    }
+    resizeBookingMap(tab);
+  }
+}
+window.matchMedia(MOBILE_MAP_MQ).addEventListener('change', placeBookingMapCards);
+
 function closeMapSheet(tab) {
   const cfg = tab && _maps[tab];
   const container = cfg && cfg.map && cfg.map.getContainer();
@@ -608,6 +650,7 @@ function closeMapSheet(tab) {
   if (!document.querySelector('.map-card--picker.map-sheet-open')) {
     document.body.classList.remove('map-sheet-lock');
   }
+  placeBookingMapCards(); // back under the vehicle choice on phones
 }
 
 document.addEventListener('keydown', (e) => {
