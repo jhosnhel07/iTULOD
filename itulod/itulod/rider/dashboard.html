@@ -237,6 +237,40 @@
         </div>
       </div>
 
+      <!-- Earnings split by how the customer paid, and every paid trip (rider.js renderPaySplit / renderPayRecords) -->
+      <div class="card">
+        <div class="card-head card-head--wrap">
+          <div>
+            <h3>Earnings by payment method</h3>
+            <p class="card-sub">What you earned, split by how the customer paid</p>
+          </div>
+          <div class="segmented segmented--sm" id="pay-split-range" role="tablist" aria-label="Period">
+            <button type="button" class="seg-btn" data-range="day">Today</button>
+            <button type="button" class="seg-btn" data-range="week">This week</button>
+            <button type="button" class="seg-btn active" data-range="month">This month</button>
+            <button type="button" class="seg-btn" data-range="all">All time</button>
+          </div>
+        </div>
+        <div class="pay-split" id="pay-split"></div>
+        <p class="pay-split__note"><i class="fa-solid fa-circle-info"></i> <strong>Cash</strong>: you collected it from the customer and owe iTULOD the commission. <strong>GCash</strong> and <strong>Wallet</strong>: iTULOD received it and pays your share out to you.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head card-head--wrap">
+          <div>
+            <h3>Earnings records</h3>
+            <p class="card-sub">Every paid trip, newest first</p>
+          </div>
+          <div class="segmented segmented--sm" id="pay-records-filter" role="tablist" aria-label="Payment method">
+            <button type="button" class="seg-btn active" data-method="all">All</button>
+            <button type="button" class="seg-btn" data-method="cash">Cash</button>
+            <button type="button" class="seg-btn" data-method="gcash">GCash</button>
+            <button type="button" class="seg-btn" data-method="wallet">Wallet</button>
+          </div>
+        </div>
+        <div id="pay-records"></div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <div>

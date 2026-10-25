@@ -779,6 +779,9 @@ async function loadEarnings() {
   loadRiderBalance();
   const { data: payments } = await supabase.from('payments').select('*').eq('rider_id', CURRENT_PROFILE.id);
   const rows = payments || [];
+  EARNING_ROWS = rows.filter(r => r.status === 'paid').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  renderPaySplit();
+  renderPayRecords();
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
@@ -802,6 +805,81 @@ async function loadEarnings() {
   document.getElementById('earnings-chart').innerHTML = totals.map(t => `<div class="bar" style="height:${Math.max(4, (t / max) * 100)}%"><span>${t > 0 ? peso(t) : ''}</span></div>`).join('');
   document.getElementById('earnings-labels').innerHTML = days.map(d => `<span>${d.toLocaleDateString('en-PH', { weekday: 'short' })}</span>`).join('');
 }
+
+// ---- earnings by payment method + records ------------------------------
+let EARNING_ROWS = [];
+let PAY_RANGE = 'month';
+let PAY_FILTER = 'all';
+const PAY_METHODS = [
+  ['cash', 'Cash', 'fa-money-bill-wave', 'Collected by you'],
+  ['gcash', 'GCash', 'fa-mobile-screen-button', 'Paid out by iTULOD'],
+  ['wallet', 'Wallet', 'fa-wallet', 'Paid out by iTULOD'],
+];
+const PAY_KIND_LABEL = { transport: 'Ride', food: 'Food', parcel: 'Parcel', hauling: 'Hauling' };
+function payRangeStart(range) {
+  const now = new Date();
+  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (range === 'day') return day;
+  if (range === 'week') { const w = new Date(day); w.setDate(day.getDate() - day.getDay()); return w; }
+  if (range === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
+  return null;
+}
+function renderPaySplit() {
+  const box = document.getElementById('pay-split');
+  if (!box) return;
+  const from = payRangeStart(PAY_RANGE);
+  const inRange = EARNING_ROWS.filter(r => !from || new Date(r.created_at) >= from);
+  const total = inRange.reduce((a, r) => a + Number(r.rider_payout || 0), 0);
+  box.innerHTML = PAY_METHODS.map(([key, label, icon, hint]) => {
+    const rows = inRange.filter(r => r.method === key);
+    const earned = rows.reduce((a, r) => a + Number(r.rider_payout || 0), 0);
+    const share = total > 0 ? Math.round((earned / total) * 100) : 0;
+    return `<button type="button" class="pay-split__item pay-split__item--${key}" onclick="setPayFilter('${key}')" title="Show ${label} records">
+      <span class="pay-split__icon"><i class="fa-solid ${icon}"></i></span>
+      <span class="pay-split__label">${label}</span>
+      <strong class="pay-split__amount">${peso(earned)}</strong>
+      <span class="pay-split__meta">${rows.length} trip${rows.length === 1 ? '' : 's'} · ${share}%</span>
+      <span class="pay-split__bar"><span style="width:${share}%"></span></span>
+      <span class="pay-split__hint">${hint}</span>
+    </button>`;
+  }).join('');
+}
+function renderPayRecords() {
+  const box = document.getElementById('pay-records');
+  if (!box) return;
+  const all = EARNING_ROWS.filter(r => PAY_FILTER === 'all' || r.method === PAY_FILTER);
+  const rows = all.slice(0, 50);
+  if (!rows.length) {
+    box.innerHTML = emptyState({ icon: 'fa-receipt', title: 'No records yet', body: PAY_FILTER === 'all' ? 'Completed trips show up here with what you earned.' : 'No trips paid this way yet.' });
+    return;
+  }
+  const meta = Object.fromEntries(PAY_METHODS.map(m => [m[0], m]));
+  box.innerHTML = `<div class="pay-records">${rows.map(r => {
+    const commission = Number(r.platform_commission || 0);
+    // a cancellation / no-show fee goes to the rider whole (no commission)
+    const what = commission === 0 && Number(r.amount) === Number(r.rider_payout) ? 'Fee from customer' : (PAY_KIND_LABEL[r.booking_type] || 'Trip');
+    const m = meta[r.method] || [r.method, r.method || '—', 'fa-receipt'];
+    return `<div class="pay-rec">
+      <span class="pay-rec__icon pay-rec__icon--${escapeHtml(r.method || '')}"><i class="fa-solid ${m[2]}"></i></span>
+      <div class="pay-rec__main"><strong>${escapeHtml(what)}</strong><span>${formatDate(r.created_at)} · ${escapeHtml(m[1])}</span></div>
+      <div class="pay-rec__amt"><strong>+${peso(r.rider_payout)}</strong><span>Paid ${peso(r.amount)}${commission ? ' · commission ' + peso(commission) : ''}</span></div>
+    </div>`;
+  }).join('')}</div>${all.length > 50 ? '<p class="pay-records__more">Showing the latest 50.</p>' : ''}`;
+}
+function setPayFilter(method) {
+  PAY_FILTER = method;
+  document.querySelectorAll('#pay-records-filter .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.method === method));
+  renderPayRecords();
+}
+function wireEarningsControls() {
+  document.querySelectorAll('#pay-split-range .seg-btn').forEach(b => b.addEventListener('click', () => {
+    PAY_RANGE = b.dataset.range;
+    document.querySelectorAll('#pay-split-range .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    renderPaySplit();
+  }));
+  document.querySelectorAll('#pay-records-filter .seg-btn').forEach(b => b.addEventListener('click', () => setPayFilter(b.dataset.method)));
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireEarningsControls); else wireEarningsControls();
 
 // ---- history -------------------------------------------------------------
 function wireHistoryTabs() {

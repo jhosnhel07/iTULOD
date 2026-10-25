@@ -5199,6 +5199,54 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 #settings-save { margin-top: 6px; }
 
 /* ── Unpaid cancellation fee reminder (customer.js renderUnpaidFee) ── */
+/* Rider → Earnings: split by payment method + records */
+.card-head--wrap { flex-wrap: wrap; gap: 10px; }
+.segmented--sm .seg-btn { padding: 6px 12px; font-size: var(--fs-xs); }
+.segmented--sm .seg-btn { white-space: nowrap; }
+@media (max-width: 560px) {
+  .card-head--wrap .segmented--sm { width: 100%; }
+  .card-head--wrap .segmented--sm .seg-btn { flex: 1 1 auto; padding: 6px 8px; }
+}
+.pay-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pay-split__item { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-2); text-align: left; cursor: pointer; font: inherit; color: inherit; transition: border-color 0.15s ease, transform 0.15s ease; }
+.pay-split__item:hover { border-color: var(--blue); transform: translateY(-1px); }
+.pay-split__icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 4px; }
+.pay-split__item--cash .pay-split__icon { background: var(--green-tint); color: var(--green); }
+.pay-split__item--gcash .pay-split__icon { background: var(--blue-50); color: var(--blue); }
+.pay-split__item--wallet .pay-split__icon { background: var(--rose-50); color: var(--rose-deep); }
+.pay-split__label { font-size: var(--fs-sm); color: var(--text-muted); font-weight: 600; }
+.pay-split__amount { font-size: var(--fs-xl); color: var(--ink); }
+.pay-split__meta, .pay-split__hint { font-size: var(--fs-xs); color: var(--text-muted); }
+.pay-split__bar { width: 100%; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; margin: 4px 0 2px; }
+.pay-split__bar span { display: block; height: 100%; border-radius: inherit; background: var(--blue); }
+.pay-split__item--cash .pay-split__bar span { background: var(--green); }
+.pay-split__item--wallet .pay-split__bar span { background: var(--rose-deep); }
+.pay-split__note { margin: 12px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.pay-split__note i { color: var(--blue); }
+.pay-records { display: flex; flex-direction: column; }
+.pay-rec { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--border); }
+.pay-rec:last-child { border-bottom: none; }
+.pay-rec__icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: var(--surface-2); color: var(--text-muted); }
+.pay-rec__icon--cash { background: var(--green-tint); color: var(--green); }
+.pay-rec__icon--gcash { background: var(--blue-50); color: var(--blue); }
+.pay-rec__icon--wallet { background: var(--rose-50); color: var(--rose-deep); }
+.pay-rec__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pay-rec__main span, .pay-rec__amt span { font-size: var(--fs-xs); color: var(--text-muted); }
+.pay-rec__amt { display: flex; flex-direction: column; align-items: flex-end; text-align: right; flex: 0 1 auto; max-width: 48%; }
+.pay-rec__main strong, .pay-rec__main span { overflow-wrap: anywhere; }
+.pay-rec__amt strong { color: var(--green); }
+.pay-records__more { margin: 10px 0 0; font-size: var(--fs-xs); color: var(--text-muted); text-align: center; }
+@media (max-width: 560px) {
+  .pay-split { grid-template-columns: 1fr; }
+  .pay-split__item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 10px; row-gap: 2px; }
+  .pay-split__icon { grid-row: span 2; margin: 0; }
+  .pay-split__label { grid-column: 2; grid-row: 1; }
+  .pay-split__hint { grid-column: 2; grid-row: 2; }
+  .pay-split__amount { grid-column: 3; grid-row: 1; font-size: var(--fs-lg); }
+  .pay-split__meta { grid-column: 3; grid-row: 2; text-align: right; }
+  .pay-split__bar { grid-column: 1 / -1; }
+}
+
 /* Rider → Vehicle info: the documents uploaded at sign-up */
 .rider-docs__title { margin: 22px 0 10px; font-size: var(--fs-md); display: flex; align-items: center; gap: 8px; }
 .rider-docs__title i { color: var(--blue); }
