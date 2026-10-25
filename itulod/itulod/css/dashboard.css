@@ -5224,6 +5224,7 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 
 /* Ride booking: passengers − / + (customer.js setPassengers) */
 .pax-stepper { display: inline-flex; align-items: center; gap: 6px; }
+.pax-stepper + .hint { display: block; margin-top: 6px; }
 .pax-stepper input { width: 70px; text-align: center; font-weight: 700; font-size: var(--fs-md); -moz-appearance: textfield; }
 .pax-stepper input::-webkit-outer-spin-button, .pax-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .pax-stepper__btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--blue); cursor: pointer; display: grid; place-items: center; }
