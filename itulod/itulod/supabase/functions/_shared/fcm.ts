@@ -74,7 +74,7 @@ export async function sendFcm(
   token: string,
   title: string,
   body: string,
-  opts: { validateOnly?: boolean } = {},
+  opts: { validateOnly?: boolean; data?: Record<string, string> } = {},
 ): Promise<'sent' | 'invalid' | 'failed'> {
   const sa = serviceAccount();
   if (!sa) return 'failed';
@@ -87,6 +87,8 @@ export async function sendFcm(
         message: {
           token,
           notification: { title, body },
+          // e.g. { link: 'messages/ride/<id>' } — the app opens that screen on tap
+          ...(opts.data ? { data: opts.data } : {}),
           android: {
             priority: 'HIGH',
             // The app's "Booking updates" channel (AppAlerts in app_itulod).

@@ -46,6 +46,10 @@
           <button class="side-link" data-tab="history">
             <i class="fa-solid fa-clock-rotate-left"></i> Booking history
           </button>
+          <button class="side-link" data-tab="messages">
+            <i class="fa-solid fa-comment-dots"></i> Messages
+            <span class="badge side-count js-msg-count" hidden>0</span>
+          </button>
         </nav>
 
       </aside>
@@ -54,6 +58,10 @@
       <main class="main">
         <div class="mobile-topbar">
           <div class="account-menu account-menu--top js-account-menu"></div>
+          <!-- Messages (js/messages.js) — unread count on the icon -->
+          <button type="button" class="topbar-action" onclick="activateTab('messages')" aria-label="Messages">
+            <i class="fa-solid fa-comment-dots"></i><span class="badge js-msg-count" hidden>0</span>
+          </button>
           <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
             <i class="fa-solid fa-bars"></i>
           </button>
@@ -991,6 +999,9 @@
         </section>
 
         <!-- ===================== HISTORY ===================== -->
+        <!-- ===================== MESSAGES (js/messages.js) ===================== -->
+        <section class="tab-panel" id="tab-messages"></section>
+
         <section class="tab-panel" id="tab-history">
           <div class="card card--flush">
             <div class="tab-row" style="margin-bottom: 20px">
@@ -1543,6 +1554,7 @@
     <script src="../js/dashboard-common.js"></script>
     <script src="../js/liquid-nav.js"></script>
     <script src="../js/restaurant-finder.js"></script>
+    <script src="../js/messages.js"></script>
     <script src="../js/customer.js"></script>
   </body>
 </html>

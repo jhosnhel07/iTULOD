@@ -685,8 +685,8 @@ function requireFields(fields) {
 const VIEW_PREFIX = 'itulod-view:';
 const RETURN_KEY = 'itulod-return-to';
 function readViewHash() {
-  const [tab = '', sub = ''] = decodeURIComponent(location.hash.replace(/^#/, '')).split('/');
-  return { tab, sub };
+  const [tab = '', sub = '', ...rest] = decodeURIComponent(location.hash.replace(/^#/, '')).split('/');
+  return { tab, sub, rest: rest.join('/') }; // #messages/transport/<id> → rest = id
 }
 function writeViewHash(tab, sub) {
   const h = '#' + tab + (sub ? '/' + sub : '');

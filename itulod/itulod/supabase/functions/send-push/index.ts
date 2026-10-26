@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
     const admin = adminClient();
     const { data: n } = await admin
       .from('notifications')
-      .select('id, user_id, title, message')
+      .select('id, user_id, title, message, link')
       .eq('id', notification_id)
       .maybeSingle();
     if (!n) return json({ error: 'Notification not found.' }, 404);
@@ -49,7 +49,9 @@ Deno.serve(async (req: Request) => {
       .select('role, phone')
       .eq('id', n.user_id)
       .maybeSingle();
-    const url = DASHBOARD_BY_ROLE[profile?.role ?? 'customer'] ?? '/';
+    // a chat notification opens its conversation (notifications.link, sql/046)
+    const link = typeof n.link === 'string' && /^[\w/-]+$/.test(n.link) ? n.link : '';
+    const url = (DASHBOARD_BY_ROLE[profile?.role ?? 'customer'] ?? '/') + (link ? '#' + link : '');
 
     let pushed = 0;
     let removed = 0;
@@ -92,7 +94,7 @@ Deno.serve(async (req: Request) => {
         .select('token')
         .eq('user_id', n.user_id);
       for (const d of devices ?? []) {
-        const result = await sendFcm(d.token, n.title, n.message);
+        const result = await sendFcm(d.token, n.title, n.message, { data: link ? { link } : undefined });
         if (result === 'sent') appPushed++;
         else if (result === 'invalid') {
           await admin.from('device_tokens').delete().eq('token', d.token);

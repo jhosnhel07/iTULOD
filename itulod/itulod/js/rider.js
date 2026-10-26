@@ -30,6 +30,7 @@ const PAGE_SIZE = 6;
   wireReceiptUpload();
   wireOnlineToggle();
   populateProfileForm();
+  if (typeof initMessages === 'function') initMessages(); // reads #messages/<chat> before restoreView()
   restoreView(); // a refresh stays on the section you were on
 
   await loadHaulingVehicleNames();
@@ -102,6 +103,7 @@ const TAB_TITLES = {
   accepted: ['Accepted bookings', 'Your current rides and deliveries.'],
   earnings: ['Earnings', 'Track your daily, weekly, and monthly income.'],
   history: ['History', 'Completed, cancelled, expired and no-show bookings.'],
+  messages: ['Messages', 'Chat with your customers about their bookings.'],
   notifications: ['Notifications', 'Updates about your jobs, tips and account.'],
   vehicle: ['Vehicle info', 'Your application and vehicle details.'],
   profile: ['Profile', 'Manage your account details.'],
@@ -130,6 +132,7 @@ function activateTab(name) {
     document.getElementById('page-sub').textContent = titles[1];
   }
   writeViewHash(name); // a refresh comes back here
+  if (name === 'messages' && typeof onMessagesShown === 'function') onMessagesShown(); // keeps #messages/<chat>
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }

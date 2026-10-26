@@ -34,6 +34,7 @@ let RATING_TARGET = null; // { kind, id }
   wireSupportRequestForm();
   wireWalletTopupForm();
   wireReferralCard();
+  if (typeof initMessages === 'function') initMessages(); // reads #messages/<chat> before restoreView()
   restoreView(); // a refresh stays on the section you were on
 
   await loadHome();
@@ -63,6 +64,7 @@ const TAB_TITLES = {
   'home': ['Home', 'Your bookings at a glance.'],
   'book': ['New booking', 'Choose your pickup, destination, and vehicle.'],
   'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
+  'messages': ['Messages', 'Chat with your rider about a booking.'],
   'notifications': ['Notifications', 'Updates about your bookings.'],
   'profile': ['Profile', 'Manage your account details.'],
 };
@@ -259,6 +261,7 @@ function activateTab(name) {
     });
   }
   if (name !== 'book') writeViewHash(name); // book writes #book/<service> in setBookingService
+  if (name === 'messages' && typeof onMessagesShown === 'function') onMessagesShown(); // keeps #messages/<chat>
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }

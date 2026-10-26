@@ -334,8 +334,8 @@
         const callBtn = telHref && !isOwnJob && tripActive
           ? `<a class="btn btn-primary btn-sm bd-call-btn" href="${telHref}"><i class="fa-solid fa-phone"></i> Call</a>`
           : '';
-        const msgBtn = !isOwnJob && tripActive
-          ? `<button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('bd-chat-messages')?.scrollIntoView({ behavior: 'smooth', block: 'center' })"><i class="fa-solid fa-comment-dots"></i> Message</button>`
+        const msgBtn = !isOwnJob && tripActive && typeof openBookingChat === 'function'
+          ? `<button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> Message</button>`
           : '';
         riderSection = `
           <div class="bd-section">
@@ -433,22 +433,14 @@
           </a>
         </div>` : '';
 
-      /* ---- 8d. Chat — only once a rider is assigned. Sending is gated to
-         'accepted'/'ongoing' by RLS; a finished trip still shows the thread,
-         just without the composer. */
+      /* ---- 8d. Chat — lives in the Messages section (js/messages.js); this
+         just opens it. Sending is gated to 'accepted'/'ongoing' by RLS. */
       const canChat = riderId && ['accepted', 'ongoing'].includes(booking.status);
-      const chatSection = riderId ? `
+      const chatSection = riderId && typeof openBookingChat === 'function' ? `
         <div class="bd-section">
           <h4><i class="fa-solid fa-comment-dots"></i> Messages</h4>
-          <div class="bd-chat-messages" id="bd-chat-messages">
-            <div class="skeleton skeleton-line skeleton-line--w60"></div><div class="skeleton skeleton-line skeleton-line--w40"></div>
-          </div>
-          ${canChat ? `
-            <form id="bd-chat-form" style="display:flex;gap:8px;margin-top:10px">
-              <input type="text" id="bd-chat-input" placeholder="Type a message…" maxlength="1000" style="flex:1" autocomplete="off" />
-              <button type="submit" class="btn btn-primary btn-sm" id="bd-chat-send"><i class="fa-solid fa-paper-plane"></i></button>
-            </form>
-          ` : `<p class="muted" style="font-size:var(--fs-xs);margin-top:8px">This thread is read-only now that the booking is ${escapeHtml(booking.status)}.</p>`}
+          <p class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">${canChat ? 'Chat about this booking — quick replies and photos too.' : 'The chat for this booking is read-only now.'}</p>
+          <button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> ${canChat ? 'Open chat' : 'View chat'}</button>
         </div>` : '';
 
       /* ---- 9. Render ---- */
@@ -492,7 +484,6 @@
       `;
 
       if (riderId) {
-        initChat({ kind, id: booking.id, canSend: canChat });
       }
       if (rideStops.length) {
         initStopControls({ kind, id: booking.id, riderId, stops: rideStops });
@@ -550,74 +541,6 @@
   /* Chat                                                                 */
   /* ------------------------------------------------------------------ */
 
-  let CHAT_CHANNEL = null;
-
-  function renderChatMessages(messages, myId) {
-    const el = document.getElementById('bd-chat-messages');
-    if (!el) return;
-    if (!messages.length) {
-      el.innerHTML = `<p class="muted" style="font-size:var(--fs-sm)">No messages yet — say hello!</p>`;
-      return;
-    }
-    el.innerHTML = messages.map(m => {
-      const mine = m.sender_id === myId;
-      return `<div style="display:flex;justify-content:${mine ? 'flex-end' : 'flex-start'};margin-bottom:8px">
-        <div style="max-width:75%;padding:8px 12px;border-radius:var(--radius-md);font-size:var(--fs-sm);background:${mine ? 'var(--blue)' : 'var(--bg-alt, #f1f3f5)'};color:${mine ? '#fff' : 'inherit'}">
-          <div>${escapeHtml(m.body)}</div>
-          <div style="font-size:var(--fs-2xs);opacity:0.7;margin-top:2px">${formatDate(m.created_at)}</div>
-        </div>
-      </div>`;
-    }).join('');
-    el.scrollTop = el.scrollHeight;
-  }
-
-  async function initChat({ kind, id, canSend }) {
-    const { data: { session } } = await supabase.auth.getSession();
-    const myId = session?.user?.id;
-    if (!myId) return;
-
-    const { data: messages, error } = await supabase
-      .from('booking_messages')
-      .select('*')
-      .eq('booking_type', kind)
-      .eq('booking_id', id)
-      .order('created_at', { ascending: true });
-    if (error) {
-      const el = document.getElementById('bd-chat-messages');
-      if (el) el.innerHTML = `<p class="muted" style="font-size:var(--fs-sm)">Could not load messages.</p>`;
-      return;
-    }
-    renderChatMessages(messages || [], myId);
-
-    if (CHAT_CHANNEL) { supabase.removeChannel(CHAT_CHANNEL); CHAT_CHANNEL = null; }
-    CHAT_CHANNEL = supabase
-      .channel(`booking-chat-${kind}-${id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'booking_messages', filter: `booking_id=eq.${id}` }, () => {
-        if (!document.getElementById('bd-chat-messages')) return; // modal has since closed
-        supabase.from('booking_messages').select('*').eq('booking_type', kind).eq('booking_id', id).order('created_at', { ascending: true })
-          .then(({ data }) => renderChatMessages(data || [], myId));
-      })
-      .subscribe();
-
-    const form = document.getElementById('bd-chat-form');
-    if (form && canSend) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const input = document.getElementById('bd-chat-input');
-        const body = input.value.trim();
-        if (!body) return;
-        const btn = document.getElementById('bd-chat-send');
-        setLoading(btn, true);
-        const { error: sendErr } = await supabase.from('booking_messages').insert({
-          booking_type: kind, booking_id: id, sender_id: myId, body,
-        });
-        setLoading(btn, false);
-        if (sendErr) { toast(sendErr.message, 'error'); return; }
-        input.value = '';
-      });
-    }
-  }
-
   /* ------------------------------------------------------------------ */
   /* Multi-stop rides — only the assigned rider, only for the first      */
   /* not-yet-arrived stop, keeping stops worked through in order.        */
@@ -662,7 +585,6 @@
     if (typeof viewState === 'function') viewState('details', null);
     if (typeof stopTrackingRider === 'function') stopTrackingRider();
     if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
-    if (CHAT_CHANNEL) { supabase.removeChannel(CHAT_CHANNEL); CHAT_CHANNEL = null; }
     const body = document.getElementById('booking-details-body');
     if (body) body.innerHTML = '';
   }

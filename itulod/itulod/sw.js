@@ -114,8 +114,15 @@ self.addEventListener('notificationclick', (event) => {
   const url = (event.notification.data && event.notification.data.url) || '/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
-      const hit = wins.find((w) => w.url.includes(url));
-      return hit ? hit.focus() : self.clients.openWindow(url);
+      // Same dashboard already open: focus it and hand it the #section (a
+      // chat notification carries #messages/<type>/<id> — js/messages.js).
+      const target = new URL(url, self.location.origin);
+      const hit = wins.find((w) => new URL(w.url).pathname === target.pathname);
+      if (hit) {
+        if (target.hash) hit.postMessage({ type: 'open-link', hash: target.hash });
+        return hit.focus();
+      }
+      return self.clients.openWindow(target.href);
     }),
   );
 });
