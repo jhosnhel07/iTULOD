@@ -5452,3 +5452,27 @@ a.rider-doc:hover .rider-doc__thumb { border-color: var(--blue); }
 @media (max-width: 900px) {
   .main :is(.card, .map-card, .form-step) { scroll-margin-top: 72px; }
 }
+
+/* Name + email to the left of the profile picture in the page header
+   (utils.js renderAccountMenus); click opens the same menu. Not in the phone
+   top bar — no room beside the centred logo. */
+.account-menu--page { display: flex; align-items: center; gap: 10px; }
+.account-who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 240px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: right;
+  line-height: 1.25;
+}
+.account-who strong,
+.account-who span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-who strong { font-size: var(--fs-sm); font-weight: 700; color: var(--ink); }
+.account-who span { font-size: var(--fs-xs); color: var(--text-muted); }
+.account-who:hover strong { color: var(--blue); }
+.account-menu--top .account-who { display: none; }
+@media (max-width: 900px) { .account-menu--page .account-who { display: none; } }

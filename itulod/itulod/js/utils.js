@@ -99,6 +99,9 @@ function renderAccountMenus(profile) {
   document.querySelectorAll('.js-account-menu').forEach((host) => {
     const wasOpen = host.classList.contains('is-open');
     host.innerHTML = `
+      <button type="button" class="account-who" tabindex="-1" aria-hidden="true">
+        <strong>${escapeHtml(name)}</strong><span>${escapeHtml(profile.email || '')}</span>
+      </button>
       <button type="button" class="account-btn" aria-haspopup="menu" aria-expanded="${wasOpen}" aria-label="Account menu for ${escapeHtml(name)}">
         ${face('account-avatar')}
         ${hasNotifTab ? `<span class="account-dot js-notif-dot" ${unread > 0 ? '' : 'hidden'}></span>` : ''}
@@ -122,7 +125,7 @@ function renderAccountMenus(profile) {
     if (host.dataset.wired) return;
     host.dataset.wired = '1';
     host.addEventListener('click', (e) => {
-      if (e.target.closest('.account-btn')) { setAccountMenuOpen(host, !host.classList.contains('is-open')); return; }
+      if (e.target.closest('.account-btn, .account-who')) { setAccountMenuOpen(host, !host.classList.contains('is-open')); return; }
       const item = e.target.closest('[data-acct]');
       if (!item) return;
       const act = item.dataset.acct;
