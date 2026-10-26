@@ -443,6 +443,12 @@
           <button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> ${canChat ? 'Open chat' : 'View chat'}</button>
         </div>` : '';
 
+      // The customer can cancel until the trip starts (pending / accepted),
+      // like the Cancel on their Home and History cards (customer.js).
+      const canCancelHere = typeof cancelBooking === 'function'
+        && CURRENT_PROFILE?.id === booking.customer_id
+        && ['pending', 'accepted'].includes(booking.status);
+
       /* ---- 9. Render ---- */
       body.innerHTML = `
         <div class="bd-header">
@@ -477,14 +483,16 @@
         ${proofSection}
         ${chatSection}
         <div class="bd-section">
+          ${canCancelHere ? `<button type="button" class="btn btn-outline btn-block btn-sm btn-danger-ghost" style="margin-bottom:8px"
+            onclick="cancelBooking('${kind}', '${booking.id}').then(ok => ok && openBookingDetails({ kind: '${kind}', id: '${booking.id}' }))">
+            <i class="fa-solid fa-xmark"></i> Cancel booking
+          </button>` : ''}
           <button type="button" class="btn btn-outline btn-block btn-sm" onclick="typeof openSupportRequestModal === 'function' && openSupportRequestModal({ kind: '${kind}', id: '${booking.id}' })">
             <i class="fa-solid fa-circle-question"></i> Report an issue with this booking
           </button>
         </div>
       `;
 
-      if (riderId) {
-      }
       if (rideStops.length) {
         initStopControls({ kind, id: booking.id, riderId, stops: rideStops });
       }

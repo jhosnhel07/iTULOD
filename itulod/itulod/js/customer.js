@@ -1647,13 +1647,14 @@ async function cancelBooking(kind, id) {
       ? `A rider has already accepted — cancelling now may incur a ${peso(cfg.cancellation_fee)} cancellation fee.`
       : 'A rider has already accepted this booking.';
   }
-  if (!(await appConfirm(message, { title: 'Cancel this booking?', confirmText: 'Yes, cancel', cancelText: 'Keep booking', danger: true, icon: 'fa-ban' }))) return;
+  if (!(await appConfirm(message, { title: 'Cancel this booking?', confirmText: 'Yes, cancel', cancelText: 'Keep booking', danger: true, icon: 'fa-ban' }))) return false;
 
   const { error } = await supabase.from(table).update({ status: 'cancelled', cancelled_reason: 'Cancelled by customer' }).eq('id', id);
-  if (error) { toast(error.message, 'error'); return; }
+  if (error) { toast(error.message, 'error'); return false; }
   toast('Booking cancelled.', 'success');
   loadHome();
   loadHistory();
+  return true; // booking details re-opens to show it cancelled
 }
 
 // ---- rating modal ----------------------------------------------------------
