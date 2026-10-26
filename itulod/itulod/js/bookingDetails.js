@@ -376,14 +376,25 @@
       }
 
       /* ---- 8. Documents section ---- */
-      const hasLicense = riderApplication?.license_url;
-      const hasOrcr    = riderApplication?.or_cr_url;
-      const docsSection = (hasLicense || hasOrcr) ? `
+      // rider-documents is private: the saved public URL answers "Bucket not
+      // found", so open each file through a 1-hour signed link (customers may
+      // sign their rider's license and OR/CR — sql/045).
+      const docs = [["Driver's License", riderApplication?.license_url], ['OR / CR', riderApplication?.or_cr_url]]
+        .map(([label, url]) => ({ label, path: url && url.includes('/rider-documents/')
+          ? decodeURIComponent(url.split('/rider-documents/')[1].split('?')[0]) : null }))
+        .filter(d => d.path);
+      const signed = {};
+      if (docs.length) {
+        const { data: links } = await supabase.storage.from('rider-documents').createSignedUrls(docs.map(d => d.path), 3600);
+        for (const l of links || []) if (l.signedUrl) signed[l.path] = l.signedUrl;
+      }
+      const docsSection = docs.length ? `
         <div class="bd-section">
           <h4><i class="fa-solid fa-id-card"></i> Rider Documents</h4>
           <div class="bd-doc-grid">
-            ${hasLicense ? `<div class="bd-doc"><strong>Driver's License</strong><a href="${riderApplication.license_url}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></div>` : ''}
-            ${hasOrcr    ? `<div class="bd-doc"><strong>OR / CR</strong><a href="${riderApplication.or_cr_url}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></div>` : ''}
+            ${docs.map(d => `<div class="bd-doc"><strong>${d.label}</strong>${signed[d.path]
+              ? `<a href="${escapeHtml(signed[d.path])}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>`
+              : '<span class="muted">Not available</span>'}</div>`).join('')}
           </div>
         </div>` : '';
 
