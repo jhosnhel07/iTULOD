@@ -3327,7 +3327,10 @@ button.vehicle-chip-item { font: inherit; color: inherit; width: 100%; cursor: p
   }
   .app-shell--tabbed .mobile-topbar {
     justify-content: center;
-    position: relative;
+    /* stays pinned while the page scrolls (was relative, which undid the
+       sticky bar above); still the anchor for the absolute icons */
+    position: sticky;
+    top: 0;
   }
   .app-shell--tabbed .mobile-topbar .topbar-action {
     position: absolute;
@@ -5423,3 +5426,29 @@ a.rider-doc:hover .rider-doc__thumb { border-color: var(--blue); }
 .online-hero.is-online .online-switch { background: rgba(255, 255, 255, .35); }
 @keyframes online-pulse { 0% { box-shadow: 0 0 0 0 rgba(184, 245, 214, .6); } 100% { box-shadow: 0 0 0 10px rgba(184, 245, 214, 0); } }
 @media (prefers-reduced-motion: reduce) { .online-hero.is-online .online-hero__dot { animation: none; } }
+
+/* Title + profile picture row stays at the top while the page scrolls
+   (desktop; phones pin .mobile-topbar instead). Frosted like the phone bar. */
+@media (min-width: 901px) {
+  .page-head {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    margin: -28px -32px 24px;
+    padding: 20px 32px 14px;
+    align-items: center;
+    background: rgba(250, 251, 253, 0.84);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid rgba(236, 222, 221, 0.8);
+  }
+  :root[data-theme="dark"] .page-head {
+    background: rgba(19, 28, 41, 0.82);
+    border-bottom-color: rgba(36, 50, 70, 0.9);
+  }
+  /* "scroll to this card" lands below the pinned row, not under it */
+  .main :is(.card, .map-card, .form-step) { scroll-margin-top: 110px; }
+}
+@media (max-width: 900px) {
+  .main :is(.card, .map-card, .form-step) { scroll-margin-top: 72px; }
+}
