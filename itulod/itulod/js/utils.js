@@ -674,7 +674,45 @@ function requireFields(fields) {
   return true;
 }
 
+// ---- Stay where you were after a refresh ---------------------------------
+// The open section lives in the address (#book/parcel, #earnings) so a refresh
+// — or logging in again after the session ran out — reopens it. Small choices
+// inside a section (filters, the booking step, an open booking) are kept in
+// sessionStorage: this browser tab only, gone when it closes or on log out.
+const VIEW_PREFIX = 'itulod-view:';
+const RETURN_KEY = 'itulod-return-to';
+function readViewHash() {
+  const [tab = '', sub = ''] = decodeURIComponent(location.hash.replace(/^#/, '')).split('/');
+  return { tab, sub };
+}
+function writeViewHash(tab, sub) {
+  const h = '#' + tab + (sub ? '/' + sub : '');
+  if (location.hash !== h) history.replaceState(null, '', location.pathname + location.search + h);
+}
+function viewState(key, value) {
+  const k = VIEW_PREFIX + location.pathname + ':' + key;
+  try {
+    if (value === undefined) { const raw = sessionStorage.getItem(k); return raw == null ? null : JSON.parse(raw); }
+    if (value === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, JSON.stringify(value));
+  } catch (_) { /* storage blocked: the page just opens as usual */ }
+  return value;
+}
+// Everything above plus the booking drafts — on log out, so the next person
+// on this browser starts clean.
+function clearViewState() {
+  try {
+    for (const store of [sessionStorage, localStorage]) {
+      Object.keys(store).filter(k => k.startsWith(VIEW_PREFIX) || k.startsWith('itulod-customer-') || k === RETURN_KEY)
+        .forEach(k => store.removeItem(k));
+    }
+  } catch (_) { /* nothing to clear */ }
+}
+// Booking drafts used to live in localStorage (kept even after log out); they
+// are per-tab now — drop any left over from before.
+try { Object.keys(localStorage).filter(k => k.startsWith('itulod-customer-')).forEach(k => localStorage.removeItem(k)); } catch (_) { /* blocked */ }
+
 // ---- Form draft persistence --------------------------------------------
+// Kept in sessionStorage: survives a refresh, not closing the tab or log out.
 function saveFormDraft(storageKey, form, extraState = {}) {
   if (!form) return;
   const payload = { ...extraState };
@@ -694,13 +732,13 @@ function saveFormDraft(storageKey, form, extraState = {}) {
       payload[key] = el.value;
     }
   });
-  localStorage.setItem(storageKey, JSON.stringify(payload));
+  try { sessionStorage.setItem(storageKey, JSON.stringify(payload)); } catch (_) { /* storage blocked */ }
 }
 
 function restoreFormDraft(storageKey, form, extraKeys = {}) {
   if (!form) return null;
   try {
-    const raw = localStorage.getItem(storageKey);
+    const raw = sessionStorage.getItem(storageKey);
     if (!raw) return null;
     const payload = JSON.parse(raw);
 
@@ -727,13 +765,13 @@ function restoreFormDraft(storageKey, form, extraKeys = {}) {
     return payload;
   } catch (err) {
     console.warn(`Discarding a corrupt saved draft (${storageKey}):`, err && err.message);
-    localStorage.removeItem(storageKey);
+    try { sessionStorage.removeItem(storageKey); } catch (_) { /* blocked */ }
     return null;
   }
 }
 
 function clearFormDraft(storageKey) {
-  localStorage.removeItem(storageKey);
+  try { sessionStorage.removeItem(storageKey); } catch (_) { /* blocked */ }
 }
 
 // ---- Path helpers --------------------------------------------------------
@@ -745,7 +783,14 @@ function rootPath() {
 }
 function redirectForRole(role) {
   const map = { admin: 'admin/dashboard.html', rider: 'rider/dashboard.html', customer: 'customer/dashboard.html' };
-  return rootPath() + (map[role] || 'login.html');
+  // Back to the section you were on when the session ran out (requireSession).
+  let hash = '';
+  try {
+    const back = JSON.parse(sessionStorage.getItem(RETURN_KEY) || 'null');
+    sessionStorage.removeItem(RETURN_KEY);
+    if (back && map[role] && back.path.endsWith(map[role]) && /^#[\w/-]+$/.test(back.hash)) hash = back.hash;
+  } catch (_) { /* no saved place */ }
+  return rootPath() + (map[role] || 'login.html') + hash;
 }
 
 async function ensureRiderApproval(profile) {
@@ -804,6 +849,7 @@ async function requireSession(allowedRoles) {
   document.body.style.visibility = 'hidden';
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
+    try { if (location.hash) sessionStorage.setItem(RETURN_KEY, JSON.stringify({ path: location.pathname, hash: location.hash })); } catch (_) { /* blocked */ }
     window.location.href = rootPath() + 'login.html';
     return null;
   }

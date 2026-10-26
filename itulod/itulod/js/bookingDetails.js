@@ -106,6 +106,7 @@
     const overlay = document.getElementById('booking-details-modal-overlay');
     const modal   = document.getElementById('booking-details-modal');
     if (!overlay || !modal) { toast('Booking details modal not found.', 'error'); return; }
+    if (typeof viewState === 'function') viewState('details', { kind, id }); // reopened after a refresh
 
     overlay.style.display = 'flex'; // matches .modal-overlay.open — centres the modal
     overlay.classList.add('open');
@@ -647,6 +648,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.style.display = 'none';
     document.body.style.overflow = '';
+    if (typeof viewState === 'function') viewState('details', null);
     if (typeof stopTrackingRider === 'function') stopTrackingRider();
     if (typeof destroyBookingDetailsMap === 'function') destroyBookingDetailsMap();
     if (CHAT_CHANNEL) { supabase.removeChannel(CHAT_CHANNEL); CHAT_CHANNEL = null; }
@@ -654,8 +656,18 @@
     if (body) body.innerHTML = '';
   }
 
+  // After a refresh, reopen the booking that was open — if it can still be seen.
+  async function reopenBookingDetails() {
+    const d = typeof viewState === 'function' ? viewState('details') : null;
+    const table = d && d.id && kindTable(d.kind);
+    if (!table) return;
+    const { data } = await supabase.from(table).select('id').eq('id', d.id).maybeSingle();
+    if (data) openBookingDetails(d); else viewState('details', null);
+  }
+
   window.openBookingDetails  = openBookingDetails;
   window.closeBookingDetails = closeBookingDetails;
+  window.reopenBookingDetails = reopenBookingDetails;
 
   window.markItemOutOfStock = async function(itemId, bookingId, e) {
     if (e) e.stopPropagation();

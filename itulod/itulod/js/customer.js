@@ -34,6 +34,7 @@ let RATING_TARGET = null; // { kind, id }
   wireSupportRequestForm();
   wireWalletTopupForm();
   wireReferralCard();
+  restoreView(); // a refresh stays on the section you were on
 
   await loadHome();
   await loadHistory();
@@ -44,6 +45,7 @@ let RATING_TARGET = null; // { kind, id }
   populateProfileForm();
   subscribeRealtime();
   startBookingExpiryWatch();
+  if (typeof reopenBookingDetails === 'function') reopenBookingDetails(); // the booking that was open
 
   if (typeof enablePushNotifications === 'function') enablePushNotifications();
   if (typeof renderPushPrompt === 'function') renderPushPrompt('push-prompt');
@@ -80,7 +82,10 @@ function setBookingService(svc) {
   document.querySelectorAll('#booking-switch .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.service === svc));
   document.querySelectorAll('.booking-view').forEach(v => v.classList.toggle('active', v.id === 'view-' + svc));
   const sub = document.getElementById('page-sub');
-  if (sub && document.getElementById('tab-book').classList.contains('active')) sub.textContent = BOOKING_SUBTITLES[svc];
+  if (document.getElementById('tab-book').classList.contains('active')) {
+    if (sub) sub.textContent = BOOKING_SUBTITLES[svc];
+    writeViewHash('book', svc); // a refresh comes back to this service
+  }
   if (typeof resizeBookingMap === 'function') requestAnimationFrame(() => resizeBookingMap(svc));
 
   // "Riders near you" follows whichever booking form is showing (each has
@@ -171,6 +176,7 @@ function setupFormSteps(formId, cfg) {
     });
     form.classList.toggle('on-first-step', current === 0);
     form.classList.toggle('on-last-step', current === steps.length - 1);
+    viewState('step:' + formId, current); // a refresh comes back to this step
     if (current === steps.length - 1) renderSummary();
     // the riders map under the vehicle choice was sized while hidden
     if (typeof resizeBookingMap === 'function') ['ride', 'parcel', 'hauling'].forEach(t => requestAnimationFrame(() => resizeBookingMap(t)));
@@ -204,7 +210,12 @@ function setupFormSteps(formId, cfg) {
     if (at >= 0 && at !== current) go(at);
   }, true);
   form.addEventListener('reset', () => go(0));
-  go(0);
+  // Back to the step from before a refresh — but only past steps whose fields
+  // are still filled in (the draft brings them back).
+  const saved = Number(viewState('step:' + formId)) || 0;
+  let reach = 0;
+  while (reach < saved && [...steps[reach].querySelectorAll('input, select, textarea')].every(f => f.checkValidity())) reach++;
+  go(reach);
 }
 
 // Home screen service tiles → straight to that booking form.
@@ -247,6 +258,7 @@ function activateTab(name) {
       if (typeof resizeBookingMap === 'function') requestAnimationFrame(() => resizeBookingMap('saved'));
     });
   }
+  if (name !== 'book') writeViewHash(name); // book writes #book/<service> in setBookingService
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }
@@ -255,6 +267,42 @@ function wireTabNav() {
   document.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+}
+
+// After a refresh: reopen the section in the address (#book/parcel) and the
+// History type chosen before (utils.js readViewHash / viewState).
+function restoreView() {
+  const { tab, sub } = readViewHash();
+  if (tab && TAB_TITLES[tab] && tab !== 'home') {
+    activateTab(tab);
+    if (tab === 'book' && BOOKING_SUBTITLES[sub]) setBookingService(sub);
+  }
+  const kind = viewState('history');
+  const btn = kind && document.querySelector(`.tab-btn[data-history="${kind}"]`);
+  if (btn) {
+    document.querySelectorAll('.tab-btn[data-history]').forEach(b => b.classList.toggle('active', b === btn));
+    HISTORY_KIND = kind;
+  }
+}
+
+// Booking drafts: the form's fields plus its map pins (and ride stops), saved
+// as you type or pin and put back after a refresh (utils.js saveFormDraft —
+// this browser tab only, cleared on booking and on log out).
+function keepBookingDraft(tab, form, extra) {
+  const key = 'itulod-customer-' + tab;
+  const save = () => saveFormDraft(key, form, {
+    __pins: typeof getBookingPins === 'function' ? getBookingPins(tab) : null,
+    ...(extra ? extra() : {}),
+  });
+  form.addEventListener('input', save);
+  form.addEventListener('change', save);
+  document.addEventListener('itulod:pins', (e) => { if (e.detail.tab === tab) save(); });
+  const draft = restoreFormDraft(key, form);
+  if (draft?.__pins && typeof restoreBookingPins === 'function') {
+    // food's pickup is the restaurant, set when one is chosen
+    restoreBookingPins(tab, tab === 'food' ? { dropoff: draft.__pins.dropoff } : draft.__pins);
+  }
+  return draft;
 }
 
 // ---- fare estimator: real OSRM road distance when we can get it, the
@@ -622,11 +670,20 @@ function wireRideForm() {
   }
   if (addStopBtn) addStopBtn.addEventListener('click', addStopRow);
 
-  form.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', () => saveFormDraft('itulod-customer-ride', form));
-    el.addEventListener('change', () => saveFormDraft('itulod-customer-ride', form));
-  });
-  restoreFormDraft('itulod-customer-ride', form);
+  const draft = keepBookingDraft('ride', form, () => ({ __stops: getStops().filter(Boolean) }));
+  for (const stop of draft?.__stops || []) {
+    addStopRow();
+    const inputs = stopsContainer?.querySelectorAll('input');
+    if (inputs?.length) inputs[inputs.length - 1].value = stop;
+  }
+  if (draft) {
+    // the list was built for 1 passenger before the count came back
+    renderRideVehicleOptions();
+    if ([...vehicleSel.options].some(o => o.value && o.value === draft['ride-vehicle'])) {
+      vehicleSel.value = draft['ride-vehicle'];
+      vehicleSel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
   est.recalc();
 
   const scheduleToggle = document.getElementById('ride-schedule-toggle');
@@ -825,11 +882,7 @@ function wireFoodForm() {
   const address = document.getElementById('food-address');
   const vehicleSel = document.getElementById('food-vehicle');
 
-  form.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', () => saveFormDraft('itulod-customer-food', form));
-    el.addEventListener('change', () => saveFormDraft('itulod-customer-food', form));
-  });
-  restoreFormDraft('itulod-customer-food', form);
+  keepBookingDraft('food', form);
   // The restaurant/cart is deliberately never restored from a draft (it's
   // dynamic state, not a named form field) — the customer just re-picks if
   // they left mid-order.
@@ -1086,11 +1139,7 @@ function wireParcelForm() {
       return v;
     }),
   ];
-  form.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', () => saveFormDraft('itulod-customer-parcel', form));
-    el.addEventListener('change', () => saveFormDraft('itulod-customer-parcel', form));
-  });
-  restoreFormDraft('itulod-customer-parcel', form);
+  keepBookingDraft('parcel', form);
   masks.forEach(reformat => reformat && reformat()); // format any restored draft values
   est.recalc();
 
@@ -1226,11 +1275,7 @@ function wireHaulingForm() {
     attachInputMask(document.getElementById('hauling-sender-phone'), formatPhoneMobile),
     attachInputMask(document.getElementById('hauling-receiver-phone'), formatPhoneMobile),
   ];
-  form.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', () => saveFormDraft('itulod-customer-hauling', form));
-    el.addEventListener('change', () => saveFormDraft('itulod-customer-hauling', form));
-  });
-  restoreFormDraft('itulod-customer-hauling', form);
+  keepBookingDraft('hauling', form);
   masks.forEach(reformat => reformat && reformat());
   est.recalc();
 
@@ -1463,6 +1508,7 @@ function wireHistoryTabs() {
       btn.classList.add('active');
       HISTORY_KIND = btn.dataset.history;
       HISTORY_PAGE = 1;
+      viewState('history', HISTORY_KIND);
       loadHistory();
     });
   });

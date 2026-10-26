@@ -31,6 +31,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireSupportSubTabs();
   wireSettingsForm();
   wireChartRange();
+  restoreView(); // a refresh stays on the section you were on
 
   await loadAnalytics();
   await loadCustomers();
@@ -52,30 +53,58 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
 function initials(name) { return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
 
 // ---- tab nav ---------------------------------------------------------
+const TAB_TITLES = {
+  analytics: ['Dashboard analytics', 'Platform overview at a glance.'],
+  customers: ['Customers', 'All registered customers.'],
+  riders: ['Riders & applications', 'Approve riders and manage the fleet.'],
+  vehicles: ['Vehicle categories', 'Manage available vehicle types and fares.'],
+  restaurants: ['Restaurants', 'Manage restaurants and their menus for food delivery.'],
+  support: ['Support requests', 'Refunds, disputes, and everything else customers flag.'],
+  bookings: ['Bookings & deliveries', 'Monitor all activity across the platform.'],
+  payments: ['Payments', 'Transactions, commissions, and payouts.'],
+  announcements: ['Announcements', 'Broadcast messages to your users.'],
+  settings: ['Settings', 'Platform configuration.']
+};
+function activateTab(name) {
+  const titles = TAB_TITLES[name];
+  if (!titles || !document.getElementById('tab-' + name)) return;
+  document.querySelectorAll('.side-link[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  Object.keys(TAB_TITLES).forEach(t => document.getElementById('tab-' + t)?.classList.toggle('active', t === name));
+  document.getElementById('page-title').textContent = titles[0];
+  document.getElementById('page-sub').textContent = titles[1];
+  writeViewHash(name); // a refresh comes back here
+  closeSidebar();
+}
 function wireTabNav() {
   document.querySelectorAll('.side-link[data-tab]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.side-link[data-tab]').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#tab-analytics, #tab-customers, #tab-riders, #tab-vehicles, #tab-restaurants, #tab-support, #tab-bookings, #tab-payments, #tab-announcements, #tab-settings').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      const titles = {
-        analytics: ['Dashboard analytics', 'Platform overview at a glance.'],
-        customers: ['Customers', 'All registered customers.'],
-        riders: ['Riders & applications', 'Approve riders and manage the fleet.'],
-        vehicles: ['Vehicle categories', 'Manage available vehicle types and fares.'],
-        restaurants: ['Restaurants', 'Manage restaurants and their menus for food delivery.'],
-        support: ['Support requests', 'Refunds, disputes, and everything else customers flag.'],
-        bookings: ['Bookings & deliveries', 'Monitor all activity across the platform.'],
-        payments: ['Payments', 'Transactions, commissions, and payouts.'],
-        announcements: ['Announcements', 'Broadcast messages to your users.'],
-        settings: ['Settings', 'Platform configuration.']
-      }[btn.dataset.tab];
-      document.getElementById('page-title').textContent = titles[0];
-      document.getElementById('page-sub').textContent = titles[1];
-      closeSidebar();
-    });
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+}
+
+// After a refresh: reopen the section in the address (#vehicles) and the
+// chart range / list tabs chosen before (utils.js viewState). Runs before the
+// first loads, so the lists load once, already filtered.
+function restoreView() {
+  const { tab } = readViewHash();
+  if (tab && tab !== 'analytics') activateTab(tab);
+  const pick = (selector, attr, value) => {
+    const btn = value && document.querySelector(`${selector}[${attr}="${value}"]`);
+    if (btn) document.querySelectorAll(selector).forEach(b => {
+      b.classList.toggle('active', b === btn);
+      if (b.hasAttribute('aria-selected')) b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+    });
+    return !!btn;
+  };
+  const days = viewState('chart-days');
+  if (pick('#chart-range .seg-btn', 'data-days', days)) CHART_DAYS = Number(days);
+  const kind = viewState('booking-kind');
+  if (pick('.tab-btn[data-booking-kind]', 'data-booking-kind', kind)) BOOKING_KIND = kind;
+  const support = viewState('support-tab');
+  if (pick('.tab-btn[data-support-tab]', 'data-support-tab', support)) SUPPORT_TAB = support;
+  const riders = viewState('rider-tab');
+  if (pick('.tab-btn[data-rider-tab]', 'data-rider-tab', riders)) {
+    document.querySelectorAll('#rider-pending, #rider-all').forEach(p => p.classList.toggle('active', p.id === 'rider-' + riders));
+  }
 }
 
 // ---- platform settings (sql/034) -----------------------------------------
@@ -162,6 +191,7 @@ function wireChartRange() {
     const btn = e.target.closest('.seg-btn');
     if (!btn) return;
     CHART_DAYS = Number(btn.dataset.days) || 7;
+    viewState('chart-days', CHART_DAYS);
     host.querySelectorAll('.seg-btn').forEach((b) => {
       b.classList.toggle('active', b === btn);
       b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
@@ -326,6 +356,7 @@ function wireRiderSubTabs() {
       document.querySelectorAll('#rider-pending, #rider-all').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('rider-' + btn.dataset.riderTab).classList.add('active');
+      viewState('rider-tab', btn.dataset.riderTab);
     });
   });
 }
@@ -1116,6 +1147,7 @@ function wireBookingTabs() {
       document.querySelectorAll('.tab-btn[data-booking-kind]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       BOOKING_KIND = btn.dataset.bookingKind;
+      viewState('booking-kind', BOOKING_KIND);
       BOOKINGS_PAGE = 1;
       loadBookings();
     });
@@ -1360,6 +1392,7 @@ function wireSupportSubTabs() {
       document.querySelectorAll('.tab-btn[data-support-tab]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       SUPPORT_TAB = btn.dataset.supportTab;
+      viewState('support-tab', SUPPORT_TAB);
       renderSupportList();
     });
   });

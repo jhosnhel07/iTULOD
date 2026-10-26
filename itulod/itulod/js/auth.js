@@ -219,6 +219,7 @@ async function uploadRiderDoc(userId, file, kind) {
 // LOGOUT — used by the sidebar on every dashboard page
 // ---------------------------------------------------------------------
 async function logout() {
+  if (typeof clearViewState === 'function') clearViewState(); // drafts + remembered sections
   await supabase.auth.signOut();
   window.location.href = rootPath() + 'login.html';
 }

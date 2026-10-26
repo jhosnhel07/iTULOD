@@ -30,6 +30,7 @@ const PAGE_SIZE = 6;
   wireReceiptUpload();
   wireOnlineToggle();
   populateProfileForm();
+  restoreView(); // a refresh stays on the section you were on
 
   await loadHaulingVehicleNames();
   await initOnlineStatus();
@@ -43,6 +44,7 @@ const PAGE_SIZE = 6;
   subscribeRealtime();
   watchNotifications();
   startBookingExpiryWatch();
+  if (typeof reopenBookingDetails === 'function') reopenBookingDetails(); // the booking that was open
   // Realtime only fires on INSERT/UPDATE, so a scheduled ride crossing into
   // its 30-minute visibility window (loadRequests()) wouldn't otherwise
   // reappear until the next manual refresh — nothing about the row changes
@@ -127,6 +129,7 @@ function activateTab(name) {
     document.getElementById('page-title').textContent = titles[0];
     document.getElementById('page-sub').textContent = titles[1];
   }
+  writeViewHash(name); // a refresh comes back here
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeSidebar();
 }
@@ -135,6 +138,23 @@ function wireTabNav() {
   document.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+}
+
+// After a refresh: reopen the section in the address (#earnings) plus the
+// History type and Earnings filters chosen before (utils.js viewState).
+function restoreView() {
+  const { tab } = readViewHash();
+  if (tab && TAB_TITLES[tab] && tab !== 'home') activateTab(tab);
+  const kind = viewState('history');
+  const btn = kind && document.querySelector(`.tab-btn[data-history="${kind}"]`);
+  if (btn) {
+    document.querySelectorAll('.tab-btn[data-history]').forEach(b => b.classList.toggle('active', b === btn));
+    HISTORY_KIND = kind;
+  }
+  const range = viewState('pay-range');
+  if (range) document.querySelector(`#pay-split-range .seg-btn[data-range="${range}"]`)?.click();
+  const method = viewState('pay-filter');
+  if (method && document.querySelector(`#pay-records-filter .seg-btn[data-method="${method}"]`)) setPayFilter(method);
 }
 
 // ---- home / overview -------------------------------------------------
@@ -868,12 +888,14 @@ function renderPayRecords() {
 }
 function setPayFilter(method) {
   PAY_FILTER = method;
+  viewState('pay-filter', method);
   document.querySelectorAll('#pay-records-filter .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.method === method));
   renderPayRecords();
 }
 function wireEarningsControls() {
   document.querySelectorAll('#pay-split-range .seg-btn').forEach(b => b.addEventListener('click', () => {
     PAY_RANGE = b.dataset.range;
+    viewState('pay-range', PAY_RANGE);
     document.querySelectorAll('#pay-split-range .seg-btn').forEach(x => x.classList.toggle('active', x === b));
     renderPaySplit();
   }));
@@ -889,6 +911,7 @@ function wireHistoryTabs() {
       btn.classList.add('active');
       HISTORY_KIND = btn.dataset.history;
       HISTORY_PAGE = 1;
+      viewState('history', HISTORY_KIND);
       loadHistory();
     });
   });

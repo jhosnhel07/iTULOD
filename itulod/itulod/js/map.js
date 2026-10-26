@@ -395,16 +395,45 @@ async function _setStop(tab, lngLat, address) {
     if (cfg.markers.address) cfg.markers.address.remove();
     cfg.markers.address = _makeMarker(cfg.map, lngLat, '#f59e0b', 'Address');
   }
-  if (cfg.markers.pickup && cfg.markers.dropoff) {
-    const p = cfg.markers.pickup.getLngLat().toArray();
-    const d = cfg.markers.dropoff.getLngLat().toArray();
-    _drawRouteOnMap(cfg.map, cfg.routeSource, cfg.routeLayer, cfg.routeColor, p, d)
-      .then(route => {
-        if (route && typeof cfg.onRoute === 'function') {
-          cfg.onRoute({ km: route.km, min: route.min, pickup: p, dropoff: d });
-        }
-      });
+  _routeBetweenPins(cfg);
+  // the booking draft keeps the pins (customer.js)
+  document.dispatchEvent(new CustomEvent('itulod:pins', { detail: { tab } }));
+}
+
+function _routeBetweenPins(cfg) {
+  if (!cfg.markers.pickup || !cfg.markers.dropoff) return;
+  const p = cfg.markers.pickup.getLngLat().toArray();
+  const d = cfg.markers.dropoff.getLngLat().toArray();
+  _drawRouteOnMap(cfg.map, cfg.routeSource, cfg.routeLayer, cfg.routeColor, p, d)
+    .then(route => {
+      if (route && typeof cfg.onRoute === 'function') {
+        cfg.onRoute({ km: route.km, min: route.min, pickup: p, dropoff: d });
+      }
+    });
+}
+
+// Pins of a booking form, for its draft: { pickup: [lng, lat], dropoff: … }.
+function getBookingPins(tab) {
+  const cfg = _maps[tab];
+  if (cfg && !cfg.map && cfg.pendingPins) return cfg.pendingPins; // restored, map not open yet
+  return { pickup: getMapMarkerLngLat(tab, 'pickup'), dropoff: getMapMarkerLngLat(tab, 'dropoff') };
+}
+// Put back the pins saved with a booking draft after a refresh. The address
+// text came back with the draft, so no lookup — just the markers and route.
+// Maps load the first time New booking opens; until then the pins wait.
+function restoreBookingPins(tab, pins) {
+  const cfg = _maps[tab];
+  if (!cfg || !pins) return;
+  if (!cfg.map) { cfg.pendingPins = pins; return; }
+  for (const [mode, color, label] of [['pickup', '#22c55e', 'Pickup'], ['dropoff', '#ef4444', 'Drop-off']]) {
+    const ll = pins[mode];
+    if (!Array.isArray(ll) || !isInIlocosNorte(ll[0], ll[1])) continue;
+    if (cfg.markers[mode]) cfg.markers[mode].remove();
+    cfg.markers[mode] = _makeMarker(cfg.map, ll, color, label);
   }
+  if (cfg.markers.pickup) setMapMode('dropoff', tab);
+  // the route line needs the map style; a fresh map is still loading it
+  if (cfg.map.isStyleLoaded()) _routeBetweenPins(cfg); else cfg.map.once('idle', () => _routeBetweenPins(cfg));
 }
 
 // The customer form registers a callback here so the fare updates the moment
@@ -567,6 +596,10 @@ function ensureBookingMaps() {
       if (document.getElementById('parcel-map')) initParcelMap('parcel-map');
       if (document.getElementById('hauling-map')) initHaulingMap('hauling-map');
       if (document.getElementById('saved-map')) initSavedMap('saved-map');
+      for (const tab of ['ride', 'food', 'parcel', 'hauling']) {
+        const pins = _maps[tab].pendingPins;
+        if (pins) { delete _maps[tab].pendingPins; restoreBookingPins(tab, pins); }
+      }
     })
     .catch((err) => {
       _bookingMapsPromise = null; // let a later attempt retry
