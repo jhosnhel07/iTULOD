@@ -32,6 +32,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireSettingsForm();
   wireChartRange();
   restoreView(); // a refresh stays on the section you were on
+  loadWaitingBookingCounts(); // the sidebar count shows at once, not after every list loads
 
   await loadAnalytics();
   await loadCustomers();
