@@ -319,6 +319,8 @@ function syncNotifMarkAll() {
 const NOTIF_BOOKING_RE = /\b(ride|delivery|hauling|booking|rider|trip|parcel|food|payment|refund|fee|cod|tip|no-show|expired|cancell?ed)\b/i;
 
 function notifIcon(n) {
+  if (String(n.link || '').startsWith('announcement/')) return 'fa-bullhorn'; // from the admin (sql/048)
+  if (String(n.link || '').startsWith('messages/')) return 'fa-comment-dots';
   const t = `${n.title} ${n.message}`.toLowerCase();
   if (/refund|wallet|payment|fee|tip|bonus/.test(t)) return 'fa-wallet';
   if (/cancel|expired|no-show|not approved/.test(t)) return 'fa-circle-exclamation';

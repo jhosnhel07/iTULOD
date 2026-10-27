@@ -1264,10 +1264,13 @@ function wireAnnouncementForm() {
     if (!requireFields({ Title: title, Message: body })) return;
 
     setLoading(btn, true);
-    const { error } = await supabase.from('announcements').insert({ title, body, audience, created_by: CURRENT_PROFILE.id });
+    // The database delivers it as a notification (+ phone push) to the
+    // audience and records how many it reached (sql/048).
+    const { data: ann, error } = await supabase.from('announcements')
+      .insert({ title, body, audience, created_by: CURRENT_PROFILE.id }).select('recipients').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
-    toast('Announcement published!', 'success');
+    toast(`Announcement sent to ${ann?.recipients ?? 0} ${audience === 'all' ? 'customers and riders' : audience + 's'}.`, 'success');
     e.target.reset();
     loadAnnouncements();
   });
@@ -1284,11 +1287,25 @@ async function loadAnnouncements() {
     });
     return;
   }
+  const AUDIENCE = { all: 'Everyone', customer: 'Customers', rider: 'Riders' };
   el.innerHTML = data.map(a => `
     <div class="notif-item">
       <span class="dot" style="background:var(--orange)"></span>
-      <div style="flex:1"><h4>${escapeHtml(a.title)}</h4><p>${escapeHtml(a.body)}</p><time>${formatDate(a.created_at)} · ${a.audience}</time></div>
+      <div style="flex:1"><h4>${escapeHtml(a.title)}</h4><p>${escapeHtml(a.body)}</p>
+        <time>${formatDate(a.created_at)} · ${AUDIENCE[a.audience] || a.audience} · ${a.recipients == null
+          ? '<strong style="color:var(--red)">not sent</strong>'
+          : `sent to ${a.recipients} ${a.recipients === 1 ? 'person' : 'people'}`}</time></div>
+      ${a.recipients == null ? `<button type="button" class="btn btn-primary btn-sm" onclick="sendAnnouncement('${a.id}', this)"><i class="fa-solid fa-paper-plane"></i> Send now</button>` : ''}
     </div>`).join('');
+}
+// Announcements published before delivery existed were never sent (sql/048).
+async function sendAnnouncement(id, btn) {
+  setLoading(btn, true);
+  const { data, error } = await supabase.rpc('deliver_announcement', { p_id: id });
+  setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  toast(`Sent to ${data} ${data === 1 ? 'person' : 'people'}.`, 'success');
+  loadAnnouncements();
 }
 
 // ---- realtime ------------------------------------------------------------

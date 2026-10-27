@@ -7,6 +7,18 @@
       let selectedRole = "customer";
       let selectedVehicle = "Motorcycle";
       const REGISTER_DRAFT_KEY = "itulod-register-draft";
+      // Set once an account is created: the wizard stops saving a draft, so
+      // coming back to Create account starts a fresh form.
+      let registrationDone = false;
+
+      // A new account is signed in by signUp(). Sign it out again (like the
+      // app) and drop the draft, so the next visit to Create account — or
+      // Login — starts fresh instead of jumping into this account.
+      async function finishRegistration() {
+        registrationDone = true;
+        clearFormDraft(REGISTER_DRAFT_KEY);
+        try { await supabase.auth.signOut(); } catch (_) { /* already signed out */ }
+      }
       const vehicleModelsByType = {
         Bicycle: [
           "Mountain bike",
@@ -807,7 +819,7 @@
               .eq("id", data.user.id);
           }
 
-          clearFormDraft(REGISTER_DRAFT_KEY);
+          await finishRegistration();
 
           // Customer should land on customer STEP 5 success panel
           showCustomerSuccess();
@@ -1007,7 +1019,7 @@
             }
           }
 
-          clearFormDraft(REGISTER_DRAFT_KEY);
+          await finishRegistration();
 
           // Ensure rider SUCCESS panel is the only visible Step 5 panel
           showRiderSuccess();
@@ -1173,6 +1185,7 @@
       }
 
       function saveRegistrationDraft() {
+        if (registrationDone) return;
         const form = document.querySelector(".form-panel");
         saveFormDraft(REGISTER_DRAFT_KEY, form, {
           currentStep,
@@ -1244,8 +1257,9 @@
           "role",
         );
         if (!hasExplicitRole) {
+          clearFormDraft(REGISTER_DRAFT_KEY); // the draft lives in sessionStorage now
           try {
-            localStorage.removeItem(REGISTER_DRAFT_KEY);
+            localStorage.removeItem(REGISTER_DRAFT_KEY); // left over from before
           } catch (_) {}
         }
 

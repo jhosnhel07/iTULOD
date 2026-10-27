@@ -1267,6 +1267,20 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(33, 150, 243, 0.4);
       }
+      /* Under Login on the success screens: start a fresh sign-up. */
+      .btn-register-another {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: fit-content;
+        margin: 14px auto 0;
+        color: #2196f3;
+        font-weight: 600;
+        font-size: var(--fs-sm);
+        text-decoration: none;
+      }
+      .btn-register-another:hover { text-decoration: underline; }
 
       /* ── Responsive ───────────────────────────────────────── */
       /* Below 900px the left branding panel (logo, tagline, steps preview,
