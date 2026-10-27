@@ -5668,3 +5668,48 @@ a.rider-doc:hover .rider-doc__thumb { border-color: var(--blue); }
   .msg-bubble { max-width: 85%; }
   .msg-photo img { max-width: 200px; }
 }
+
+/* New booking: your bookings still going (customer.js renderBookActive) */
+.book-active {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--blue);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+.book-active[hidden] { display: none; }
+.book-active__icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+}
+.book-active__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.book-active__main strong { font-size: var(--fs-sm); color: var(--ink); }
+.book-active__main span { overflow: hidden; color: var(--text-muted); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
+.book-active__more {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.book-active__actions { display: flex; flex-shrink: 0; gap: 6px; }
+@media (max-width: 720px) {
+  .book-active { flex-wrap: wrap; }
+  .book-active__actions { width: 100%; }
+  .book-active__actions .btn { flex: 1; justify-content: center; }
+  /* step-by-step forms: only on the first step */
+  #tab-book:has(.booking-view.active form[data-stepped]:not(.on-first-step)) .book-active { display: none; }
+}

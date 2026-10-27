@@ -725,6 +725,7 @@ function wireRideForm() {
     ]))) return;
     // One fare value for both the inserted row and the confirmation modal, so
     // the amount shown can never drift from the amount charged.
+    if (!(await okToBookAgain('transport'))) return;
     const fare = estimateRideFare(vehicle, km, passengers());
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('transport_bookings').insert({
@@ -919,6 +920,7 @@ function wireFoodForm() {
       { label: 'Delivery address', address: address.value.trim(), coords: typeof getMapMarkerLngLat === 'function' ? getMapMarkerLngLat('food', 'dropoff') : null },
     ]))) return;
 
+    if (!(await okToBookAgain('food'))) return;
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('food_deliveries').insert({
       customer_id: CURRENT_PROFILE.id,
@@ -1195,6 +1197,7 @@ function wireParcelForm() {
       { label: 'Sender address', address: payload.sender_address, coords: parcelCoords?.pickup },
       { label: 'Receiver address', address: payload.receiver_address, coords: parcelCoords?.dropoff },
     ]))) return;
+    if (!(await okToBookAgain('parcel'))) return;
     setLoading(btn, true);
     const { data: booking, error } = await supabase.from('parcel_deliveries').insert(payload).select('id').single();
     setLoading(btn, false);
@@ -1343,6 +1346,7 @@ function wireHaulingForm() {
     payload.dropoff_lng = coords?.dropoff?.[0] ?? null;
     payload.dropoff_lat = coords?.dropoff?.[1] ?? null;
 
+    if (!(await okToBookAgain('hauling'))) return;
     setLoading(btn, true);
     const { error } = await supabase.from('hauling_bookings').insert(payload);
     setLoading(btn, false);
@@ -1437,12 +1441,58 @@ async function loadHome() {
     rider = data || null;
   }
   renderHomeActive(active, rider);
+  ACTIVE_BOOKINGS = rows.filter(r => ['pending', 'accepted', 'ongoing'].includes(r.status));
+  renderBookActive();
 
   // Recent activity
   const recent = document.getElementById('home-recent');
   recent.innerHTML = rows.length
     ? rows.slice(0, 4).map(r => renderHistoryCard(r, r._kind)).join('')
     : emptyState({ icon: 'fa-inbox', title: 'No bookings yet', body: 'Your rides and deliveries will show up here.' });
+}
+
+// ---- New booking: your bookings still going ------------------------------
+// A banner above the service switch (pending / accepted / ongoing, kept
+// current by loadHome), so nobody books the same thing twice by mistake; and
+// the submit buttons ask before a second booking of the same service.
+let ACTIVE_BOOKINGS = [];
+const ACTIVE_STAGE = { pending: 'waiting for a rider', accepted: 'with a rider on the way', ongoing: 'in progress' };
+const KIND_NOUN = { transport: 'ride', food: 'food order', parcel: 'parcel delivery', hauling: 'hauling job' };
+function renderBookActive() {
+  const el = document.getElementById('book-active');
+  if (!el) return;
+  const b = ACTIVE_BOOKINGS[0];
+  if (!b) { el.hidden = true; el.innerHTML = ''; return; }
+  const kind = b._kind;
+  const more = ACTIVE_BOOKINGS.length - 1;
+  const canChat = b.rider_id && ['accepted', 'ongoing'].includes(b.status) && typeof openBookingChat === 'function';
+  el.hidden = false;
+  el.innerHTML = `
+    <span class="book-active__icon" style="background:${COLOR_BY_KIND[kind]}"><i class="fa-solid ${ICON_BY_KIND[kind]}"></i></span>
+    <div class="book-active__main">
+      <strong>You have a ${KIND_NOUN[kind]} ${ACTIVE_STAGE[b.status]}</strong>
+      <span>${escapeHtml(bookingTitle(b, kind))} · ${peso(b.final_fare ?? b.estimated_fare)}</span>
+      ${more > 0 ? `<button type="button" class="book-active__more" onclick="activateTab('history')">+${more} more in Booking history</button>` : ''}
+    </div>
+    <div class="book-active__actions">
+      <button type="button" class="btn btn-outline btn-sm" onclick="openBookingDetails({ kind: '${kind}', id: '${b.id}' })"><i class="fa-solid fa-eye"></i> View</button>
+      ${canChat ? `<button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${b.id}')"><i class="fa-solid fa-comment-dots"></i> Chat</button>` : ''}
+      ${['pending', 'accepted'].includes(b.status) ? `<button type="button" class="btn btn-outline btn-sm btn-danger-ghost" onclick="cancelBooking('${kind}', '${b.id}')"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ''}
+    </div>`;
+}
+
+// Before a second booking of the same service while one is still going:
+// ask, don't block (two rides for the family is fine). Checked fresh.
+async function okToBookAgain(kind) {
+  const { data } = await supabase.from(TABLE_BY_KIND[kind]).select('id, status')
+    .eq('customer_id', CURRENT_PROFILE.id).in('status', ['pending', 'accepted', 'ongoing'])
+    .order('created_at', { ascending: false }).limit(1);
+  const b = data?.[0];
+  if (!b) return true;
+  const ok = await appConfirm(`You already have a ${KIND_NOUN[kind]} ${ACTIVE_STAGE[b.status]}. Book another one?`,
+    { title: 'Book another?', confirmText: 'Book anyway', cancelText: 'View my booking', icon: 'fa-clone' });
+  if (!ok) openBookingDetails({ kind, id: b.id });
+  return ok;
 }
 
 function renderHomeActive(b, rider) {
