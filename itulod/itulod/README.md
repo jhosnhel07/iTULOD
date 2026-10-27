@@ -67,6 +67,7 @@ itulod/
 │   ├── check-email/            # Anonymous: is this email already registered?
 │   ├── redeem-promo/           # Validates + applies a promo code (transport only, for now)
 │   ├── wallet-topup/           # Opens a PayMongo GCash source to top up a customer's wallet
+│   ├── rider-pay-dues/         # A rider pays what they owe iTULOD by GCash (back to ₱0.00)
 │   ├── apply-referral-code/    # Redeems a referral code: welcome bonus now, referrer bonus on first completed booking
 │   └── _shared/               # helpers.ts, notify.ts (SMS + push fan-out), payments.ts (mark paid/failed, wallet credit)
 ├── DEPLOYMENT.md              # Deploy + secrets + security runbook

@@ -1609,7 +1609,7 @@ async function loadRiderClaims() {
       <div class="info"><div>
         <h4>${escapeHtml(c.rider?.full_name || 'Rider')} · ${peso(c.amount)}</h4>
         <p>${c.method === 'gcash' ? "GCash sent to iTULOD's number" : 'Cash, handed to the admin'}${c.reference ? ' · ref. ' + escapeHtml(c.reference) : ''}</p>
-        <p style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml(c.rider?.phone || '')} · sent ${escapeHtml(formatDate(c.created_at))}</p>
+        <p style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml([c.rider?.phone, 'sent ' + formatDate(c.created_at)].filter(Boolean).join(' · '))}</p>
         <div class="claim-reject" style="margin-top:8px;display:none;gap:6px;flex-wrap:wrap">
           <input type="text" class="claim-reason" maxlength="200" placeholder="Why can't you confirm it?" style="flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--bg-input);color:var(--text)">
           <button class="btn btn-danger-ghost btn-sm" onclick="reviewClaim('${c.id}', false, this)">Reject</button>
