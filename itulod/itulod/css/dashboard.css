@@ -5434,6 +5434,81 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 }
 
 /* =====================================================================
+   CUSTOMER PROMOS (js/promos.js, sql/053): the picker on each booking form
+   and My promos
+   ===================================================================== */
+.promo-pick__row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.promo-pick__select { flex: 1; min-width: 200px; }
+.promo-pick__code { display: flex; gap: 8px; margin-top: 8px; }
+.promo-pick__code[hidden] { display: none; }
+.promo-pick__input { flex: 1; min-width: 0; }
+.promo-pick__note { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.promo-pick__save { color: var(--green-dark); }
+.promo-pick__save i { margin-right: 4px; }
+.promo-code-form { display: flex; gap: 8px; }
+.promo-code-form input {
+  width: 180px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs);
+  background: var(--bg-input); color: var(--text); font: inherit; font-size: var(--fs-sm);
+}
+#tab-promos .card-head h3 { display: flex; align-items: center; gap: 8px; }
+#tab-promos .card-head h3 > i { color: var(--blue); font-size: 0.9em; }
+.promo-list { display: flex; flex-direction: column; gap: 12px; }
+.promo-card {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px;
+  padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.promo-card.is-flash { border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-50); }
+.promo-card__value {
+  width: 74px; height: 74px; border-radius: var(--radius-md);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%); color: #fff;
+  font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 800; line-height: 1;
+  border: 2px dashed rgba(255, 255, 255, 0.55); outline: 3px solid var(--blue);
+}
+.promo-card__value small { margin-top: 3px; font-size: 11px; font-weight: 600; opacity: 0.9; }
+.promo-card--used .promo-card__value, .promo-card--expired .promo-card__value,
+.promo-card--ended .promo-card__value, .promo-card--full .promo-card__value {
+  background: var(--slate-300); outline-color: var(--slate-300);
+}
+.promo-card__info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.promo-card__info strong { color: var(--ink); }
+.promo-card__info span { font-size: var(--fs-sm); color: var(--text-body); }
+.promo-card__info code {
+  align-self: flex-start; padding: 2px 8px; border-radius: 6px; background: var(--surface-2);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; color: var(--ink);
+}
+.promo-card__state { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+@media (max-width: 640px) {
+  .promo-card { grid-template-columns: auto minmax(0, 1fr); }
+  .promo-card__state { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+  .promo-card__value { width: 62px; height: 62px; font-size: var(--fs-md); }
+  .promo-code-form { width: 100%; }
+  .promo-code-form input { flex: 1; width: auto; }
+}
+
+/* Admin → promo codes (admin.js wirePromoForm / loadPromoCodes) */
+.promo-form {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 14px;
+  margin-bottom: 18px; align-items: end;
+}
+.promo-form .field { margin-bottom: 0; }
+.promo-form__wide { grid-column: span 2; }
+.promo-form__services { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 0; }
+.promo-form__services label, .promo-form__send label {
+  display: inline-flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; margin: 0;
+}
+.promo-form__services input, .promo-form__send input { width: auto; }
+.promo-form__send { align-self: center; }
+.promo-form__submit { display: flex; justify-content: flex-end; grid-column: 1 / -1; }
+.promo-cell { display: flex; flex-direction: column; gap: 2px; }
+.promo-cell code { align-self: flex-start; font-weight: 700; }
+.promo-cell strong { color: var(--ink); }
+.promo-cell small { color: var(--text-muted); font-size: var(--fs-xs); }
+@media (max-width: 900px) { .promo-form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .promo-form { grid-template-columns: 1fr; } .promo-form__wide { grid-column: auto; } .promo-form__submit .btn { width: 100%; } }
+
+/* =====================================================================
    RIDER → EARNINGS (rider.js loadEarnings): what you earned → balance with
    iTULOD → last 7 days + by payment method → records
    ===================================================================== */

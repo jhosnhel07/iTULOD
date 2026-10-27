@@ -35,6 +35,7 @@ let RATING_TARGET = null; // { kind, id }
   wireWalletTopupForm();
   wireReferralCard();
   if (typeof initMessages === 'function') initMessages(); // reads #messages/<chat> before restoreView()
+  if (typeof initPromos === 'function') initPromos(); // My promos + the pickers on the booking forms (sql/053)
   restoreView(); // a refresh stays on the section you were on
 
   await loadHome();
@@ -65,6 +66,7 @@ const TAB_TITLES = {
   'book': ['New booking', 'Choose your pickup, destination, and vehicle.'],
   'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
   'messages': ['Messages', 'Chat with your rider about a booking.'],
+  'promos': ['My promos', 'Claim promos and use them when you book.'],
   'notifications': ['Notifications', 'Updates about your bookings.'],
   'profile': ['Profile', 'Manage your account details.'],
 };
@@ -543,27 +545,6 @@ function toggleSavedAddressPicker(btn, inputId) {
   setTimeout(() => document.addEventListener('click', _addrPickerOutsideClick, true), 0);
 }
 
-// If the customer typed a promo code, validate + apply it server-side
-// (supabase/functions/redeem-promo) right after the booking is created —
-// this can only ever knock the fare down, never up, and it's applied to
-// the real row in the database, not just displayed, so there's nothing for
-// a client to spoof. Clears the input either way so a failed code doesn't
-// silently get retried on the next booking.
-async function applyPromoIfEntered(kind, bookingId, promoInputId) {
-  const input = document.getElementById(promoInputId);
-  const code = input?.value.trim();
-  if (!code) return;
-  input.value = '';
-  const { data, error } = await supabase.functions.invoke('redeem-promo', {
-    body: { code, booking_type: kind, booking_id: bookingId },
-  });
-  if (error || data?.error) {
-    toast(data?.error || error.message || 'That promo code could not be applied.', 'error');
-    return;
-  }
-  toast(`Promo applied — you saved ${peso(data.discount_amount)}!`, 'success');
-}
-
 // ---- vehicle select + fare estimate -------------------------------------
 async function loadVehicleOptions() {
   const { data, error } = await supabase.from('vehicles').select('*').eq('is_available', true).order('base_fare');
@@ -767,7 +748,8 @@ function wireRideForm() {
           ? 'Pay with GCash from Home or Booking history whenever you’re ready.'
           : 'Waiting for a rider to accept.'
     );
-    await applyPromoIfEntered('transport', booking.id, 'ride-promo');
+    // the promo picked on the form (js/promos.js → redeem-promo, sql/053)
+    await applyChosenPromo('transport', booking.id);
     // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
     const [pLngLat, dLngLat] = await Promise.all([
       _geocodeAddress(pickup.value),
@@ -941,6 +923,7 @@ function wireFoodForm() {
       }))
     );
     if (itemsErr) toast(`Order placed, but the item list didn't save: ${itemsErr.message}`, 'error');
+    await applyChosenPromo('food', booking.id);
 
     celebrate(
       'Order placed!',
@@ -1193,6 +1176,7 @@ function wireParcelForm() {
     const { data: booking, error } = await supabase.from('parcel_deliveries').insert(payload).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
+    await applyChosenPromo('parcel', booking.id);
 
     // GCash isn't charged here: "Pay ₱X" shows in Booking history once a
     // rider accepts (the booking gets its final_fare then — sql/050).
@@ -1336,9 +1320,10 @@ function wireHaulingForm() {
 
     if (!(await okToBookAgain('hauling'))) return;
     setLoading(btn, true);
-    const { error } = await supabase.from('hauling_bookings').insert(payload);
+    const { data: hauled, error } = await supabase.from('hauling_bookings').insert(payload).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
+    await applyChosenPromo('hauling', hauled.id);
 
     celebrate(
       payload.scheduled_for ? 'Hauling scheduled' : 'Hauling booked!',
@@ -1913,6 +1898,6 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'food'); loadHome(); if (HISTORY_KIND === 'food') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'parcel'); loadHome(); if (HISTORY_KIND === 'parcel') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'hauling'); loadHome(); if (HISTORY_KIND === 'hauling') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => loadNotifications())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => { loadNotifications(); if (typeof loadMyPromos === 'function') loadMyPromos(); })
     .subscribe();
 }

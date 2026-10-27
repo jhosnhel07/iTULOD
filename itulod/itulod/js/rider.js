@@ -961,14 +961,17 @@ function renderPayRecords() {
   }
   const meta = Object.fromEntries(PAY_METHODS.map(m => [m[0], m]));
   box.innerHTML = `<div class="pay-records">${rows.map(r => {
-    const commission = Number(r.platform_commission || 0);
+    // A promo is paid by iTULOD (sql/053): platform_commission is iTULOD's cut
+    // after the discount, so its full commission is that plus the discount.
+    const promo = Number(r.promo_discount || 0);
+    const commission = Number(r.platform_commission || 0) + promo;
     // a cancellation / no-show fee goes to the rider whole (no commission)
     const what = commission === 0 && Number(r.amount) === Number(r.rider_payout) ? 'Fee from customer' : (PAY_KIND_LABEL[r.booking_type] || 'Trip');
     const m = meta[r.method] || [r.method, r.method || '—', 'fa-receipt'];
     return `<div class="pay-rec">
       <span class="pay-rec__icon pay-rec__icon--${escapeHtml(r.method || '')}"><i class="fa-solid ${m[2]}"></i></span>
       <div class="pay-rec__main"><strong>${escapeHtml(what)}</strong><span>${formatDate(r.created_at)}</span><span>${escapeHtml(m[1])}</span></div>
-      <div class="pay-rec__amt"><strong>+${peso(r.rider_payout)}</strong><span>Paid ${peso(r.amount)}</span>${commission ? `<span>−${peso(commission)} commission</span>` : ''}</div>
+      <div class="pay-rec__amt"><strong>+${peso(r.rider_payout)}</strong><span>Paid ${peso(r.amount)}</span>${promo ? `<span>+${peso(promo)} promo by iTULOD</span>` : ''}${commission ? `<span>−${peso(commission)} commission</span>` : ''}</div>
     </div>`;
   }).join('')}</div>${all.length > rows.length
     ? `<div class="pay-records__more"><span>Showing ${rows.length} of ${all.length}</span>

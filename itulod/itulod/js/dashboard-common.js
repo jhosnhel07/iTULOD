@@ -324,6 +324,7 @@ const NOTIF_BOOKING_RE = /\b(ride|delivery|hauling|booking|rider|trip|parcel|foo
 
 function notifIcon(n) {
   if (String(n.link || '').startsWith('announcement/')) return 'fa-bullhorn'; // from the admin (sql/048)
+  if (String(n.link || '').startsWith('promo/')) return 'fa-ticket'; // a promo to claim (sql/053)
   if (String(n.link || '').startsWith('messages/')) return 'fa-comment-dots';
   const t = `${n.title} ${n.message}`.toLowerCase();
   if (/refund|wallet|payment|fee|tip|bonus/.test(t)) return 'fa-wallet';
@@ -339,7 +340,9 @@ async function openNotification(id) {
   const fullDate = isNaN(when) ? '' : when.toLocaleString('en-PH', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
   });
-  const bookingRelated = NOTIF_BOOKING_RE.test(`${n.title} ${n.message}`);
+  // a promo: Claim it / view it in My promos (js/promos.js, sql/053)
+  const promoAction = /^promo\/[\w-]+$/.test(n.link || '') && typeof promoNotifAction === 'function' ? promoNotifAction(n) : '';
+  const bookingRelated = !promoAction && NOTIF_BOOKING_RE.test(`${n.title} ${n.message}`);
   // a chat message opens its conversation (notifications.link, sql/046)
   const chatLink = typeof openLink === 'function' && /^messages\/[\w-]+\/[\w-]+$/.test(n.link || '') ? n.link : '';
   document.getElementById('notif-modal-body').innerHTML = `
@@ -349,6 +352,7 @@ async function openNotification(id) {
       <time datetime="${escapeHtml(n.created_at || '')}"><i class="fa-regular fa-clock"></i> ${escapeHtml(fullDate)}</time>
       <p>${escapeHtml(n.message)}</p>
       <div class="notif-detail__actions">
+        ${promoAction}
         ${chatLink ? `<button type="button" class="btn btn-primary btn-block" onclick="closeNotification(); openLink('${escapeHtml(chatLink)}')"><i class="fa-solid fa-comment-dots"></i> Open chat</button>` : ''}
         ${!chatLink && bookingRelated ? `<button type="button" class="btn btn-primary btn-block" onclick="closeNotification(); activateTab('history')"><i class="fa-solid fa-clock-rotate-left"></i> ${CURRENT_PROFILE?.role === 'rider' ? 'View history' : 'View booking history'}</button>` : ''}
         <button type="button" class="btn btn-outline btn-block" onclick="closeNotification()">Close</button>
