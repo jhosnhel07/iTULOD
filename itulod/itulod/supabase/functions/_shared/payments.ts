@@ -115,3 +115,20 @@ export async function markWalletTopupFailed(admin: ReturnType<typeof adminClient
   await admin.from('wallet_topups').update({ status: 'failed' }).eq('id', topup.id);
   return topup;
 }
+
+// ---- rider paying what they owe iTULOD (rider-pay-dues, sql/051) -------------
+// settle_rider_payment() records the collection and tells the rider, once.
+export async function markRiderPaymentPaid(admin: ReturnType<typeof adminClient>, reference: string) {
+  const { data: row } = await admin.from('rider_payments').select('id').eq('paymongo_reference', reference).maybeSingle();
+  if (!row) return null;
+  const { data, error } = await admin.rpc('settle_rider_payment', { p_reference: reference });
+  if (error) throw error;
+  return data;
+}
+
+export async function markRiderPaymentFailed(admin: ReturnType<typeof adminClient>, reference: string) {
+  const { data: row } = await admin.from('rider_payments').select('id, status').eq('paymongo_reference', reference).maybeSingle();
+  if (!row) return null;
+  if (row.status === 'pending') await admin.from('rider_payments').update({ status: 'failed' }).eq('id', row.id);
+  return row;
+}

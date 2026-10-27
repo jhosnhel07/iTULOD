@@ -32,7 +32,8 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireSettingsForm();
   wireChartRange();
   restoreView(); // a refresh stays on the section you were on
-  loadWaitingBookingCounts(); // the sidebar count shows at once, not after every list loads
+  loadWaitingBookingCounts(); // the sidebar counts show at once, not after every list loads
+  loadRiderClaims();
 
   await loadAnalytics();
   await loadCustomers();
@@ -1336,6 +1337,9 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, () => debouncedReload([loadBookings, loadAnalytics, loadPayments, loadRiderBalances]))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => debouncedReload([loadPayments]))
+    // riders paying by GCash / "I paid the admin" (sql/051)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rider_payment_claims' }, () => loadRiderClaims())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rider_settlements' }, () => loadRiderBalances())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'support_requests' }, () => debouncedReload([loadSupportRequests]))
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
       // Only photo-review changes matter here; own timer so it doesn't cancel
@@ -1555,6 +1559,8 @@ async function loadRiderBalances() {
   ]);
   if (error) { tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`; return; }
   const debtLimit = Number(cfg?.rider_debt_limit || 0);
+  RIDERS_TO_PAY = (data || []).filter(r => Number(r.net) > 0).length;
+  updatePaymentsBadge();
   const rows = (data || []).filter(r => Number(r.net) !== 0 || Number(r.cod_unremitted) > 0 || Number(r.online_earnings) > 0 || Number(r.cash_commission) > 0);
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6">${emptyState({ icon: 'fa-scale-balanced', title: 'All settled', body: 'No rider has an open balance.' })}</td></tr>`;
@@ -1574,9 +1580,58 @@ async function loadRiderBalances() {
       <td>${peso(r.cash_commission)}</td>
       <td>${netCell}</td>
       <td>${Number(r.cod_unremitted) > 0 ? `<span class="badge badge--pending">${peso(r.cod_unremitted)}</span>` : '—'}</td>
-      <td>${net !== 0 ? `<button class="btn btn-outline btn-sm" onclick='openSettlementModal(${JSON.stringify({ id: r.rider_id, name: r.full_name, net })})'>Record ${net > 0 ? 'payout' : 'payment'}</button>` : ''}</td>
+      <td>${net !== 0 ? `<button class="btn btn-outline btn-sm" onclick='openSettlementModal(${JSON.stringify({ id: r.rider_id, name: r.full_name, net })})'>${net > 0 ? 'Mark sent' : 'Mark paid'}</button>` : ''}</td>
     </tr>`;
   }).join('');
+}
+
+// ---- "I paid the admin" (sql/051) -------------------------------------------
+// The badge on Payments: payments to confirm + riders iTULOD still has to pay.
+let RIDERS_TO_PAY = 0;
+let CLAIMS_TO_CONFIRM = 0;
+function updatePaymentsBadge() { setNavCount('payments', RIDERS_TO_PAY + CLAIMS_TO_CONFIRM); }
+
+async function loadRiderClaims() {
+  const el = document.getElementById('rider-claims-list');
+  if (!el) return;
+  const { data, error } = await supabase.from('rider_payment_claims')
+    .select('*, rider:rider_id(full_name, phone)').eq('status', 'pending').order('created_at');
+  if (error) { el.innerHTML = emptyState({ icon: 'fa-triangle-exclamation', title: 'Could not load', body: error.message, tone: 'error' }); return; }
+  CLAIMS_TO_CONFIRM = (data || []).length;
+  updatePaymentsBadge();
+  if (!CLAIMS_TO_CONFIRM) {
+    el.innerHTML = emptyState({ icon: 'fa-circle-check', title: 'Nothing to confirm', body: 'Payments riders say they made to you show up here.', tone: 'success' });
+    return;
+  }
+  el.innerHTML = data.map(c => `
+    <div class="booking-card claim-row" data-claim="${c.id}" style="cursor:default">
+      <div class="kind-icon" style="background:var(--green)"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+      <div class="info"><div>
+        <h4>${escapeHtml(c.rider?.full_name || 'Rider')} · ${peso(c.amount)}</h4>
+        <p>${c.method === 'gcash' ? "GCash sent to iTULOD's number" : 'Cash, handed to the admin'}${c.reference ? ' · ref. ' + escapeHtml(c.reference) : ''}</p>
+        <p style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml(c.rider?.phone || '')} · sent ${escapeHtml(formatDate(c.created_at))}</p>
+        <div class="claim-reject" style="margin-top:8px;display:none;gap:6px;flex-wrap:wrap">
+          <input type="text" class="claim-reason" maxlength="200" placeholder="Why can't you confirm it?" style="flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--bg-input);color:var(--text)">
+          <button class="btn btn-danger-ghost btn-sm" onclick="reviewClaim('${c.id}', false, this)">Reject</button>
+        </div>
+      </div></div>
+      <div class="meta">
+        <button class="btn btn-primary btn-sm" onclick="reviewClaim('${c.id}', true, this)"><i class="fa-solid fa-check"></i> Mark paid</button>
+        <button class="btn btn-outline btn-sm" onclick="this.closest('.claim-row').querySelector('.claim-reject').style.display = 'flex'; this.closest('.claim-row').querySelector('.claim-reason').focus()">Reject…</button>
+      </div>
+    </div>`).join('');
+}
+
+async function reviewClaim(id, confirm, btn) {
+  const reason = confirm ? null : btn.closest('.claim-row').querySelector('.claim-reason').value.trim();
+  if (!confirm && !reason) { toast('Say why it wasn\'t confirmed.', 'error'); return; }
+  setLoading(btn, true);
+  const { error } = await supabase.rpc('admin_review_rider_claim', { p_claim: id, p_confirm: confirm, p_reason: reason });
+  setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  toast(confirm ? 'Marked paid — the rider\'s balance is updated.' : 'Rejected — the rider has been told why.', 'success');
+  loadRiderClaims();
+  loadRiderBalances();
 }
 
 function openSettlementModal(r) {

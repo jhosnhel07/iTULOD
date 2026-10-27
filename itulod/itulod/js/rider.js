@@ -276,8 +276,8 @@ async function loadRequests() {
   const debtBanner = RIDER_DEBT.blocked
     ? `<div class="fee-alert" role="alert"><i class="fa-solid fa-circle-exclamation"></i><div>
         <strong>You owe iTULOD ${peso(RIDER_DEBT.owed)} in commission</strong>
-        <span>That's more than the ${peso(RIDER_DEBT.debt_limit)} limit, so you can't accept jobs until you settle it with the admin (GCash or cash). Your balance is on the Earnings page.</span>
-      </div></div>`
+        <span>That's more than the ${peso(RIDER_DEBT.debt_limit)} limit, so you can't accept jobs until you pay it — by GCash right away, or to the admin.</span>
+      </div><button type="button" class="btn btn-primary btn-sm" onclick="activateTab('earnings')"><i class="fa-solid fa-mobile-screen-button"></i> Pay now</button></div>`
     : '';
 
   if (merged.length === 0) {
@@ -756,30 +756,114 @@ async function updateStatus(kind, id, status) {
 
 // ---- earnings ----------------------------------------------------------
 // Balance with iTULOD (sql/024 rider_balance): GCash/wallet fares iTULOD
-// owes you, minus commission you owe on cash trips, less what's been settled.
+// owes you, minus commission you owe on cash trips, less what's been settled
+// — already just the difference. You owe: "Pay with GCash" (rider-pay-dues,
+// back to ₱0.00 by itself) or "I paid the admin" (the admin confirms).
+// iTULOD owes you: the admin sends it and marks it sent (sql/051).
+const GCASH_MIN = 20; // PayMongo's smallest GCash payment
+let RIDER_OWED = 0;
+
 async function loadRiderBalance() {
   const el = document.getElementById('rider-balance');
   if (!el) return;
-  const { data, error } = await supabase.rpc('rider_balance');
+  const [bal, claims, history] = await Promise.all([
+    supabase.rpc('rider_balance'),
+    supabase.from('rider_payment_claims').select('*').eq('rider_id', CURRENT_PROFILE.id).order('created_at', { ascending: false }).limit(1),
+    supabase.from('rider_settlements').select('*').eq('rider_id', CURRENT_PROFILE.id).order('created_at', { ascending: false }).limit(10),
+  ]);
+  const { data, error } = bal;
   if (error || !data || !data.length) { el.innerHTML = ''; return; }
   const b = data[0];
-  const net = Number(b.net);
+  const net = Math.round(Number(b.net) * 100) / 100;
+  RIDER_OWED = net < 0 ? -net : 0;
   const tone = net > 0 ? 'owed' : net < 0 ? 'due' : 'even';
   const headline = net > 0 ? `iTULOD owes you ${peso(net)}`
-    : net < 0 ? `You owe iTULOD ${peso(-net)}` : 'All settled';
+    : net < 0 ? `You owe iTULOD ${peso(-net)}` : `${peso(0)} · All settled`;
   const detail = `${peso(b.online_earnings)} from GCash/wallet trips · ${peso(b.cash_commission)} commission on cash trips`
     + (Number(b.payouts_made) ? ` · ${peso(b.payouts_made)} paid out` : '')
     + (Number(b.collections_made) ? ` · ${peso(b.collections_made)} paid in` : '');
+
+  const claim = claims.data?.[0];
+  const lastSettled = history.data?.[0]?.created_at;
+  const pending = claim?.status === 'pending' ? claim : null;
+  const rejected = claim?.status === 'rejected' && (!lastSettled || claim.reviewed_at > lastSettled) ? claim : null;
+  const actions = net < 0
+    ? (pending
+        ? `<div class="settle-note settle-note--wait"><i class="fa-regular fa-clock"></i><span>Waiting for the admin to confirm your ${peso(pending.amount)} ${pending.method === 'gcash' ? 'GCash' : 'cash'} payment${pending.reference ? ` (ref. ${escapeHtml(pending.reference)})` : ''}.</span></div>`
+        : `<div class="settle-actions">
+             ${RIDER_OWED >= GCASH_MIN ? `<button type="button" class="btn btn-primary btn-sm" id="pay-dues-btn" onclick="payDuesWithGcash(this)"><i class="fa-solid fa-mobile-screen-button"></i> Pay ${peso(RIDER_OWED)} with GCash</button>` : ''}
+             <button type="button" class="btn btn-outline btn-sm" onclick="openClaimModal()"><i class="fa-solid fa-hand-holding-dollar"></i> I paid the admin</button>
+           </div>
+           ${RIDER_OWED < GCASH_MIN ? `<p class="settle-hint">GCash needs at least ${peso(GCASH_MIN)} — pay this to the admin, then tap "I paid the admin".</p>` : ''}`)
+    : net > 0
+      ? `<div class="settle-note"><i class="fa-solid fa-circle-info"></i><span>The admin sends this to you and marks it sent — your balance then goes back to ${peso(0)}.</span></div>`
+      : '';
+  const rejectedNote = rejected
+    ? `<div class="settle-note settle-note--bad"><i class="fa-solid fa-circle-exclamation"></i><span>Your ${peso(rejected.amount)} payment wasn't confirmed: ${escapeHtml(rejected.reject_reason || '')}</span></div>`
+    : '';
+  const SETTLE_LABEL = (s) => s.direction === 'payout'
+    ? `iTULOD sent you · ${escapeHtml(s.method === 'gcash' ? 'GCash' : s.method || 'cash')}`
+    : s.note === 'Paid by GCash in the app' ? 'You paid by GCash'
+    : `You paid the admin · ${escapeHtml(s.method === 'gcash' ? 'GCash' : s.method || 'cash')}`;
+  const historyHtml = (history.data || []).length
+    ? `<details class="settle-history"><summary>Payments with iTULOD (${history.data.length})</summary>
+         ${history.data.map(s => `<div class="settle-row"><span>${SETTLE_LABEL(s)}<small>${escapeHtml(formatDate(s.created_at))}</small></span>
+           <strong class="${s.direction === 'payout' ? 'is-in' : 'is-out'}">${s.direction === 'payout' ? '+' : '−'}${peso(s.amount)}</strong></div>`).join('')}
+       </details>`
+    : '';
+
   el.innerHTML = `
-    <div class="balance-card balance-card--${tone}">
+    <div class="balance-card balance-card--${tone}" id="balance-main">
       <div class="balance-card__icon"><i class="fa-solid fa-scale-balanced"></i></div>
-      <div class="balance-card__text"><strong>${headline}</strong>${escapeHtml(detail)}</div>
+      <div class="balance-card__text"><strong>${headline}</strong>${escapeHtml(detail)}
+        ${actions}${rejectedNote}${historyHtml}</div>
     </div>
     ${Number(b.cod_unremitted) > 0 ? `
     <div class="balance-card balance-card--due">
       <div class="balance-card__icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
       <div class="balance-card__text"><strong>${peso(b.cod_unremitted)} COD to hand over</strong>Cash you collected for senders. Mark each one handed over from History → Parcels.</div>
     </div>` : ''}`;
+}
+
+// The amount is worked out on the server (rider-pay-dues); GCash sends the
+// rider back to payment-return.html, which confirms it and links to Earnings.
+async function payDuesWithGcash(btn) {
+  setLoading(btn, true);
+  const { data, error } = await supabase.functions.invoke('rider-pay-dues', { body: {} });
+  if (error || data?.error) {
+    setLoading(btn, false);
+    let message = data?.error || "Couldn't start the GCash payment.";
+    try { message = (await error.context.json()).error || message; } catch (_) { /* network error */ }
+    toast(message, 'error');
+    return;
+  }
+  toast('Redirecting to GCash…', 'info');
+  window.location.href = data.checkout_url;
+}
+
+function openClaimModal() {
+  document.getElementById('claim-amount').value = RIDER_OWED ? RIDER_OWED.toFixed(2) : '';
+  document.getElementById('claim-method').value = 'cash';
+  document.getElementById('claim-reference').value = '';
+  document.getElementById('claim-owed').textContent = peso(RIDER_OWED);
+  document.getElementById('claim-modal').classList.add('open');
+}
+function closeClaimModal() { document.getElementById('claim-modal')?.classList.remove('open'); }
+
+async function submitClaim(e) {
+  e.preventDefault();
+  const btn = document.getElementById('claim-submit');
+  setLoading(btn, true);
+  const { error } = await supabase.rpc('rider_claim_payment', {
+    p_amount: parseFloat(document.getElementById('claim-amount').value),
+    p_method: document.getElementById('claim-method').value,
+    p_reference: document.getElementById('claim-reference').value.trim() || null,
+  });
+  setLoading(btn, false);
+  if (error) { toast(error.message, 'error'); return; }
+  closeClaimModal();
+  toast('Sent — the admin will confirm your payment.', 'success');
+  loadRiderBalance();
 }
 
 async function markCodRemitted(id) {
@@ -1034,5 +1118,8 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings' }, refresh)
+    // paid / confirmed / sent: the balance and the debt banner follow at once (sql/051)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rider_settlements', filter: `rider_id=eq.${CURRENT_PROFILE.id}` }, () => { loadRiderBalance(); loadRequests(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rider_payment_claims', filter: `rider_id=eq.${CURRENT_PROFILE.id}` }, () => loadRiderBalance())
     .subscribe();
 }

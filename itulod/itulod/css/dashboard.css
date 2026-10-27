@@ -3971,6 +3971,30 @@ body {
 .balance-card--even .balance-card__icon { background: var(--blue-50); color: var(--blue); }
 .balance-card__text { flex: 1; font-size: var(--fs-sm); color: var(--text-muted); }
 .balance-card__text strong { display: block; font-family: var(--font-display); font-size: var(--fs-lg); color: var(--ink); }
+/* Rider balance: pay / I paid the admin / payments history (rider.js loadRiderBalance) */
+#balance-main { align-items: flex-start; }
+.settle-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.settle-hint { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.settle-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--blue-50); color: var(--ink); font-size: var(--fs-xs); line-height: 1.45;
+}
+.settle-note > i { margin-top: 2px; color: var(--blue); }
+.settle-note--wait { background: var(--yellow-tint, rgba(245, 158, 11, 0.12)); }
+.settle-note--wait > i { color: #b45309; }
+.settle-note--bad { background: var(--rose-50); }
+.settle-note--bad > i { color: var(--rose-deep); }
+.settle-history { margin-top: 12px; font-size: var(--fs-xs); }
+.settle-history summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.settle-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.settle-row:last-child { border-bottom: 0; }
+.settle-row span { color: var(--ink); }
+.settle-row small { display: block; color: var(--text-muted); }
+.settle-row strong { display: inline; font-size: var(--fs-sm); white-space: nowrap; }
+.settle-row .is-in { color: var(--green-dark); }
+.settle-row .is-out { color: var(--ink); }
+@media (max-width: 560px) { .settle-actions .btn { width: 100%; } }
 .hauling-availability {
   display: flex; align-items: center; gap: 8px;
   margin: 0 0 12px; padding: 10px 12px;

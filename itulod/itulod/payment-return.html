@@ -23,7 +23,7 @@
     <!-- Receipt, filled in by the script below once the booking is loaded. -->
     <dl class="receipt" id="receipt" style="display:none;margin-bottom:24px"></dl>
 
-    <a href="customer/dashboard.html" class="btn btn-primary btn-block">
+    <a href="customer/dashboard.html" id="return-back" class="btn btn-primary btn-block">
       <i class="fa-solid fa-arrow-left"></i> Back to dashboard
     </a>
   </div>
@@ -40,8 +40,12 @@
   const type = params.get('type');
   const id = params.get('id');
   const result = params.get('result'); // success | failed
-  const isWallet = type === 'wallet';
-  const table = isWallet ? 'wallet_topups' : { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries', hauling: 'hauling_bookings' }[type];
+  // 'rider' = a rider paying what they owe iTULOD (rider-pay-dues, sql/051);
+  // it has the same columns as a wallet top-up.
+  const isRider = type === 'rider';
+  const isWallet = type === 'wallet' || isRider;
+  const table = type === 'wallet' ? 'wallet_topups' : isRider ? 'rider_payments' : { transport: 'transport_bookings', food: 'food_deliveries', parcel: 'parcel_deliveries', hauling: 'hauling_bookings' }[type];
+  if (isRider) document.getElementById('return-back').href = 'rider/dashboard.html#earnings';
 
   const iconEl = document.getElementById('return-icon');
   const titleEl = document.getElementById('return-title');
@@ -86,14 +90,14 @@
   function renderReceipt(b) {
     const rows = [];
     if (b.paymongo_reference) rows.push(['Reference', escapeHtml(b.paymongo_reference)]);
-    rows.push([isWallet ? 'Top-up' : 'Booking', escapeHtml('#' + id.slice(0, 8))]);
+    rows.push([isRider ? 'Paid to' : isWallet ? 'Top-up' : 'Booking', isRider ? 'iTULOD (commission)' : escapeHtml('#' + id.slice(0, 8))]);
     const route = type === 'transport' ? [b.pickup_address, b.destination_address]
       : type === 'food' ? [b.restaurant_name, b.delivery_address]
       : type === 'parcel' ? [b.sender_address, b.receiver_address]
       : type === 'hauling' ? [b.pickup_address, b.dropoff_address]
       : [];
     if (route[0] && route[1]) rows.push(['Route', escapeHtml(`${route[0]} → ${route[1]}`)]);
-    rows.push(['Booked', escapeHtml(formatDate(b.created_at))]);
+    rows.push([isWallet ? 'Date' : 'Booked', escapeHtml(formatDate(b.created_at))]);
     rows.push(['Method', b.payment_method === 'gcash' ? 'GCash' : b.payment_method === 'wallet' ? 'iTULOD Wallet' : escapeHtml(b.payment_method || '—')]);
     rows.push(['Status', statusCell(b.payment_status)]);
 
@@ -107,12 +111,16 @@
   function setHeading(status) {
     if (status === 'paid') {
       show('fa-circle-check', 'var(--green)', 'Payment successful!',
-        isWallet ? "It's in your wallet — ready to spend on your next ride." : 'Your booking is confirmed. See you soon!');
+        isRider ? 'iTULOD received it — your balance is updated on Earnings.'
+          : isWallet ? "It's in your wallet — ready to spend on your next ride." : 'Your booking is confirmed. See you soon!');
     } else if (status === 'failed') {
       show('fa-circle-xmark', 'var(--red)', 'Payment did not go through',
-        isWallet ? 'Your wallet was not topped up. You can try again from your dashboard.' : 'You can retry from Booking history in your dashboard.');
+        isRider ? 'Your balance is unchanged. You can try again from Earnings.'
+          : isWallet ? 'Your wallet was not topped up. You can try again from your dashboard.' : 'You can retry from Booking history in your dashboard.');
     } else {
-      show('fa-clock', 'var(--slate-500)', 'Still confirming…', "This can take a minute — we'll update your booking history as soon as PayMongo confirms.");
+      show('fa-clock', 'var(--slate-500)', 'Still confirming…', isRider
+        ? "This can take a minute — your balance on Earnings updates as soon as PayMongo confirms."
+        : "This can take a minute — we'll update your booking history as soon as PayMongo confirms.");
     }
   }
 

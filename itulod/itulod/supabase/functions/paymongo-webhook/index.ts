@@ -14,20 +14,23 @@
 // PayMongo signature ourselves below instead of a Supabase JWT.)
 // =============================================================================
 import { adminClient, json, CORS_HEADERS } from '../_shared/helpers.ts';
-import { chargeSource, markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
+import {
+  chargeSource, markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed,
+  markRiderPaymentPaid, markRiderPaymentFailed,
+} from '../_shared/payments.ts';
 
-// A PayMongo reference funds either a booking or a wallet top-up — try the
-// booking first (the common case) and fall back to a wallet top-up only when
-// nothing matched, so each reference is settled exactly once.
+// A PayMongo reference funds a booking, a wallet top-up, or a rider paying
+// what they owe iTULOD — try them in that order, so each reference is settled
+// exactly once.
 async function settlePaid(admin: ReturnType<typeof adminClient>, reference: string) {
-  const hit = await markBookingPaid(admin, reference);
-  if (hit) return;
-  await markWalletTopupPaid(admin, reference);
+  if (await markBookingPaid(admin, reference)) return;
+  if (await markWalletTopupPaid(admin, reference)) return;
+  await markRiderPaymentPaid(admin, reference);
 }
 async function settleFailed(admin: ReturnType<typeof adminClient>, reference: string) {
-  const hit = await markBookingFailed(admin, reference);
-  if (hit) return;
-  await markWalletTopupFailed(admin, reference);
+  if (await markBookingFailed(admin, reference)) return;
+  if (await markWalletTopupFailed(admin, reference)) return;
+  await markRiderPaymentFailed(admin, reference);
 }
 
 async function hmacSha256Hex(secret: string, payload: string) {

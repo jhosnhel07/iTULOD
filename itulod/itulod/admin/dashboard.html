@@ -50,6 +50,7 @@
           </button>
           <button class="side-link" data-tab="payments">
             <i class="fa-solid fa-sack-dollar"></i> Payments
+            <span class="badge side-count js-count-payments" hidden title="Rider payments to confirm and riders to pay">0</span>
           </button>
           <button class="side-link" data-tab="vehicles">
             <i class="fa-solid fa-car-side"></i> Vehicle categories
@@ -479,6 +480,14 @@
 
         <!-- ===================== PAYMENTS ===================== -->
         <section class="tab-panel" id="tab-payments">
+          <!-- "I paid the admin" from riders, waiting to be confirmed (sql/051) -->
+          <div class="card" style="margin-bottom: 20px">
+            <div class="card-head">
+              <h3>Rider payments to confirm</h3>
+              <span style="font-size: var(--fs-xs); color: var(--text-muted)">Riders who say they paid you their commission — check, then mark paid</span>
+            </div>
+            <div id="rider-claims-list"></div>
+          </div>
           <!-- Rider balances (sql/024): who iTULOD must pay, who owes commission -->
           <div class="card" style="margin-bottom: 20px">
             <div class="card-head">

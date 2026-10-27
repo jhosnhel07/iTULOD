@@ -14,12 +14,17 @@
 // payment completes right away instead of waiting on the webhook. PayMongo
 // charges a source only once, so a race with the webhook can't double charge.
 //
-//   POST { booking_type: 'transport'|'food'|'parcel'|'hauling', booking_id }
+//   POST { booking_type: 'transport'|'food'|'parcel'|'hauling'|'wallet'|'rider', booking_id }
+//   ('wallet' = a customer's wallet top-up; 'rider' = a rider paying what
+//   they owe iTULOD — rider-pay-dues, sql/051)
 //
 // Deploy: supabase functions deploy sync-payment-status
 // =============================================================================
 import { adminClient, getRequestUser, json, paymongoFetch, TABLE_BY_KIND, CORS_HEADERS } from '../_shared/helpers.ts';
-import { chargeSource, markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
+import {
+  chargeSource, markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed,
+  markRiderPaymentPaid, markRiderPaymentFailed,
+} from '../_shared/payments.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
@@ -30,19 +35,21 @@ Deno.serve(async (req: Request) => {
 
     const { booking_type, booking_id } = await req.json();
     const isWallet = booking_type === 'wallet';
-    const table = isWallet ? 'wallet_topups' : TABLE_BY_KIND[booking_type];
+    const isRider = booking_type === 'rider';
+    const table = isWallet ? 'wallet_topups' : isRider ? 'rider_payments' : TABLE_BY_KIND[booking_type];
     if (!table) return json({ error: 'Unknown booking_type.' }, 400);
+    const owner = isRider ? 'rider_id' : 'customer_id';
 
     const admin = adminClient();
     const { data: row, error } = await admin
       .from(table)
-      .select(isWallet ? 'customer_id, status, paymongo_reference' : 'customer_id, payment_status, paymongo_reference')
+      .select(isWallet || isRider ? `${owner}, status, paymongo_reference` : 'customer_id, payment_status, paymongo_reference')
       .eq('id', booking_id)
       .single();
     if (error || !row) return json({ error: 'Booking not found.' }, 404);
-    if (row.customer_id !== user.id) return json({ error: 'This booking does not belong to you.' }, 403);
+    if (row[owner] !== user.id) return json({ error: 'This booking does not belong to you.' }, 403);
 
-    const currentStatus = isWallet ? row.status : row.payment_status;
+    const currentStatus = isWallet || isRider ? row.status : row.payment_status;
 
     // Already resolved, or never went through GCash — nothing to check.
     if (currentStatus === 'paid' || currentStatus === 'failed' || !row.paymongo_reference) {
@@ -64,15 +71,17 @@ Deno.serve(async (req: Request) => {
     if (sourceStatus === 'chargeable') {
       // Authorized, not yet charged — charge it now.
       sourceStatus = await chargeSource(row.paymongo_reference, source.data.attributes.amount, secretKey,
-        isWallet ? 'iTULOD wallet top-up' : 'iTULOD booking');
+        isWallet ? 'iTULOD wallet top-up' : isRider ? 'iTULOD rider commission' : 'iTULOD booking');
     }
     if (sourceStatus === 'paid' || sourceStatus === 'consumed') {
       if (isWallet) await markWalletTopupPaid(admin, row.paymongo_reference);
+      else if (isRider) await markRiderPaymentPaid(admin, row.paymongo_reference);
       else await markBookingPaid(admin, row.paymongo_reference);
       return json({ payment_status: 'paid' });
     }
     if (sourceStatus === 'failed' || sourceStatus === 'expired' || sourceStatus === 'cancelled') {
       if (isWallet) await markWalletTopupFailed(admin, row.paymongo_reference);
+      else if (isRider) await markRiderPaymentFailed(admin, row.paymongo_reference);
       else await markBookingFailed(admin, row.paymongo_reference);
       return json({ payment_status: 'failed' });
     }
