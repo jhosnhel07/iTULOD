@@ -269,16 +269,18 @@ PayMongo's side while `payment_status` in the database stays stuck on
 `pending` forever, since nothing else tells it otherwise. Symptom: PayMongo's
 own dashboard (Developers → Webhooks → the endpoint → recent deliveries)
 shows 401s, or `payment-return.html` sits on "Still confirming…" past the
-~15-second poll window. `sync-payment-status` (below) papers over most of
-this in the UI, but the webhook secret being correct is still what actually
-gets bookings marked paid in the first place.
+~15-second poll window. `sync-payment-status` (below) now completes the
+payment itself, so bookings get paid even without the webhook — but keep the
+webhook secret correct as the backup for shoppers who close the page early.
 
-`payment-return.html` and the dashboard also call **`sync-payment-status`**
-(needs no dashboard setup — it's just another deployed function) to ask
-PayMongo directly whether a still-pending GCash source has actually gone
-through, rather than only waiting on the webhook to arrive. It's read-only
-against PayMongo — it never creates a charge, so it can't double-charge
-anyone — it only syncs `payment_status` to match what PayMongo already says.
+`payment-return.html`, the dashboard and the app's receipt popup also call
+**`sync-payment-status`** (needs no dashboard setup — it's just another
+deployed function). It asks PayMongo about a still-pending GCash source and,
+once the shopper has tapped **Authorize** (source `chargeable`), creates the
+Payment itself — the same `chargeSource()` step the webhook uses — then marks
+the booking / wallet top-up paid. So the payment completes right after
+Authorize instead of waiting on the webhook. PayMongo charges a source only
+once, so the webhook and this function racing can't double-charge.
 
 ---
 

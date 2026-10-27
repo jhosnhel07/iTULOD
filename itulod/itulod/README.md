@@ -63,7 +63,7 @@ itulod/
 │   ├── finalize-fare/          # Rider confirms the food/parcel fare at pickup
 │   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
-│   ├── sync-payment-status/    # On-demand: ask PayMongo directly instead of waiting on the webhook (bookings + wallet top-ups)
+│   ├── sync-payment-status/    # On-demand: completes an authorized GCash payment instead of waiting on the webhook (bookings + wallet top-ups)
 │   ├── check-email/            # Anonymous: is this email already registered?
 │   ├── redeem-promo/           # Validates + applies a promo code (transport only, for now)
 │   ├── wallet-topup/           # Opens a PayMongo GCash source to top up a customer's wallet
