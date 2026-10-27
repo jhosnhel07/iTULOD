@@ -5,7 +5,7 @@
 // sync-payment-status (the on-demand, client-pulled path) so there is exactly
 // one place that decides what "marking a booking paid/failed" means.
 // =============================================================================
-import { adminClient, TABLE_BY_KIND } from './helpers.ts';
+import { adminClient, paymongoFetch, TABLE_BY_KIND } from './helpers.ts';
 import { notifyUser } from './notify.ts';
 
 // Look up which booking table + row a PayMongo reference (source id or
@@ -40,6 +40,36 @@ export async function markBookingFailed(admin: ReturnType<typeof adminClient>, r
     message: 'Your GCash payment failed. You can retry from Booking history.',
   }).catch((e) => console.error('notifyUser failed:', e));
   return hit;
+}
+
+// ---- charging an authorized GCash source ------------------------------------
+// After the shopper taps "Authorize" a GCash source is only "chargeable"; we
+// still have to create the Payment that takes the money. paymongo-webhook does
+// it on source.chargeable, and sync-payment-status does it when the customer
+// comes back first (or the webhook never arrives) — so the payment completes
+// right after Authorize either way. PayMongo charges a source only once: if
+// both paths race, the second call is refused and we just read the outcome.
+// Returns paid, failed or pending.
+export async function chargeSource(sourceId: string, amount: number, secretKey: string, description: string) {
+  try {
+    const payment = await paymongoFetch('/payments', secretKey, {
+      method: 'POST',
+      body: JSON.stringify({
+        data: { attributes: { amount, currency: 'PHP', source: { id: sourceId, type: 'source' }, description } },
+      }),
+    });
+    const status = payment?.data?.attributes?.status;
+    return status === 'failed' ? 'failed' : status === 'paid' ? 'paid' : 'pending';
+  } catch (e) {
+    const source = await paymongoFetch(`/sources/${sourceId}`, secretKey).catch(() => null);
+    const status = source?.data?.attributes?.status;
+    if (status === 'paid' || status === 'consumed') return 'paid'; // the other path charged it
+    if (status === 'chargeable' || status === 'pending') {
+      console.error('chargeSource: PayMongo refused, will retry:', e);
+      return 'pending';
+    }
+    return 'failed';
+  }
 }
 
 // ---- wallet ---------------------------------------------------------------

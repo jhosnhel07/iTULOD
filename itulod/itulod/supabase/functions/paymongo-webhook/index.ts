@@ -13,8 +13,8 @@
 // (--no-verify-jwt because PayMongo calls this anonymously; we verify the
 // PayMongo signature ourselves below instead of a Supabase JWT.)
 // =============================================================================
-import { adminClient, json, paymongoFetch, CORS_HEADERS } from '../_shared/helpers.ts';
-import { markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
+import { adminClient, json, CORS_HEADERS } from '../_shared/helpers.ts';
+import { chargeSource, markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
 
 // A PayMongo reference funds either a booking or a wallet top-up — try the
 // booking first (the common case) and fall back to a wallet top-up only when
@@ -70,14 +70,11 @@ Deno.serve(async (req: Request) => {
         const sourceId = resource.id;
         const amount = resource.attributes.amount;
         const secretKey = Deno.env.get('PAYMONGO_SECRET_KEY')!;
-        // Actually charge the now-chargeable GCash source.
-        await paymongoFetch('/payments', secretKey, {
-          method: 'POST',
-          body: JSON.stringify({
-            data: { attributes: { amount, currency: 'PHP', source: { id: sourceId, type: 'source' }, description: 'iTULOD booking' } }
-          })
-        });
-        await settlePaid(admin, sourceId);
+        // Charge the now-chargeable GCash source (sync-payment-status may
+        // already have — chargeSource then just reads the outcome).
+        const outcome = await chargeSource(sourceId, amount, secretKey, 'iTULOD booking');
+        if (outcome === 'paid') await settlePaid(admin, sourceId);
+        else if (outcome === 'failed') await settleFailed(admin, sourceId);
         break;
       }
       case 'payment.paid': {

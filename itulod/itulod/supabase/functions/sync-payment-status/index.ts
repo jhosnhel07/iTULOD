@@ -9,17 +9,17 @@
 // matters (the payment-return page, or the dashboard after "Back to
 // dashboard").
 //
-// Deliberately READ-ONLY against PayMongo — it only ever checks a Source's
-// status and syncs our DB to match. It never creates a Payment (never
-// charges anything). That stays paymongo-webhook's job exclusively, so there
-// is no way this function can cause a double charge.
+// Once the shopper has tapped "Authorize" the Source is "chargeable": this
+// charges it (chargeSource — the same step as paymongo-webhook) so the
+// payment completes right away instead of waiting on the webhook. PayMongo
+// charges a source only once, so a race with the webhook can't double charge.
 //
 //   POST { booking_type: 'transport'|'food'|'parcel'|'hauling', booking_id }
 //
 // Deploy: supabase functions deploy sync-payment-status
 // =============================================================================
 import { adminClient, getRequestUser, json, paymongoFetch, TABLE_BY_KIND, CORS_HEADERS } from '../_shared/helpers.ts';
-import { markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
+import { chargeSource, markBookingPaid, markBookingFailed, markWalletTopupPaid, markWalletTopupFailed } from '../_shared/payments.ts';
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
@@ -60,8 +60,13 @@ Deno.serve(async (req: Request) => {
       return json({ payment_status: currentStatus });
     }
 
-    const sourceStatus = source?.data?.attributes?.status;
-    if (sourceStatus === 'paid') {
+    let sourceStatus = source?.data?.attributes?.status;
+    if (sourceStatus === 'chargeable') {
+      // Authorized, not yet charged — charge it now.
+      sourceStatus = await chargeSource(row.paymongo_reference, source.data.attributes.amount, secretKey,
+        isWallet ? 'iTULOD wallet top-up' : 'iTULOD booking');
+    }
+    if (sourceStatus === 'paid' || sourceStatus === 'consumed') {
       if (isWallet) await markWalletTopupPaid(admin, row.paymongo_reference);
       else await markBookingPaid(admin, row.paymongo_reference);
       return json({ payment_status: 'paid' });
