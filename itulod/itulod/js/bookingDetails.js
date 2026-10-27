@@ -180,6 +180,21 @@
         ? (await supabase.from('food_order_items').select('*').eq('food_delivery_id', id).order('created_at', { ascending: true })).data || []
         : [];
 
+      /* ---- 2d. The rider's own view (sql/047) ----
+         Riders see the customer (name, photo, bookings; phone while the trip
+         is on) and what they earn, instead of "Your rider", the vehicle and
+         documents. A waiting request shows the earnings but not the customer
+         until they accept. */
+      const asRider = CURRENT_PROFILE?.role === 'rider';
+      const myJob = asRider && booking.rider_id === CURRENT_PROFILE.id;
+      const openRequest = asRider && !booking.rider_id && booking.status === 'pending';
+      const [custRes, earnRes] = await Promise.all([
+        myJob ? supabase.rpc('booking_customer', { p_type: kind, p_id: booking.id }) : Promise.resolve({ data: null }),
+        myJob || openRequest ? supabase.rpc('rider_booking_earnings', { p_type: kind, p_id: booking.id }) : Promise.resolve({ data: null }),
+      ]);
+      const customer = custRes.data?.[0] || null;
+      const earn = earnRes.data?.[0] || null;
+
       /* ---- 3. Build title ---- */
       const title = kind === 'parcel'
         ? `${booking.sender_name} → ${booking.receiver_name}`
@@ -192,7 +207,7 @@
       const liveTrackable = booking.rider_id && ['accepted', 'ongoing'].includes(booking.status);
       const mapSection = (routePickup && routeDropoff) ? `
         <button type="button" class="btn btn-outline btn-block bd-map-toggle" id="bd-map-toggle">
-          <i class="fa-solid fa-map-location-dot"></i> ${liveTrackable ? 'Track rider on map' : 'View route on map'}
+          <i class="fa-solid fa-map-location-dot"></i> ${liveTrackable && !asRider ? 'Track rider on map' : 'View route on map'}
         </button>
         <p id="bd-eta" class="bd-eta" hidden></p>
         <div class="bd-map" id="bd-map" hidden>
@@ -214,6 +229,8 @@
             <h4><i class="fa-solid fa-route"></i> Trip Details</h4>
             ${routeBlock('Pickup', booking.pickup_address, 'Destination', booking.destination_address, rideStops.length ? `<div class="bd-stops-list">${stopsRows}</div>` : '')}
             ${booking.distance_km ? row('<i class="fa-solid fa-road"></i> Distance', booking.distance_km + ' km') : ''}
+            ${asRider ? row('<i class="fa-solid fa-user-group"></i> Passengers', String(booking.passengers || 1)) : ''}
+            ${asRider && booking.scheduled_for ? row('<i class="fa-regular fa-calendar"></i> Scheduled for', formatDate(booking.scheduled_for)) : ''}
             ${mapSection}
           </div>`;
       } else if (kind === 'food') {
@@ -243,6 +260,13 @@
                 <div style="font-size:var(--fs-xs);color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Order</div>
                 <div class="bd-stops-list">${itemsRows}</div>
               </div>` : ''}
+            ${asRider ? `
+              ${booking.item_subtotal != null ? row('Item subtotal', peso(booking.item_subtotal)) : ''}
+              ${booking.delivery_fee != null ? row('Delivery fee', peso(booking.delivery_fee)) : ''}
+              ${booking.item_subtotal != null && ['pending', 'accepted'].includes(booking.status)
+                ? `<div class="bd-status-note bd-status-note--info" style="margin:8px 0 0"><i class="fa-solid fa-money-bill-wave"></i>
+                    <span>Bring <strong>${peso(booking.item_subtotal)}</strong> cash to buy the food — the customer pays you back with the delivery fee.</span></div>`
+                : ''}` : ''}
             ${mapSection}
           </div>`;
       } else if (kind === 'hauling') {
@@ -393,7 +417,7 @@
           ? decodeURIComponent(url.split('/rider-documents/')[1].split('?')[0]) : null }))
         .filter(d => d.path);
       const signed = {};
-      if (docs.length) {
+      if (docs.length && !asRider) { // a rider doesn't need their own documents here
         const { data: links } = await supabase.storage.from('rider-documents').createSignedUrls(docs.map(d => d.path), 3600);
         for (const l of links || []) if (l.signedUrl) signed[l.path] = l.signedUrl;
       }
@@ -442,6 +466,88 @@
           </a>
         </div>` : '';
 
+      /* ---- 8d. Rider view: the customer, earnings, what to collect ---- */
+      let customerSection = '';
+      let earningsSection = '';
+      if (asRider) {
+        const tripActive = ['accepted', 'ongoing'].includes(booking.status);
+        if (customer) {
+          let hadChat = false;
+          if (!tripActive) {
+            const { count } = await supabase.from('booking_messages').select('id', { count: 'exact', head: true })
+              .eq('booking_type', kind).eq('booking_id', booking.id);
+            hadChat = (count || 0) > 0;
+          }
+          const face = safeImageUrl(customer.avatar_url)
+            ? `<img src="${escapeHtml(customer.avatar_url)}" class="bd-avatar" alt="Customer photo">`
+            : `<div class="bd-avatar bd-avatar--initials">${escapeHtml((customer.full_name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase())}</div>`;
+          const tel = customer.phone ? 'tel:' + customer.phone.replace(/[^\d+]/g, '') : '';
+          const since = customer.member_since ? new Date(customer.member_since).toLocaleDateString('en-PH', { month: 'short', year: 'numeric' }) : '';
+          const n = Number(customer.completed_bookings || 0);
+          customerSection = `
+            <div class="bd-section">
+              <h4><i class="fa-solid fa-user"></i> Your customer</h4>
+              <div class="bd-rider-card">
+                ${face}
+                <div class="bd-rider-info">
+                  <strong>${escapeHtml(customer.full_name || '—')}</strong>
+                  <span class="bd-rider-meta">
+                    <span class="bd-rider-rating ${n ? '' : 'bd-rider-rating--new'}">${n ? `<i class="fa-solid fa-circle-check"></i> ${n} completed booking${n === 1 ? '' : 's'}` : 'New customer'}</span>
+                    ${since ? `<span>Since ${escapeHtml(since)}</span>` : ''}
+                    ${customer.phone ? `<a href="${tel}">${escapeHtml(customer.phone)}</a>` : ''}
+                  </span>
+                </div>
+                ${tripActive || hadChat ? `<div class="bd-rider-actions">
+                  ${tel && tripActive ? `<a class="btn btn-primary btn-sm bd-call-btn" href="${tel}"><i class="fa-solid fa-phone"></i> Call</a>` : ''}
+                  ${typeof openBookingChat === 'function' ? `<button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> ${tripActive ? 'Message' : 'View chat'}</button>` : ''}
+                </div>` : ''}
+              </div>
+            </div>`;
+        } else if (openRequest) {
+          customerSection = `
+            <div class="bd-section">
+              <h4><i class="fa-solid fa-user"></i> Customer</h4>
+              <p class="muted" style="font-size:var(--fs-sm)">The customer's name and number show once you accept this booking.</p>
+            </div>`;
+        }
+
+        const ended = ['cancelled', 'no_show', 'expired'].includes(booking.status);
+        const tip = Number(earn?.tip || 0);
+        const fareOnly = earn ? Number(earn.fare) - (earn.is_final ? tip : 0) : null;
+        const cod = kind === 'parcel' && Number(booking.cod_amount) > 0 ? Number(booking.cod_amount) : 0;
+        const collect = !ended && booking.status !== 'completed'
+          ? (booking.payment_method === 'cash' || !booking.payment_method
+              ? `Collect <strong>${peso(fare)}</strong> in cash from the customer${cod ? ` · plus the <strong>${peso(cod)}</strong> cash on delivery for the sender` : ''}.`
+              : booking.payment_status === 'paid'
+                ? `Paid online — nothing to collect${cod ? `, except the <strong>${peso(cod)}</strong> cash on delivery for the sender` : ''}.`
+                : `The customer pays online (${paymentMethodLabel(booking.payment_method)})${cod ? ` · collect the <strong>${peso(cod)}</strong> cash on delivery for the sender` : ''}.`)
+          : '';
+        earningsSection = `
+          <div class="bd-section">
+            <h4><i class="fa-solid fa-sack-dollar"></i> Your earnings</h4>
+            ${earn ? `
+              ${row(ended ? 'Fee from the customer' : 'Fare', peso(fareOnly))}
+              ${Number(earn.commission) ? row('iTULOD commission', '− ' + peso(earn.commission)) : ''}
+              ${tip ? row('Tip from the customer', peso(tip)) : ''}
+              <div class="bd-row bd-row--total"><span>${earn.is_final ? 'You earned' : 'You earn (estimate)'}</span><strong>${peso(Number(earn.payout) + (earn.is_final ? 0 : tip))}</strong></div>`
+              : row('Fare', fare != null ? peso(fare) : '—')}
+            ${booking.payment_method ? row('Payment method', paymentMethodLabel(booking.payment_method)) : ''}
+            ${booking.payment_status ? row('Payment status', paymentStatusBadge(booking.payment_status)) : ''}
+            ${collect ? `<div class="bd-status-note bd-status-note--info" style="margin:8px 0 0"><i class="fa-solid fa-hand-holding-dollar"></i><span>${collect}</span></div>` : ''}
+            ${booking.rating ? row('Customer rated you', ratingStars(booking.rating)) : ''}
+            ${booking.review ? row('Their review', escapeHtml(booking.review)) : ''}
+          </div>`;
+
+        // the grace-period note, from the rider's side
+        if (booking.status === 'pending') {
+          statusNote = `<div class="bd-status-note bd-status-note--info"><i class="fa-regular fa-clock"></i>
+            <span>Accept within the 15-minute window, or this request expires automatically.</span></div>`;
+        } else if (booking.status === 'accepted') {
+          statusNote = `<div class="bd-status-note bd-status-note--info"><i class="fa-regular fa-clock"></i>
+            <span>Start the trip within 15 minutes of the booking time, or it expires automatically.</span></div>`;
+        }
+      }
+
       // The customer can cancel until the trip starts (pending / accepted),
       // like the Cancel on their Home and History cards (customer.js).
       const canCancelHere = typeof cancelBooking === 'function'
@@ -462,8 +568,8 @@
           <div class="bd-sub">${formatDate(booking.created_at)}</div>
           <div class="bd-fare-hero">
             <div>
-              <span class="bd-fare-hero__label">${booking.final_fare ? 'Final fare' : 'Estimated fare'}</span>
-              <strong class="bd-fare-hero__amount">${fare != null ? peso(fare) : '—'}</strong>
+              <span class="bd-fare-hero__label">${asRider && earn ? (earn.is_final ? 'You earned' : 'You earn') : booking.final_fare ? 'Final fare' : 'Estimated fare'}</span>
+              <strong class="bd-fare-hero__amount">${asRider && earn ? peso(Number(earn.payout) + (earn.is_final ? 0 : Number(earn.tip || 0))) : fare != null ? peso(fare) : '—'}</strong>
             </div>
             ${booking.payment_method ? `
               <div class="bd-fare-hero__pay">
@@ -474,13 +580,13 @@
           ${timelineHTML(booking, kind)}
         </div>
         ${statusNote}
-        ${riderSection}
+        ${asRider ? customerSection : riderSection}
         ${routeSection}
-        ${fareSection}
-        ${vehicleSection}
-        ${docsSection}
+        ${asRider ? earningsSection : fareSection}
+        ${asRider ? '' : vehicleSection}
+        ${asRider ? '' : docsSection}
         ${proofSection}
-        <div class="bd-section">
+        <div class="bd-section" ${asRider ? 'hidden' : ''}>
           ${canCancelHere ? `<button type="button" class="btn btn-outline btn-block btn-sm btn-danger-ghost" style="margin-bottom:8px"
             onclick="cancelBooking('${kind}', '${booking.id}').then(ok => ok && openBookingDetails({ kind: '${kind}', id: '${booking.id}' }))">
             <i class="fa-solid fa-xmark"></i> Cancel booking
