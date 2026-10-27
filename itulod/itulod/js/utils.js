@@ -82,6 +82,16 @@ function syncThemeToggles() {
 }
 
 // ---- Account menu (dashboards) ------------------------------------------
+// A number on a sidebar link / phone bottom-bar tab (every .js-count-<name>):
+// new booking requests, active jobs, bookings that need you… Hidden at 0.
+function setNavCount(name, n) {
+  n = Number(n) || 0;
+  document.querySelectorAll('.js-count-' + name).forEach(el => {
+    el.textContent = n > 99 ? '99+' : String(n);
+    el.hidden = n <= 0;
+  });
+}
+
 // The profile picture at the top of each dashboard (where the sun/moon
 // button used to be). Opens a menu with the name and email, "My profile",
 // the dark-mode switch and Log out. Call again whenever the profile changes.
@@ -104,7 +114,7 @@ function renderAccountMenus(profile) {
       </button>
       <button type="button" class="account-btn" aria-haspopup="menu" aria-expanded="${wasOpen}" aria-label="Account menu for ${escapeHtml(name)}">
         ${face('account-avatar')}
-        ${hasNotifTab ? `<span class="account-dot js-notif-dot" ${unread > 0 ? '' : 'hidden'}></span>` : ''}
+        ${hasNotifTab ? `<span class="account-dot js-notif-dot" ${unread > 0 ? '' : 'hidden'}>${unread > 99 ? '99+' : unread}</span>` : ''}
       </button>
       <div class="account-pop" role="menu" ${wasOpen ? '' : 'hidden'}>
         <div class="account-pop__head">
@@ -116,7 +126,7 @@ function renderAccountMenus(profile) {
           </div>
         </div>
         ${hasProfileTab ? '<button type="button" role="menuitem" data-acct="profile"><i class="fa-solid fa-user"></i><span>My profile</span></button>' : ''}
-        ${hasNotifTab ? `<button type="button" role="menuitem" data-acct="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span><span class="badge badge--danger js-notif-count account-count" style="display:${unread > 0 ? 'inline-block' : 'none'}">${unread}</span></button>` : ''}
+        ${hasNotifTab ? `<button type="button" role="menuitem" data-acct="notifications"><i class="fa-solid fa-bell"></i><span>Notifications</span><span class="badge badge--danger js-notif-count account-count" style="display:${unread > 0 ? 'inline-block' : 'none'}">${unread > 99 ? '99+' : unread}</span></button>` : ''}
         <button type="button" role="menuitemcheckbox" aria-checked="${currentTheme() === 'dark'}" data-acct="theme">
           <i class="fa-solid fa-moon"></i><span>Dark mode</span><span class="account-switch" aria-hidden="true"></span>
         </button>

@@ -223,6 +223,7 @@
         </div>`).join('');
 
       let routeSection = '';
+      let outOfStock = 0; // food: the price of items the restaurant didn't have
       if (kind === 'transport') {
         routeSection = `
           <div class="bd-section">
@@ -234,12 +235,16 @@
             ${mapSection}
           </div>`;
       } else if (kind === 'food') {
+        outOfStock = orderItems.filter(it => it.is_out_of_stock)
+          .reduce((s, it) => s + Number(it.subtotal ?? Number(it.unit_price) * it.quantity), 0);
         const itemsRows = orderItems.map(it => {
           const oosStyle = it.is_out_of_stock ? 'text-decoration: line-through; color: var(--text-muted);' : '';
           const oosBadge = it.is_out_of_stock ? ' <span class="badge badge--cancelled" style="transform:scale(0.8)">Out of stock</span>' : '';
           
+          // At the restaurant, before the trip starts: its price comes off
+          // the total (sql/050).
           let actionBtn = '';
-          if (CURRENT_PROFILE.role === 'rider' && booking.status === 'ongoing' && !it.is_out_of_stock) {
+          if (asRider && booking.status === 'accepted' && !it.is_out_of_stock) {
             actionBtn = ` <button class="btn btn-outline btn-sm" style="padding: 2px 6px; font-size: var(--fs-2xs);" onclick="markItemOutOfStock('${it.id}', '${booking.id}', event)">OOS</button>`;
           }
 
@@ -263,9 +268,10 @@
             ${asRider ? `
               ${booking.item_subtotal != null ? row('Item subtotal', peso(booking.item_subtotal)) : ''}
               ${booking.delivery_fee != null ? row('Delivery fee', peso(booking.delivery_fee)) : ''}
+              ${outOfStock ? row('Out of stock', '− ' + peso(outOfStock)) : ''}
               ${booking.item_subtotal != null && ['pending', 'accepted'].includes(booking.status)
                 ? `<div class="bd-status-note bd-status-note--info" style="margin:8px 0 0"><i class="fa-solid fa-money-bill-wave"></i>
-                    <span>Bring <strong>${peso(booking.item_subtotal)}</strong> cash to buy the food — the customer pays you back with the delivery fee.</span></div>`
+                    <span>Bring <strong>${peso(Math.max(0, Number(booking.item_subtotal) - outOfStock))}</strong> cash to buy the food — the customer pays you back with the delivery fee. ${booking.status === 'accepted' ? 'Then take a photo of the receipt to start the trip.' : ''}</span></div>`
                 : ''}` : ''}
             ${mapSection}
           </div>`;
@@ -307,8 +313,9 @@
           <h4><i class="fa-solid fa-peso-sign"></i> Fare & Payment</h4>
           ${booking.item_subtotal != null ? row('Item subtotal', peso(booking.item_subtotal)) : ''}
           ${booking.delivery_fee  != null ? row('Delivery fee',  peso(booking.delivery_fee))  : ''}
-          ${booking.estimated_fare && booking.final_fare ? row('Estimated fare', peso(booking.estimated_fare)) : ''}
-          ${booking.final_fare || booking.estimated_fare ? `<div class="bd-row bd-row--total"><span>${booking.final_fare ? 'Final fare' : 'Estimated fare'}</span><strong>${peso(booking.final_fare ?? booking.estimated_fare)}</strong></div>` : ''}
+          ${outOfStock ? row('Out of stock', '− ' + peso(outOfStock)
+              + (booking.payment_status === 'paid' && ['gcash', 'wallet'].includes(booking.payment_method) ? ' · refunded to your iTULOD wallet' : '')) : ''}
+          ${booking.final_fare || booking.estimated_fare ? `<div class="bd-row bd-row--total"><span>Total</span><strong>${peso(booking.final_fare ?? booking.estimated_fare)}</strong></div>` : ''}
           ${!booking.estimated_fare && !booking.final_fare ? row('Fare', '—') : ''}
           ${booking.distance_km && kind === 'transport' ? row('Distance', booking.distance_km + ' km') : ''}
           ${kind === 'transport' ? row('Passengers', String(booking.passengers || 1)) : ''}
@@ -466,6 +473,15 @@
           </a>
         </div>` : '';
 
+      /* ---- 8c'. Food: the receipt the rider photographed before the trip ---- */
+      const receiptSection = (kind === 'food' && safeImageUrl(booking.receipt_photo_url)) ? `
+        <div class="bd-section">
+          <h4><i class="fa-solid fa-receipt"></i> Receipt</h4>
+          <a href="${escapeHtml(booking.receipt_photo_url)}" target="_blank" rel="noopener noreferrer" title="Open the receipt">
+            <img src="${escapeHtml(booking.receipt_photo_url)}" alt="Receipt for this order" style="width:100%;max-width:320px;border-radius:var(--radius-sm);border:1px solid var(--border);display:block">
+          </a>
+        </div>` : '';
+
       /* ---- 8d. Rider view: the customer, earnings, what to collect ---- */
       let customerSection = '';
       let earningsSection = '';
@@ -568,7 +584,7 @@
           <div class="bd-sub">${formatDate(booking.created_at)}</div>
           <div class="bd-fare-hero">
             <div>
-              <span class="bd-fare-hero__label">${asRider && earn ? (earn.is_final ? 'You earned' : 'You earn') : booking.final_fare ? 'Final fare' : 'Estimated fare'}</span>
+              <span class="bd-fare-hero__label">${asRider && earn ? (earn.is_final ? 'You earned' : 'You earn') : 'Total'}</span>
               <strong class="bd-fare-hero__amount">${asRider && earn ? peso(Number(earn.payout) + (earn.is_final ? 0 : Number(earn.tip || 0))) : fare != null ? peso(fare) : '—'}</strong>
             </div>
             ${booking.payment_method ? `
@@ -585,6 +601,7 @@
         ${asRider ? earningsSection : fareSection}
         ${asRider ? '' : vehicleSection}
         ${asRider ? '' : docsSection}
+        ${receiptSection}
         ${proofSection}
         <div class="bd-section" ${asRider ? 'hidden' : ''}>
           ${canCancelHere ? `<button type="button" class="btn btn-outline btn-block btn-sm btn-danger-ghost" style="margin-bottom:8px"
@@ -716,7 +733,7 @@
 
   window.markItemOutOfStock = async function(itemId, bookingId, e) {
     if (e) e.stopPropagation();
-    if (!(await appConfirm('The customer will see this item marked as out of stock on their order.', { title: 'Mark as out of stock?', confirmText: 'Out of stock', icon: 'fa-box-open' }))) return;
+    if (!(await appConfirm("Its price comes off the customer's total (refunded to their wallet if they already paid online), and they're told. This can't be undone.", { title: 'Mark as out of stock?', confirmText: 'Out of stock', icon: 'fa-box-open' }))) return;
     try {
       toast('Updating...', 'info');
       const { error } = await supabase.from('food_order_items').update({ is_out_of_stock: true }).eq('id', itemId);

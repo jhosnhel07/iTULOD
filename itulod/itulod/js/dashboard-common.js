@@ -252,12 +252,13 @@ function startProfileSync() {
 }
 
 // ---- Notifications (customer + rider) ---------------------------------------
-// Unread count on every .js-notif-count badge (sidebar, phone top bar, nav).
+// Unread count on the profile picture and every .js-notif-count badge.
 function setNotifCount(unread) {
   window.ITULOD_UNREAD = unread; // the profile menu's Notifications row reads this when it re-renders
-  document.querySelectorAll('.js-notif-dot').forEach((d) => { d.hidden = !(unread > 0); });
+  const label = unread > 99 ? '99+' : String(unread);
+  document.querySelectorAll('.js-notif-dot').forEach((d) => { d.textContent = label; d.hidden = !(unread > 0); });
   document.querySelectorAll('.js-notif-count').forEach(el => {
-    el.textContent = unread;
+    el.textContent = label;
     el.style.display = unread > 0 ? 'inline-block' : 'none';
   });
 }
@@ -292,7 +293,10 @@ async function loadNotifications() {
     return;
   }
   NOTIFS = data;
-  setNotifCount(data.filter(n => !n.is_read).length);
+  // Only the latest 30 are listed, so count every unread one on the server.
+  const { count: unread } = await supabase.from('notifications').select('id', { count: 'exact', head: true })
+    .eq('user_id', CURRENT_PROFILE.id).eq('is_read', false);
+  setNotifCount(unread ?? data.filter(n => !n.is_read).length);
   syncNotifMarkAll();
 
   list.innerHTML = data.map(n => `
@@ -356,7 +360,7 @@ async function openNotification(id) {
   // Mark just this one read — right away on screen, then in the database.
   n.is_read = true;
   document.querySelector(`.notif-item[data-id="${id}"]`)?.classList.add('read');
-  setNotifCount(NOTIFS.filter(x => !x.is_read).length);
+  setNotifCount(Math.max(0, Number(window.ITULOD_UNREAD || 0) - 1));
   syncNotifMarkAll();
   const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
   if (error) console.warn('Could not mark notification read:', error.message);

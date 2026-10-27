@@ -33,9 +33,11 @@
       <span class="side-nav-label">Work</span>
       <button class="side-link" data-tab="requests">
         <i class="fa-solid fa-inbox"></i> Booking requests
+        <span class="badge side-count js-count-requests" hidden>0</span>
       </button>
       <button class="side-link" data-tab="accepted">
         <i class="fa-solid fa-route"></i> Accepted bookings
+        <span class="badge side-count js-count-accepted" hidden>0</span>
       </button>
       <button class="side-link" data-tab="messages">
         <i class="fa-solid fa-comment-dots"></i> Messages
@@ -453,8 +455,8 @@
   <!-- Mobile bottom nav — primary tabs; the hamburger keeps everything -->
   <nav class="bottom-nav" aria-label="Primary">
     <button data-tab="home" class="active"><i class="fa-solid fa-house"></i><span>Home</span></button>
-    <button data-tab="requests"><i class="fa-solid fa-inbox"></i><span>Requests</span></button>
-    <button data-tab="accepted"><i class="fa-solid fa-route"></i><span>Active</span></button>
+    <button data-tab="requests"><i class="fa-solid fa-inbox"></i><span>Requests</span><span class="bn-badge js-count-requests" hidden>0</span></button>
+    <button data-tab="accepted"><i class="fa-solid fa-route"></i><span>Active</span><span class="bn-badge js-count-accepted" hidden>0</span></button>
     <button data-tab="earnings"><i class="fa-solid fa-sack-dollar"></i><span>Earnings</span></button>
   </nav>
 </div>

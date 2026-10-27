@@ -60,7 +60,7 @@ itulod/
 ├── supabase/functions/
 │   ├── create-payment/         # Opens a PayMongo GCash source for a booking, or pays it from wallet balance
 │   ├── paymongo-webhook/       # Source of truth: marks a booking (or wallet top-up) paid/failed
-│   ├── finalize-fare/          # Rider confirms the food/parcel fare at pickup
+│   ├── finalize-fare/          # Retired: the booked total is fixed (sql/050)
 │   ├── on-booking-change/      # DB-webhook → notifications on status/assignment
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
 │   ├── sync-payment-status/    # On-demand: completes an authorized GCash payment instead of waiting on the webhook (bookings + wallet top-ups)

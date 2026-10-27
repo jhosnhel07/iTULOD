@@ -82,6 +82,7 @@ once:
 | 47 | `sql/047_rider_booking_details.sql` | The rider's own booking details: `booking_customer(type, id)` gives the booking's rider (or an admin) the customer's name, photo, member since and completed bookings — the phone only while the trip is accepted/ongoing; `rider_booking_earnings(type, id)` gives fare, commission, payout and tip (the payments row once done, else the estimate by the completion rule; also for an approved rider looking at a waiting request); approved riders can read the `food_order_items` of waiting food requests. |
 | 48 | `sql/048_announcement_delivery.sql` | Announcements reach people: an insert on `announcements` (trigger `trg_announcement_deliver`) sends it as a notification (title "📢 …", link `announcement/<id>`) to every active customer and/or rider in its audience — so it shows in Notifications on web and app and goes out as a push. `announcements.recipients` records how many it reached (null = published before this, never sent); `deliver_announcement(id)` (admin) sends one of those — the admin list has **Send now**. |
 | 49 | `sql/049_password_reset_attempts.sql` | Forgot password with a code: `password_reset_attempts` caps wrong codes at 5 per account per 15 min for the new `password-reset-code` Edge Function (deploy with `--no-verify-jwt`). The function finds the account by email or mobile number (the code always goes to the account's email — no SMS provider) and checks the code. **Needs** the Reset Password email template to show `{{ .Token }}` — paste `supabase/templates/reset_password.html` into Dashboard → Authentication → Email Templates → Reset Password. |
+| 50 | `sql/050_fixed_fare_receipt.sql` | **The booked total is the total** — riders no longer set a fare. When a rider accepts a food / parcel / hauling booking, `booking_before_update()` sets `final_fare` to the booked total, which is what opens GCash / wallet payment (still never before a rider is found; a released unpaid job goes back to no final fare). Food: `food_require_receipt()` refuses Start trip until the rider saved `receipt_photo_url` (only the rider can set it); `food_item_out_of_stock()` takes an out-of-stock item's price off the total, refunds it to the wallet if already paid online, notifies the customer, and allows no other edits or putting it back. "A rider accepted" says what to pay. `is_trusted_writer()` now also accepts `itulod.system_write = 'true'` and postgres sessions — expiry, unpaid-fee collection and out-of-stock write as the system that way and were being refused. Redeploy `finalize-fare` (now answers 410: the total is fixed) and `create-payment` (food / parcel / hauling payable only once a rider accepted). |
 | 39 | `sql/039_tricycle_icon.sql` | Tricycle shows its own icon (motorcycle + sidecar): `vehicles.icon = 'fa-tricycle'`, a custom class drawn from `assets/icons/tricycle.svg` in css/main.css (Font Awesome has no tricycle). |
 | 38 | `sql/038_public_vehicle_catalog.sql` | Logged-out visitors can read **available** vehicles (public price list) so the home / login / sign-up pages show the live catalog, vehicle count and sample fare. |
 | 37 | `sql/037_device_push.sql` | Phone push (Firebase Cloud Messaging): `device_tokens` + `register_device()` / `unregister_device()` (the app saves its FCM token after login, removes it on logout); new ride/food/parcel jobs notify **online** riders with the matching vehicle (`trg_notify_new_job_riders`). `send-push` delivers every notification to these tokens too — needs the Edge Function secret `FIREBASE_SERVICE_ACCOUNT_B64` (base64 of the Firebase service-account JSON, project "itulod"; never commit that file) and the app's `android/app/google-services.json` (gitignored). |
@@ -193,7 +194,7 @@ supabase link --project-ref <your-project-ref>
 # deploy all twelve
 supabase functions deploy create-payment       --project-ref <ref>
 supabase functions deploy paymongo-webhook     --project-ref <ref>
-supabase functions deploy finalize-fare        --project-ref <ref>
+supabase functions deploy finalize-fare        --project-ref <ref>   # retired: answers 410 (sql/050)
 supabase functions deploy on-booking-change    --project-ref <ref>
 supabase functions deploy expire-bookings      --project-ref <ref>
 supabase functions deploy sync-payment-status  --project-ref <ref>
@@ -387,9 +388,10 @@ and it would also change OTP length, email frequency and MFA.
    - `select * from payments order by created_at desc limit 1;` — one row, with
      `platform_commission` = 15 % and `rider_payout` = the rest.
    - the customer got a "completed" notification.
-5. Food/parcel with GCash: rider taps **Set fare** at pickup → customer sees
-   **Pay ₱X** in Booking history → completes GCash checkout → webhook flips
-   `payment_status` to `paid`.
+5. Food/parcel with GCash: a rider accepts → customer sees **Pay ₱X** (the
+   booked total) in Booking history → completes GCash checkout → webhook flips
+   `payment_status` to `paid`. Food: Start trip stays locked until the rider
+   uploads / takes the receipt photo; the customer sees it in booking details.
 6. Try to tamper: as the customer, `update transport_bookings set
    estimated_fare = 1 where id = '<yours>'` from the SQL editor **using a
    non-service connection** — it must raise an exception.
@@ -507,10 +509,9 @@ and it would also change OTP length, email frequency and MFA.
     order" lists what you picked, and the fare card shows item subtotal +
     delivery fee + estimated total. Fill delivery address + vehicle, submit.
     Check: `food_deliveries.item_subtotal`/`delivery_fee` are set,
-    `final_fare` is still **null** (GCash is only charged once the rider
-    confirms — unchanged from before), and `food_order_items` has one row
-    per item ordered. Accept the booking as a rider — the "Set fare" input
-    should already be pre-filled with the correct total (one-tap confirm),
+    `final_fare` is still **null** (nothing is payable before a rider
+    accepts), and `food_order_items` has one row per item ordered. Accept
+    the booking as a rider — `final_fare` becomes the booked total (sql/050),
     and the booking's details should list the ordered items under Food
     Delivery Details for both customer and rider.
 

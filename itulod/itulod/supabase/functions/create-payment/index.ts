@@ -45,11 +45,12 @@ Deno.serve(async (req: Request) => {
       return json({ error: `This booking is ${booking.status.replace('_', '-')} and can no longer be paid.` }, 400);
     }
 
-    // Charge the confirmed final fare when the rider has set one (food / parcel),
-    // otherwise the up-front estimate (transport).
-    const payable = Number(booking.final_fare ?? booking.estimated_fare ?? 0);
+    // A ride is payable from booking (its estimate). Food / parcel / hauling
+    // once a rider accepts: the booking gets final_fare then — the booked
+    // total, less any out-of-stock food (sql/050). Never before a rider is found.
+    const payable = Number((booking_type === 'transport' ? booking.estimated_fare : booking.final_fare) ?? 0);
     if (payable <= 0) {
-      return json({ error: 'Booking has no payable amount yet.' }, 400);
+      return json({ error: booking_type === 'transport' ? 'Booking has no payable amount yet.' : 'You can pay once a rider accepts your booking.' }, 400);
     }
 
     if (method === 'wallet') {

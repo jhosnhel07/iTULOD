@@ -226,10 +226,11 @@ function renderRiderHomeActive(list, openCount) {
   const b = list.find(x => x.status === 'ongoing') || list[0];
   const kind = b._kind;
   const title = bookingTitle(b, kind);
-  // Food/parcel completion needs the confirmed fare and a proof-of-delivery
-  // photo, both of which live on the Accepted bookings card — send the rider
-  // there instead of completing straight from Home.
-  const next = b.status === 'accepted'
+  // A food order's receipt photo and a delivery's proof photo are taken on
+  // the Accepted bookings card — send the rider there for those steps.
+  const next = b.status === 'accepted' && kind === 'food' && !safeImageUrl(b.receipt_photo_url)
+    ? `<button type="button" class="btn btn-outline btn-sm" onclick="activateTab('accepted')"><i class="fa-solid fa-receipt"></i> Add receipt</button>`
+    : b.status === 'accepted'
     ? `<button type="button" class="btn btn-outline btn-sm" onclick="updateStatus('${kind}','${b.id}','ongoing')">Start trip</button>`
     : kind === 'transport'
       ? `<button type="button" class="btn btn-primary btn-sm" onclick="updateStatus('${kind}','${b.id}','completed')">Mark complete</button>`
@@ -241,9 +242,9 @@ function renderRiderHomeActive(list, openCount) {
         ${statusBadge(b.status)}
       </div>
       <h3>${escapeHtml(title)}</h3>
-      <p class="home-active__stage">${b.status === 'accepted' ? 'Navigate to the pickup point' : 'Trip in progress'}</p>
+      <p class="home-active__stage">${b.status === 'accepted' ? (kind === 'food' ? 'Buy the order, then take a photo of the receipt' : 'Navigate to the pickup point') : 'Trip in progress'}</p>
       <div class="home-active__meta">
-        <span><i class="fa-solid fa-peso-sign"></i> ${peso(b.estimated_fare)}</span>
+        <span><i class="fa-solid fa-peso-sign"></i> ${peso(b.final_fare ?? b.estimated_fare)}</span>
       </div>
       <div class="home-active__actions">
         <button type="button" class="btn btn-primary btn-sm" onclick="activateTab('accepted')">
@@ -269,6 +270,7 @@ async function loadRequests() {
     return q.order('created_at', { ascending: false }).then(r => ({ kind, rows: r.data || [] }));
   }));
   const merged = results.flatMap(r => r.rows.map(row => ({ ...row, _kind: r.kind }))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  setNavCount('requests', merged.length);
   const { data: debt } = await supabase.rpc('rider_debt_status');
   RIDER_DEBT = (debt && debt[0]) || { owed: 0, debt_limit: 0, blocked: false };
   const debtBanner = RIDER_DEBT.blocked
@@ -374,6 +376,7 @@ async function loadAccepted() {
   ));
   const merged = results.flatMap(r => r.rows.map(row => ({ ...row, _kind: r.kind })));
   RIDER_HAS_ACTIVE_BOOKING = merged.length > 0;
+  setNavCount('accepted', merged.length);
 
   updateNavMapForAccepted(merged);
 
@@ -416,18 +419,22 @@ function updateNavMapForAccepted(merged) {
 function renderAcceptedCard(b, kind) {
   const title = bookingTitle(b, kind);
 
-  // Food / parcel: the rider confirms the real fare at pickup before completing.
-  const needsFinalFare = kind !== 'transport' && b.final_fare == null;
-  const setFareAction = needsFinalFare
-    ? `<span class="fare-set">
-         <input type="number" inputmode="decimal" min="1" step="0.5" id="ff-${b.id}"
-                placeholder="₱ final fare" value="${b.estimated_fare || ''}"
-                onclick="event.stopPropagation()" class="fare-set__input">
-         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); ${kind === 'food' ? `adjustFoodBill('${b.id}')` : `setFinalFare('${kind}','${b.id}')`}">Set fare</button>
-       </span>`
+  // The total is what the customer booked (sql/050) — nothing to set. A food
+  // order's receipt photo comes first: "Start trip" stays locked until it's
+  // saved (the database enforces this too).
+  const isAccepted = b.status === 'accepted';
+  const needsReceipt = kind === 'food' && isAccepted;
+  const hasReceipt = !!safeImageUrl(b.receipt_photo_url);
+  const receiptAction = needsReceipt
+    ? (hasReceipt
+        ? `<a class="proof-chip" href="${escapeHtml(b.receipt_photo_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View receipt">
+             <img src="${escapeHtml(b.receipt_photo_url)}" alt=""><span><i class="fa-solid fa-check"></i> Receipt saved</span>
+           </a>
+           <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); takeReceiptPhoto('${b.id}')"><i class="fa-solid fa-camera-rotate"></i> Retake</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); takeReceiptPhoto('${b.id}')"><i class="fa-solid fa-receipt"></i> Upload / take receipt photo</button>`)
     : '';
 
-  const canComplete = b.status === 'ongoing' && !needsFinalFare;
+  const canComplete = b.status === 'ongoing';
   // Grace period reminder: an accepted job that never starts expires
   // automatically 15 minutes after it was accepted (sql/009).
   const noShowAction = b.status === 'accepted'
@@ -451,19 +458,19 @@ function renderAcceptedCard(b, kind) {
            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); takeDeliveryProof('${kind}','${b.id}')"><i class="fa-solid fa-camera-rotate"></i> Retake</button>`
         : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); takeDeliveryProof('${kind}','${b.id}')"><i class="fa-solid fa-camera"></i> Take proof of delivery</button>`)
     : '';
-  const nextAction = b.status === 'accepted'
-    ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`
+  const nextAction = isAccepted
+    ? (needsReceipt && !hasReceipt
+        ? `<button class="btn btn-outline btn-sm" disabled title="Take a photo of the receipt first"><i class="fa-solid fa-lock"></i> Start trip</button>`
+        : `<button class="btn ${needsReceipt ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','ongoing')"><i class="fa-solid fa-play"></i> Start trip</button>`)
     : !canComplete
       ? ''
       : needsProof && !hasProof
         ? `<button class="btn btn-outline btn-sm" disabled title="Take a proof-of-delivery photo first"><i class="fa-solid fa-lock"></i> Mark complete</button>`
         : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); updateStatus('${kind}','${b.id}','completed')"><i class="fa-solid fa-flag-checkered"></i> Mark complete</button>`;
 
-  // Turn-by-turn in Google Maps: to the pickup until the trip starts, then
-  // to the drop-off.
-  const navTarget = b.status === 'ongoing'
-    ? bookingDropoff(b, kind)
-    : bookingPickup(b, kind);
+  // Turn-by-turn in Google Maps to the pickup, until the trip starts. After
+  // Start trip the card is just proof of delivery → Mark complete.
+  const navTarget = isAccepted ? bookingPickup(b, kind) : null;
   const navigateAction = navTarget
     ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
           href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(navTarget)}">
@@ -480,7 +487,7 @@ function renderAcceptedCard(b, kind) {
     title, sub: `${kind[0].toUpperCase() + kind.slice(1)} · ${formatDate(b.created_at)}`,
     fare: b.final_fare ?? b.estimated_fare, status: b.status,
     footLeft: [paidBadge, haulingNeeds(b, kind), passengersChip(b, kind)].filter(Boolean).join(' '),
-    actions: setFareAction + navigateAction + noShowAction + releaseAction + proofAction + nextAction,
+    actions: navigateAction + noShowAction + releaseAction + receiptAction + proofAction + nextAction,
   });
 }
 
@@ -550,18 +557,17 @@ function wireProofUpload() {
   });
 }
 
-// ---- receipt photo upload (food) ---------------------------------------
+// ---- receipt photo (food) --------------------------------------------------
+// After buying the order, the rider uploads or takes a photo of the receipt;
+// that unlocks "Start trip" (sql/050 enforces it too). The customer sees the
+// receipt in their booking details. Same one-hidden-input pattern as proof.
 let _receiptTarget = null;
-function adjustFoodBill(id) {
-  const input = document.getElementById('ff-' + id);
-  const amount = parseFloat(input?.value);
-  if (!amount || amount <= 0) { toast('Enter the final fare first.', 'error'); return; }
-  
-  _receiptTarget = { id, amount };
-  const fileInput = document.getElementById('receipt-upload-input');
-  if (!fileInput) { setFinalFare('food', id, amount); return; }
-  fileInput.value = '';
-  fileInput.click();
+function takeReceiptPhoto(id) {
+  _receiptTarget = id;
+  const input = document.getElementById('receipt-upload-input');
+  if (!input) { toast("Couldn't open the camera on this page — please reload.", 'error'); return; }
+  input.value = '';
+  input.click();
 }
 
 function wireReceiptUpload() {
@@ -569,28 +575,27 @@ function wireReceiptUpload() {
   if (!input) return;
   input.addEventListener('change', async () => {
     const file = input.files[0];
-    const target = _receiptTarget;
+    const id = _receiptTarget;
     _receiptTarget = null;
-    if (!file || !target) return;
-    if (!file.type.startsWith('image/')) { toast('Please choose an image file.', 'error'); return; }
-    
+    if (!file || !id) return;
+    const problem = photoPickProblem(file);
+    if (problem) { toast(problem, 'error'); return; }
+
     toast('Uploading receipt…', 'info');
-    const path = `${CURRENT_PROFILE.id}/receipt-${target.id}-${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from('receipts').upload(path, file, { upsert: true });
+    const photo = await shrinkImageFile(file, { max: 1600 });
+    const path = `${CURRENT_PROFILE.id}/receipt-${id}-${Date.now()}-${photo.name}`;
+    const { error: upErr } = await supabase.storage.from('receipts').upload(path, photo, { upsert: true });
     if (upErr) {
       console.error('Receipt upload failed:', upErr.message);
-      if (!(await appConfirm("The receipt photo couldn't be uploaded.", { title: 'Confirm fare without a receipt?', confirmText: 'Confirm anyway', icon: 'fa-receipt' }))) return;
-      await setFinalFare('food', target.id, target.amount);
+      toast("The receipt couldn't be uploaded — check your connection and try again.", 'error');
       return;
     }
-    
     const receipt_photo_url = supabase.storage.from('receipts').getPublicUrl(path).data.publicUrl;
-    await supabase.from('food_deliveries').update({
-      actual_food_cost: target.amount, // simplified mapping for web
-      receipt_photo_url: receipt_photo_url
-    }).eq('id', target.id);
-    
-    await setFinalFare('food', target.id, target.amount);
+    const { error } = await supabase.from('food_deliveries').update({ receipt_photo_url }).eq('id', id);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Receipt saved — you can start the trip now.', 'success');
+    await loadAccepted();
+    loadRiderHome();
   });
 }
 
@@ -719,18 +724,6 @@ function wireOnlineToggle() {
     goOnline(() => { setOnlineUI(false); onlineHere(false); toast("Couldn't access your location. Check your browser's location permission and try again.", 'error'); });
     setOnlineUI(true);
   });
-}
-
-async function setFinalFare(kind, id, amountOverride) {
-  const input = document.getElementById('ff-' + id);
-  const amount = amountOverride || parseFloat(input?.value);
-  if (!amount || amount <= 0) { toast('Enter the final fare.', 'error'); return; }
-  const { data, error } = await supabase.functions.invoke('finalize-fare', {
-    body: { booking_type: kind, booking_id: id, amount },
-  });
-  if (error || data?.error) { toast(data?.error || error.message, 'error'); return; }
-  toast('Fare confirmed. The customer has been notified.', 'success');
-  await loadAccepted();
 }
 
 async function updateStatus(kind, id, status) {

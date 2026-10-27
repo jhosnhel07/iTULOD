@@ -787,14 +787,10 @@ function wireRideForm() {
 }
 
 // ---- food: restaurant + menu + cart --------------------------------------
-// A cart order's item prices are fixed and known up front, unlike a typed
-// free-text order — but GCash is still only ever charged once the rider
-// confirms the fare (never at booking time, an explicit standing product
-// decision — see finalize-fare / needsFinalFare in rider.js). estimated_fare
-// is set to the real computed total (items + delivery) here, which the
-// rider's "Set fare" input already defaults to, so confirming it is a
-// one-tap action instead of a blind guess — final_fare itself is still only
-// ever set by the rider, same as every other food order.
+// Item prices are known up front, so estimated_fare is the real total
+// (items + delivery) and it's the total the customer pays (sql/050). GCash is
+// never charged at booking time: the booking gets final_fare when a rider
+// accepts, which is what shows "Pay ₱X". Out-of-stock items come off it.
 let FOOD_CART = { restaurantId: null, restaurantName: null, restaurantAddress: null, items: {} };
 let FOOD_ROUTE_KM = null;
 let FOOD_ROUTE_TIMER = null;
@@ -930,13 +926,8 @@ function wireFoodForm() {
       delivery_address: address.value.trim(),
       instructions, vehicle_id: vehicle.id,
       item_subtotal: subtotal, delivery_fee: deliveryFee,
-      // final_fare is deliberately left unset here, same as every other food
-      // order — GCash is only ever charged once the rider confirms the fare
-      // (see finalize-fare / needsFinalFare in rider.js), never at booking
-      // time. estimated_fare is the real, computed total though, so the
-      // rider's "Set fare" input is pre-filled with the right number already
-      // (renderAcceptedCard's ff-${id} input defaults to estimated_fare) —
-      // a one-tap confirmation instead of a blind guess.
+      // final_fare is set by the database when a rider accepts (sql/050) —
+      // the same total, so GCash is never charged before a rider is found.
       estimated_fare: total,
       distance_km: Number(km.toFixed(2)), status: 'pending', payment_method: paymentMethod,
     }).select('id').single();
@@ -954,7 +945,7 @@ function wireFoodForm() {
     celebrate(
       'Order placed!',
       paymentMethod === 'gcash'
-        ? `Total ${peso(total)}. We'll ask you to pay by GCash once the rider confirms the fare at pickup.`
+        ? `Total ${peso(total)}. You can pay by GCash as soon as a rider accepts.`
         : `You'll pay ${peso(total)} cash on delivery.`
     );
 
@@ -1203,14 +1194,12 @@ function wireParcelForm() {
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
 
-    // See wireFoodForm() for why GCash isn't charged here: only the rider
-    // knows the real price once they see the parcel, so payment waits for
-    // finalize-fare to set final_fare, which is what reveals "Pay ₱X" in
-    // Booking history.
+    // GCash isn't charged here: "Pay ₱X" shows in Booking history once a
+    // rider accepts (the booking gets its final_fare then — sql/050).
     celebrate(
       'Parcel delivery requested!',
       paymentMethod === 'gcash'
-        ? "We'll ask you to pay by GCash once the rider confirms the fare at pickup."
+        ? 'You can pay by GCash as soon as a rider accepts.'
         : 'Waiting for a rider to accept.'
     );
     clearFormDraft('itulod-customer-parcel');
@@ -1221,9 +1210,8 @@ function wireParcelForm() {
 
 
 // ---- hauling: big / heavy items with a hauling vehicle + helpers ---------
-// Same lifecycle as a parcel: the estimate is vehicle fare + helpers, the
-// driver confirms the real fare at pickup (finalize-fare), and GCash/wallet
-// is only charged after that. Only riders with a Van/Pickup/Truck see these
+// Same lifecycle as a parcel: the total is vehicle fare + helpers, and
+// GCash/wallet can be paid once a driver accepts. Only riders with a Van/Pickup/Truck see these
 // jobs (RLS is_hauling_rider(), sql/022).
 let HAULING_VEHICLES = [];
 let HAULING_HELPER_FEE = 250;
@@ -1358,7 +1346,7 @@ function wireHaulingForm() {
         ? `For ${formatDate(payload.scheduled_for)}. We'll find a driver closer to the time.`
         : payload.payment_method === 'cash'
           ? 'Waiting for a driver to accept.'
-          : "We'll ask you to pay once the driver confirms the fare at pickup."
+          : 'You can pay as soon as a driver accepts.'
     );
     clearFormDraft('itulod-customer-hauling');
     e.target.reset();
@@ -1443,12 +1431,25 @@ async function loadHome() {
   renderHomeActive(active, rider);
   ACTIVE_BOOKINGS = rows.filter(r => ['pending', 'accepted', 'ongoing'].includes(r.status));
   renderBookActive();
+  const waiting = rows.filter(needsYou);
+  setNavCount('history', waiting.length);
+  kinds.forEach(k => setNavCount('history-' + k, waiting.filter(r => r._kind === k).length));
 
   // Recent activity
   const recent = document.getElementById('home-recent');
   recent.innerHTML = rows.length
     ? rows.slice(0, 4).map(r => renderHistoryCard(r, r._kind)).join('')
     : emptyState({ icon: 'fa-inbox', title: 'No bookings yet', body: 'Your rides and deliveries will show up here.' });
+}
+
+// The count on Booking history: bookings still going, waiting for your
+// payment, or finished in the last 3 days and not rated yet.
+const RATE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+function needsYou(b) {
+  if (['pending', 'accepted', 'ongoing'].includes(b.status)) return true;
+  if (paymentDue(b, b._kind).needsPay) return true;
+  return b.status === 'completed' && !b.rating
+    && Date.now() - new Date(b.updated_at || b.created_at).getTime() < RATE_WINDOW_MS;
 }
 
 // ---- New booking: your bookings still going ------------------------------
@@ -1602,9 +1603,9 @@ async function loadHistory() {
 // Shared between Home's active-booking card and Booking history: does this
 // booking still need a GCash payment, and for how much? Booking creation
 // never charges GCash itself — it's a separate step the customer takes here
-// (Home) or in Booking history, whenever they're ready. Transport's fare is
-// known at booking time (estimated_fare); food/parcel only becomes payable
-// once the rider confirms the real price at pickup (final_fare).
+// (Home) or in Booking history, whenever they're ready. A ride is payable
+// from booking (estimated_fare); food / parcel / hauling once a rider
+// accepts — that's when the booking gets final_fare, the booked total (sql/050).
 function paymentDue(b, kind) {
   const payable = kind === 'transport' ? b.estimated_fare : b.final_fare;
   const needsPay = ['gcash', 'wallet'].includes(b.payment_method)
@@ -1653,13 +1654,13 @@ function paymentBadge(b) {
 
 async function retryPayment(bookingId, kind = 'transport') {
   // Re-read the row: create-payment charges whatever the booking says now
-  // (final_fare for food/parcel once the rider set it, else the estimate).
+  // (final_fare once a rider accepted — less any out-of-stock food).
   const table = TABLE_BY_KIND[kind];
   const { data: b, error } = await supabase.from(table).select('*').eq('id', bookingId).single();
   if (error || !b) { toast('Could not load that booking.', 'error'); return; }
 
-  const amount = kind === 'transport' ? b.estimated_fare : (b.final_fare ?? b.estimated_fare);
-  if (!amount) { toast('The rider hasn\'t confirmed the fare yet.', 'error'); return; }
+  const amount = kind === 'transport' ? b.estimated_fare : b.final_fare;
+  if (!amount) { toast('You can pay once a rider accepts your booking.', 'error'); return; }
 
   const rows = kind === 'transport'
     ? [['Payment method', 'GCash'], ['Pickup', b.pickup_address], ['Destination', b.destination_address],

@@ -40,11 +40,13 @@
           </button>
           <button class="side-link" data-tab="riders">
             <i class="fa-solid fa-id-card"></i> Riders &amp; applications
+            <span class="badge side-count js-count-riders" hidden title="Applications and photos to review">0</span>
           </button>
 
           <span class="side-nav-label">Operations</span>
           <button class="side-link" data-tab="bookings">
             <i class="fa-solid fa-route"></i> Bookings &amp; deliveries
+            <span class="badge side-count js-count-bookings" hidden title="Waiting for a rider">0</span>
           </button>
           <button class="side-link" data-tab="payments">
             <i class="fa-solid fa-sack-dollar"></i> Payments
@@ -57,7 +59,7 @@
           </button>
           <button class="side-link" data-tab="support">
             <i class="fa-solid fa-life-ring"></i> Support requests
-            <span id="support-open-badge" class="pending-count" style="display:none"></span>
+            <span id="support-open-badge" class="badge side-count" style="display:none"></span>
           </button>
 
           <span class="side-nav-label">System</span>
@@ -443,16 +445,16 @@
         <section class="tab-panel" id="tab-bookings">
           <div class="tab-row">
             <button class="tab-btn active" data-booking-kind="transport">
-              Transportation
+              Transportation<span class="tab-count js-count-bookings-transport" hidden>0</span>
             </button>
             <button class="tab-btn" data-booking-kind="food">
-              Food delivery
+              Food delivery<span class="tab-count js-count-bookings-food" hidden>0</span>
             </button>
             <button class="tab-btn" data-booking-kind="parcel">
-              Parcel delivery
+              Parcel delivery<span class="tab-count js-count-bookings-parcel" hidden>0</span>
             </button>
             <button class="tab-btn" data-booking-kind="hauling">
-              Hauling
+              Hauling<span class="tab-count js-count-bookings-hauling" hidden>0</span>
             </button>
           </div>
           <div class="card">

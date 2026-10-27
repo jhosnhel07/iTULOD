@@ -449,6 +449,7 @@ function updatePendingBadge(count) {
   // The badge counts new applications plus photo changes waiting for review.
   if (count !== undefined) PENDING_APP_COUNT = count;
   count = PENDING_APP_COUNT + PHOTO_REVIEW_IDS.size;
+  setNavCount('riders', count);
   // Find the Pending applications tab button and update/add a count badge
   const pendingBtn = document.querySelector('.tab-btn[data-rider-tab="pending"]');
   if (!pendingBtn) return;
@@ -1153,7 +1154,18 @@ function wireBookingTabs() {
     });
   });
 }
+// The count on Bookings & deliveries (and each kind's tab): bookings still
+// waiting for a rider.
+async function loadWaitingBookingCounts() {
+  const counts = await Promise.all(Object.keys(TABLE_BY_KIND).map(k =>
+    supabase.from(TABLE_BY_KIND[k]).select('id', { count: 'exact', head: true })
+      .eq('status', 'pending').is('rider_id', null).then(r => [k, r.count || 0])));
+  counts.forEach(([k, n]) => setNavCount('bookings-' + k, n));
+  setNavCount('bookings', counts.reduce((s, [, n]) => s + n, 0));
+}
+
 async function loadBookings() {
+  loadWaitingBookingCounts();
   const table = TABLE_BY_KIND[BOOKING_KIND];
   const tbody = document.querySelector('#bookings-table tbody');
   showSkeleton(tbody, skeletonRows(5, 6), BOOKING_KIND);

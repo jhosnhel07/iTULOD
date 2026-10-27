@@ -2493,21 +2493,6 @@ button.vehicle-chip-item { font: inherit; color: inherit; width: 100%; cursor: p
   color: var(--blue-dark, var(--blue));
 }
 
-.fare-set {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.fare-set__input {
-  width: 120px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: var(--fs-sm);
-}
-
 .bd-map-loading {
   position: absolute;
   inset: 0;
@@ -3096,6 +3081,23 @@ button.vehicle-chip-item { font: inherit; color: inherit; width: 100%; cursor: p
   margin-left: 3px;
   transform: scale(0.82);
 }
+/* Count on a bottom-bar tab (setNavCount in dashboard-common.js) */
+.bottom-nav .bn-badge {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  z-index: 1;
+}
+.bottom-nav .bn-badge[hidden] { display: none; }
 .bottom-nav button {
   position: relative;
 }
@@ -4756,16 +4758,24 @@ body { transition: background-color 0.25s ease, color 0.25s ease; }
 .account-pop [data-acct].is-danger:hover { background: var(--red-tint); }
 .account-count { margin-left: auto; }
 .account-btn { position: relative; }
-/* Unread notifications: a red dot on the profile picture. */
+/* Unread notifications: a number on the profile picture */
 .account-dot {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  top: -5px;
+  right: -7px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
   background: var(--red);
   border: 2px solid var(--surface);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
 }
 .account-dot[hidden] { display: none; }
 .account-switch {
@@ -5494,6 +5504,23 @@ a.rider-doc:hover .rider-doc__thumb { border-color: var(--blue); }
   text-align: center;
 }
 .side-link .side-count[hidden], .topbar-action .badge[hidden] { display: none; }
+/* Count inside a tab button (Booking history: Rides / Food / …) */
+.tab-btn .tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tab-btn .tab-count[hidden] { display: none; }
 .msg-shell {
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);

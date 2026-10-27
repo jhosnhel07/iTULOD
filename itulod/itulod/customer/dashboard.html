@@ -45,6 +45,7 @@
           <span class="side-nav-label">Activity</span>
           <button class="side-link" data-tab="history">
             <i class="fa-solid fa-clock-rotate-left"></i> Booking history
+            <span class="badge side-count js-count-history" hidden title="In progress, to pay or to rate">0</span>
           </button>
           <button class="side-link" data-tab="messages">
             <i class="fa-solid fa-comment-dots"></i> Messages
@@ -730,9 +731,8 @@
                     <option value="wallet">Wallet</option>
                   </select>
                   <p style="color: var(--text-muted); font-size: var(--fs-xs); margin: 6px 0 0">
-                    <i class="fa-solid fa-lock"></i> The rider may adjust the
-                    final fare at pickup; you'll only be charged the confirmed
-                    amount.
+                    <i class="fa-solid fa-lock"></i> The total shown is the total
+                    you pay. Online payment opens once a rider accepts.
                   </p>
                 </div>
 
@@ -955,9 +955,8 @@
                     <option value="wallet">Wallet</option>
                   </select>
                   <p style="color: var(--text-muted); font-size: var(--fs-xs); margin: 6px 0 0">
-                    <i class="fa-solid fa-lock"></i> The driver confirms the
-                    final fare after seeing the load; you'll only be charged the
-                    confirmed amount.
+                    <i class="fa-solid fa-lock"></i> The total shown is the total
+                    you pay. Online payment opens once a driver accepts.
                   </p>
                 </div>
 
@@ -1008,17 +1007,17 @@
           <div class="card card--flush">
             <div class="tab-row" style="margin-bottom: 20px">
               <button class="tab-btn active" data-history="transport">
-                <i class="fa-solid fa-car" style="margin-right: 6px"></i>Rides
+                <i class="fa-solid fa-car" style="margin-right: 6px"></i>Rides<span class="tab-count js-count-history-transport" hidden>0</span>
               </button>
               <button class="tab-btn" data-history="food">
                 <i class="fa-solid fa-utensils" style="margin-right: 6px"></i
-                >Food
+                >Food<span class="tab-count js-count-history-food" hidden>0</span>
               </button>
               <button class="tab-btn" data-history="parcel">
-                <i class="fa-solid fa-box" style="margin-right: 6px"></i>Parcels
+                <i class="fa-solid fa-box" style="margin-right: 6px"></i>Parcels<span class="tab-count js-count-history-parcel" hidden>0</span>
               </button>
               <button class="tab-btn" data-history="hauling">
-                <i class="fa-solid fa-truck-moving" style="margin-right: 6px"></i>Hauling
+                <i class="fa-solid fa-truck-moving" style="margin-right: 6px"></i>Hauling<span class="tab-count js-count-history-hauling" hidden>0</span>
               </button>
             </div>
             <div id="history-list"></div>
@@ -1311,7 +1310,7 @@
       <nav class="bottom-nav" aria-label="Primary">
         <button data-tab="home" class="active"><i class="fa-solid fa-house"></i><span>Home</span></button>
         <button data-tab="book"><i class="fa-solid fa-plus"></i><span>Book</span></button>
-        <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+        <button data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span><span class="bn-badge js-count-history" hidden>0</span></button>
       </nav>
     </div>
 
