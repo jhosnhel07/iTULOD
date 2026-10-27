@@ -95,22 +95,153 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
   setTimeout(() => window.location.href = redirectForRole(profile.role), 500);
 });
 
-// forgot password
-document.getElementById('forgot-link')?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const username = document.getElementById('username').value.trim();
-  if (!username) { toast('Enter your username above first, then click "Forgot password?"', 'info'); return; }
-  if (isAdminUsername(username)) {
-    toast('The default admin account cannot be reset here. Contact your system administrator.', 'info');
-    return;
-  }
-  const email = resolveLoginEmail(username);
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/reset-password.html'
+// ---------------------------------------------------------------------
+// FORGOT PASSWORD — email or mobile number → 6-digit code → new password →
+// straight to the dashboard. The password-reset-code Edge Function finds the
+// account (a number is looked up; the code always goes to the account's
+// email), and checks the code, returning a session (sql/049).
+// ---------------------------------------------------------------------
+const FP = { identifier: '', resendTimer: null };
+
+async function resetCodeCall(body) {
+  const { data, error } = await supabase.functions.invoke('password-reset-code', { body });
+  if (!error) return data;
+  // non-2xx: the function's own message is in the response body
+  let message = 'Something went wrong. Please try again.';
+  try { message = (await error.context.json()).error || message; } catch (_) { /* network error */ }
+  throw new Error(message);
+}
+
+function fpShowStep(n) {
+  [1, 2, 3].forEach(i => { document.getElementById('fp-form-' + i).hidden = i !== n; });
+  document.querySelectorAll('[data-fp-dot]').forEach(li => {
+    const i = Number(li.dataset.fpDot);
+    li.classList.toggle('is-current', i === n);
+    li.classList.toggle('is-done', i < n);
   });
-  if (error) toast(error.message, 'error');
-  else toast('Password reset link sent to ' + email, 'success');
-});
+  const sub = document.getElementById('fp-sub');
+  if (n === 1) sub.textContent = "Enter the email or mobile number on your account. We'll email you a 6-digit code.";
+  if (n === 3) sub.textContent = 'Code accepted. Create your new password.';
+  document.querySelector(`#fp-form-${n} input`)?.focus();
+}
+
+function fpOpen(open) {
+  document.getElementById('login-form').hidden = open;
+  document.getElementById('forgot-panel').hidden = !open;
+  document.querySelector('.register-link')?.toggleAttribute('hidden', open);
+  // the panel has its own heading
+  document.querySelectorAll('.card-title, .card-sub').forEach(el => el.toggleAttribute('hidden', open));
+  if (!open) return;
+  // start with whatever they typed in the login box, when it's an email or number
+  const typed = document.getElementById('username').value.trim();
+  if (typed && !isAdminUsername(typed) && (typed.includes('@') || /^[\d\s+()-]{10,}$/.test(typed))) {
+    document.getElementById('fp-identifier').value = typed;
+  }
+  fpShowStep(1);
+}
+
+function fpStartResendTimer() {
+  const btn = document.getElementById('fp-resend');
+  let left = 60;
+  clearInterval(FP.resendTimer);
+  btn.disabled = true;
+  btn.textContent = `Resend code (${left}s)`;
+  FP.resendTimer = setInterval(() => {
+    left -= 1;
+    if (left > 0) { btn.textContent = `Resend code (${left}s)`; return; }
+    clearInterval(FP.resendTimer);
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  }, 1000);
+}
+
+async function fpSendCode(btn) {
+  const raw = document.getElementById('fp-identifier').value.trim();
+  if (!raw) { toast('Enter your email or mobile number.', 'error'); return; }
+  if (isAdminUsername(raw)) { toast('The default admin account cannot be reset here. Contact your system administrator.', 'info'); return; }
+  // a login username (no @, not a number) → its email, like the login box
+  const identifier = raw.includes('@') || /^[\d\s+()-]+$/.test(raw) ? raw : resolveLoginEmail(raw);
+  setLoading(btn, true);
+  try {
+    const { sent_to } = await resetCodeCall({ action: 'send', identifier });
+    FP.identifier = identifier;
+    document.getElementById('fp-sub').innerHTML = `We sent a 6-digit code to <strong>${escapeHtml(sent_to)}</strong>. Check your inbox (and spam).`;
+    document.getElementById('fp-code').value = '';
+    fpShowStep(2);
+    fpStartResendTimer();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+if (document.getElementById('forgot-panel')) {
+  document.getElementById('forgot-link')?.addEventListener('click', (e) => { e.preventDefault(); fpOpen(true); });
+  document.getElementById('fp-back').addEventListener('click', () => { clearInterval(FP.resendTimer); fpOpen(false); });
+  document.getElementById('fp-change').addEventListener('click', () => { clearInterval(FP.resendTimer); fpShowStep(1); });
+  document.getElementById('fp-form-1').addEventListener('submit', (e) => { e.preventDefault(); fpSendCode(document.getElementById('fp-send')); });
+  document.getElementById('fp-resend').addEventListener('click', (e) => {
+    document.getElementById('fp-identifier').value = FP.identifier;
+    fpSendCode(e.currentTarget);
+  });
+  document.querySelectorAll('[data-fp-toggle]').forEach(btn => btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.fpToggle);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.querySelector('i').className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  }));
+  attachPasswordChecklist(document.getElementById('fp-password'));
+
+  document.getElementById('fp-form-2').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('fp-code').value.replace(/\s/g, '');
+    if (!/^\d{6,10}$/.test(code)) { toast('Enter the 6-digit code from the email.', 'error'); return; }
+    const btn = document.getElementById('fp-verify');
+    setLoading(btn, true);
+    try {
+      const s = await resetCodeCall({ action: 'verify', identifier: FP.identifier, code });
+      const { error } = await supabase.auth.setSession({ access_token: s.access_token, refresh_token: s.refresh_token });
+      if (error) throw error;
+      clearInterval(FP.resendTimer);
+      fpShowStep(3);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  document.getElementById('fp-form-3').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = document.getElementById('fp-password').value;
+    const confirm = document.getElementById('fp-confirm').value;
+    if (passwordProblem(password)) { toast(passwordProblem(password), 'error'); return; }
+    if (password !== confirm) { toast('Those passwords don’t match.', 'error'); return; }
+    const btn = document.getElementById('fp-save');
+    setLoading(btn, true);
+    const { data: upd, error } = await supabase.auth.updateUser({ password });
+    if (error) { setLoading(btn, false); toast(error.message, 'error'); return; }
+
+    // Signed in already — the same checks as logging in, then the dashboard.
+    const { data: profile } = await supabase.from('profiles').select('id, role, is_active').eq('id', upd.user.id).single();
+    if (!profile || !profile.is_active) {
+      setLoading(btn, false);
+      toast('Password changed, but this account has been deactivated. Contact support.', 'error');
+      await supabase.auth.signOut();
+      return;
+    }
+    const approval = await ensureRiderApproval(profile);
+    if (!approval.allowed) {
+      setLoading(btn, false);
+      toast('Password changed. ' + approval.message, 'info');
+      await supabase.auth.signOut();
+      return;
+    }
+    toast('Password changed — welcome back!', 'success');
+    setTimeout(() => window.location.href = redirectForRole(profile.role), 600);
+  });
+}
 
 // ---------------------------------------------------------------------
 // REGISTER

@@ -440,6 +440,10 @@ verify_jwt = false
 enabled = true
 verify_jwt = false
 
+[functions.password-reset-code]
+enabled = true
+verify_jwt = false
+
 # Called by the database (sql/023 push_new_notification via pg_net) with a
 # shared secret header instead of a Supabase JWT.
 [functions.send-push]

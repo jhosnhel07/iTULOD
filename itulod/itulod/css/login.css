@@ -589,3 +589,53 @@
         }
       }
       .bp-stat-icon i { color: #ffffff; opacity: 0.9; }
+
+/* Forgot password: email or number → code → new password (js/auth.js) */
+.forgot-panel[hidden], #login-form[hidden], .register-link[hidden], .card-title[hidden], .card-sub[hidden] { display: none !important; }
+.fp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2196f3;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.fp-title { margin: 0 0 14px; font-size: 1.35rem; font-weight: 800; color: #1c2733; }
+.fp-steps { display: flex; gap: 6px; margin: 0 0 14px; padding: 0; list-style: none; }
+.fp-steps li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: #f1f4f8;
+  color: #687482;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.fp-steps li span {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 11px;
+}
+.fp-steps li.is-current { background: #e3f2fd; color: #0d47a1; }
+.fp-steps li.is-current span { background: #2196f3; color: #fff; }
+.fp-steps li.is-done { color: #1a9d63; }
+.fp-steps li.is-done span { background: #1a9d63; color: #fff; }
+.fp-sub { margin: 0 0 18px; color: #5a6672; font-size: var(--fs-sm); line-height: 1.55; }
+#fp-code { letter-spacing: 0.35em; font-weight: 700; }
+.fp-links { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.fp-links button { padding: 0; border: 0; background: none; color: #2196f3; font-weight: 600; font-size: var(--fs-sm); cursor: pointer; }
+.fp-links button:disabled { color: #9aa6b2; cursor: default; }

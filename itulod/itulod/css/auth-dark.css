@@ -139,3 +139,10 @@
 /* Bicycle note on the rider Vehicle step */
 :root[data-theme="dark"] .field-note { color: #8d9aab; }
 :root[data-theme="dark"] .bicycle-note { background: #221820; border-color: #3a2630; color: #e2a3b1; }
+
+/* Forgot password panel (login.css) */
+:root[data-theme="dark"] .fp-title { color: #e6edf5; }
+:root[data-theme="dark"] .fp-sub { color: #9fb0c3; }
+:root[data-theme="dark"] .fp-steps li { background: #1b2635; color: #9fb0c3; }
+:root[data-theme="dark"] .fp-steps li span { background: #243246; }
+:root[data-theme="dark"] .fp-steps li.is-current { background: rgba(33, 150, 243, 0.18); color: #90caf9; }

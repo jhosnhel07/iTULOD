@@ -180,6 +180,65 @@
             </button>
           </form>
 
+          <!-- Forgot password: email or number → 6-digit code → new password,
+               then straight to the dashboard (js/auth.js, password-reset-code) -->
+          <div class="forgot-panel" id="forgot-panel" hidden>
+            <button type="button" class="fp-back" id="fp-back"><i class="fa-solid fa-arrow-left"></i> Back to login</button>
+            <h2 class="fp-title">Reset your password</h2>
+            <ol class="fp-steps" aria-label="Steps">
+              <li class="is-current" data-fp-dot="1"><span>1</span>Account</li>
+              <li data-fp-dot="2"><span>2</span>Code</li>
+              <li data-fp-dot="3"><span>3</span>New password</li>
+            </ol>
+            <p class="fp-sub" id="fp-sub">Enter the email or mobile number on your account. We'll email you a 6-digit code.</p>
+
+            <form id="fp-form-1" class="fp-step" novalidate>
+              <div class="input-group">
+                <label for="fp-identifier">Email or mobile number</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-user input-icon"></i>
+                  <input type="text" id="fp-identifier" required placeholder="you@gmail.com or 0917 123 4567" autocomplete="username" />
+                </div>
+              </div>
+              <button type="submit" class="login-btn" id="fp-send"><i class="fa-solid fa-paper-plane"></i> Send code</button>
+            </form>
+
+            <form id="fp-form-2" class="fp-step" novalidate hidden>
+              <div class="input-group">
+                <label for="fp-code">6-digit code</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-key input-icon"></i>
+                  <input type="text" id="fp-code" required inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="123456" />
+                </div>
+              </div>
+              <button type="submit" class="login-btn" id="fp-verify"><i class="fa-solid fa-check"></i> Verify code</button>
+              <div class="fp-links">
+                <button type="button" id="fp-resend" disabled>Resend code</button>
+                <button type="button" id="fp-change">Use a different email or number</button>
+              </div>
+            </form>
+
+            <form id="fp-form-3" class="fp-step" novalidate hidden>
+              <div class="input-group">
+                <label for="fp-password">New password</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-lock input-icon"></i>
+                  <input type="password" id="fp-password" required placeholder="Create a new password" autocomplete="new-password" />
+                  <button type="button" class="pw-toggle-btn" data-fp-toggle="fp-password" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                </div>
+              </div>
+              <div class="input-group">
+                <label for="fp-confirm">Confirm new password</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-lock input-icon"></i>
+                  <input type="password" id="fp-confirm" required placeholder="Type it again" autocomplete="new-password" />
+                  <button type="button" class="pw-toggle-btn" data-fp-toggle="fp-confirm" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                </div>
+              </div>
+              <button type="submit" class="login-btn" id="fp-save"><i class="fa-solid fa-floppy-disk"></i> Save and continue</button>
+            </form>
+          </div>
+
           <!-- Register link -->
           <p class="register-link">
             Don't have an account? <a href="register.html">Create one</a>
