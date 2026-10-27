@@ -480,63 +480,73 @@
 
         <!-- ===================== PAYMENTS ===================== -->
         <section class="tab-panel" id="tab-payments">
-          <!-- "I paid the admin" from riders, waiting to be confirmed (sql/051) -->
-          <div class="card" style="margin-bottom: 20px">
-            <div class="card-head">
-              <h3>Rider payments to confirm</h3>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted)">Riders who say they paid you their commission — check, then mark paid</span>
+          <!-- 1. At a glance (admin.js loadPayments + loadRiderBalances) -->
+          <div class="stat-grid pay-summary" id="payment-stats"></div>
+
+          <!-- 2. To do: "I paid the admin" from riders, waiting to be confirmed (sql/051) -->
+          <div class="card pay-section">
+            <div class="card-head card-head--wrap">
+              <div>
+                <h3><i class="fa-solid fa-list-check"></i> Rider payments to confirm <span class="badge side-count js-count-claims" hidden>0</span></h3>
+                <p class="card-sub">Riders who say they paid you their commission. Check you received it, then mark it paid.</p>
+              </div>
             </div>
             <div id="rider-claims-list"></div>
           </div>
-          <!-- Rider balances (sql/024): who iTULOD must pay, who owes commission -->
-          <div class="card" style="margin-bottom: 20px">
-            <div class="card-head">
-              <h3>Rider balances</h3>
-              <span style="font-size: var(--fs-xs); color: var(--text-muted)">GCash/wallet fares owed to riders minus commission owed on cash trips</span>
+
+          <!-- 3. Rider balances (sql/024): who iTULOD must pay, who owes commission -->
+          <div class="card pay-section">
+            <div class="card-head card-head--wrap">
+              <div>
+                <h3><i class="fa-solid fa-scale-balanced"></i> Rider balances</h3>
+                <p class="card-sub">Each rider's GCash/wallet fares (iTULOD holds them) minus the commission they owe on cash trips, after payments.</p>
+              </div>
+              <div class="segmented segmented--sm" id="balances-filter" role="tablist" aria-label="Which riders">
+                <button type="button" class="seg-btn active" data-show="open">Open balances</button>
+                <button type="button" class="seg-btn" data-show="all">All riders</button>
+              </div>
             </div>
             <div class="table-wrap">
-              <table id="rider-balances-table">
+              <table class="data-table pay-table" id="rider-balances-table">
                 <thead>
-                  <tr><th>Rider</th><th>Online earnings</th><th>Cash commission</th><th>Balance</th><th>COD to hand over</th><th></th></tr>
+                  <tr>
+                    <th>Rider</th>
+                    <th class="num">Online earnings</th>
+                    <th class="num">Cash commission</th>
+                    <th class="num">Paid in / out</th>
+                    <th>Balance</th>
+                    <th>COD to hand over</th>
+                    <th class="act">Action</th>
+                  </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
           </div>
-          <div class="stat-grid" id="payment-stats">
-            <div class="stat-card">
-              <div class="top">
-                <div class="icon icon--blue"><i class="fa-solid fa-peso-sign"></i></div>
-              </div>
-              <strong id="pay-total">—</strong>
-              <span class="label">Total Processed</span>
-            </div>
-            <div class="stat-card">
-              <div class="top">
-                <div class="icon icon--orange"><i class="fa-solid fa-percent"></i></div>
-              </div>
-              <strong id="pay-commission">—</strong>
-              <span class="label">Platform Commission</span>
-            </div>
-            <div class="stat-card">
-              <div class="top">
-                <div class="icon icon--green"><i class="fa-solid fa-wallet"></i></div>
-              </div>
-              <strong id="pay-payout">—</strong>
-              <span class="label">Rider Payouts</span>
-            </div>
-          </div>
 
-          <div class="card">
-            <div class="card-head"><h3>All transactions</h3></div>
+          <!-- 4. Every completed / paid booking -->
+          <div class="card pay-section">
+            <div class="card-head card-head--wrap">
+              <div>
+                <h3><i class="fa-solid fa-receipt"></i> All transactions</h3>
+                <p class="card-sub">Every paid booking — what the customer paid, iTULOD's commission and the rider's share.</p>
+              </div>
+              <div class="segmented segmented--sm" id="payments-filter" role="tablist" aria-label="Payment method">
+                <button type="button" class="seg-btn active" data-method="all">All</button>
+                <button type="button" class="seg-btn" data-method="cash">Cash</button>
+                <button type="button" class="seg-btn" data-method="gcash">GCash</button>
+                <button type="button" class="seg-btn" data-method="wallet">Wallet</button>
+              </div>
+            </div>
             <div class="table-wrap">
-              <table class="data-table" id="payments-table">
+              <table class="data-table pay-table" id="payments-table">
                 <thead>
                   <tr>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Commission</th>
-                    <th>Rider payout</th>
+                    <th>Booking</th>
+                    <th>Customer → Rider</th>
+                    <th class="num">Amount</th>
+                    <th class="num">Commission</th>
+                    <th class="num">Rider share</th>
                     <th>Method</th>
                     <th>Status</th>
                     <th>Date</th>

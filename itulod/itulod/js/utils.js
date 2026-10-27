@@ -388,7 +388,9 @@ function statusBadge(status) {
     pending: 'badge--pending', accepted: 'badge--accepted', ongoing: 'badge--ongoing',
     completed: 'badge--completed', cancelled: 'badge--cancelled',
     expired: 'badge--expired', no_show: 'badge--no-show',
-    approved: 'badge--completed', rejected: 'badge--cancelled'
+    approved: 'badge--completed', rejected: 'badge--cancelled',
+    // payment statuses (admin Payments → All transactions)
+    paid: 'badge--completed', failed: 'badge--cancelled', refunded: 'badge--expired'
   };
   const label = { no_show: 'No-show' }[status] || status;
   return `<span class="badge ${map[status] || 'badge--pending'}">${label}</span>`;

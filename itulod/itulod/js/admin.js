@@ -31,6 +31,7 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireSupportSubTabs();
   wireSettingsForm();
   wireChartRange();
+  wirePaymentFilters();
   restoreView(); // a refresh stays on the section you were on
   loadWaitingBookingCounts(); // the sidebar counts show at once, not after every list loads
   loadRiderClaims();
@@ -1223,40 +1224,68 @@ async function loadPayments() {
   // commission / rider payouts silently undercount once volume grows.
   const { data } = await supabase.from('payments').select('*, customer:customer_id(full_name), rider:rider_id(full_name)').order('created_at', { ascending: false });
   ALL_PAYMENTS = data || [];
-  const rows = ALL_PAYMENTS;
-  const totalRevenue = rows.reduce((a, r) => a + Number(r.amount), 0);
-  const totalCommission = rows.reduce((a, r) => a + Number(r.platform_commission), 0);
-  const totalPayout = rows.reduce((a, r) => a + Number(r.rider_payout), 0);
-
-  document.getElementById('payment-stats').innerHTML = [
-    ['Total processed', peso(totalRevenue), 'fa-money-bill-wave', 'var(--blue)'],
-    ['Platform commission', peso(totalCommission), 'fa-percent', 'var(--orange)'],
-    ['Rider payouts', peso(totalPayout), 'fa-hand-holding-dollar', 'var(--green)'],
-  ].map(([label, value, icon, color]) => `
-    <div class="stat-card"><div class="top"><div class="icon" style="background:${color}"><i class="fa-solid ${icon}"></i></div></div><strong>${value}</strong><span class="label">${label}</span></div>`).join('');
-
+  PAY_TOTALS.processed = ALL_PAYMENTS.reduce((a, r) => a + Number(r.amount), 0);
+  PAY_TOTALS.commission = ALL_PAYMENTS.reduce((a, r) => a + Number(r.platform_commission), 0);
+  PAY_TOTALS.riderShare = ALL_PAYMENTS.reduce((a, r) => a + Number(r.rider_payout), 0);
+  PAY_TOTALS.count = ALL_PAYMENTS.length;
+  renderPaymentStats();
   renderPaymentsPage();
 }
+
+// The four cards at the top of Payments: money through iTULOD, its cut, and
+// what's still open with riders (filled in by loadRiderBalances).
+const PAY_TOTALS = { processed: 0, commission: 0, riderShare: 0, count: 0, collect: 0, collectRiders: 0, pay: 0, payRiders: 0 };
+function renderPaymentStats() {
+  const t = PAY_TOTALS;
+  const riders = (n) => `${n} rider${n === 1 ? '' : 's'}`;
+  document.getElementById('payment-stats').innerHTML = [
+    ['Total processed', peso(t.processed), `${t.count} paid booking${t.count === 1 ? '' : 's'} · ${peso(t.riderShare)} to riders`, 'fa-money-bill-wave', 'icon--blue'],
+    ['iTULOD commission', peso(t.commission), 'Its cut of every paid booking', 'fa-percent', 'icon--orange'],
+    ['To collect from riders', peso(t.collect), t.collectRiders ? `${riders(t.collectRiders)} owe commission` : 'Nobody owes iTULOD', 'fa-arrow-down', 'icon--red'],
+    ['To pay riders', peso(t.pay), t.payRiders ? `${riders(t.payRiders)} to send their share` : 'Nobody is waiting', 'fa-arrow-up', 'icon--green'],
+  ].map(([label, value, sub, icon, tone]) => `
+    <div class="stat-card"><div class="top"><div class="icon ${tone}"><i class="fa-solid ${icon}"></i></div></div>
+      <strong>${value}</strong><span class="label">${label}</span><span class="stat-sub">${escapeHtml(sub)}</span></div>`).join('');
+}
+
+let PAYMENTS_METHOD = 'all';
+function wirePaymentFilters() {
+  document.querySelectorAll('#payments-filter .seg-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#payments-filter .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    PAYMENTS_METHOD = b.dataset.method; PAYMENTS_PAGE = 1; renderPaymentsPage();
+  }));
+  document.querySelectorAll('#balances-filter .seg-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#balances-filter .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    BALANCES_SHOW = b.dataset.show; renderRiderBalances();
+  }));
+}
+
+const PAY_METHOD_LABEL = { cash: 'Cash', gcash: 'GCash', wallet: 'Wallet', card: 'Card' };
+const PAY_KIND_ICON = { transport: 'fa-car', food: 'fa-utensils', parcel: 'fa-box', hauling: 'fa-truck-moving' };
 function renderPaymentsPage() {
   const tbody = document.querySelector('#payments-table tbody');
   const pager = document.getElementById('payments-pagination');
-  if (ALL_PAYMENTS.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7">${emptyState({
+  const list = PAYMENTS_METHOD === 'all' ? ALL_PAYMENTS : ALL_PAYMENTS.filter(p => p.method === PAYMENTS_METHOD);
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8">${emptyState({
       icon: 'fa-sack-dollar',
-      title: 'No transactions yet',
+      title: ALL_PAYMENTS.length ? `No ${PAY_METHOD_LABEL[PAYMENTS_METHOD]} transactions` : 'No transactions yet',
       body: 'Payments appear here as bookings are completed and paid.'
     })}</td></tr>`;
     if (pager) pager.innerHTML = '';
     return;
   }
-  const { slice, totalPages } = paginate(ALL_PAYMENTS, PAYMENTS_PAGE, ADMIN_PAGE_SIZE);
+  const { slice, totalPages } = paginate(list, PAYMENTS_PAGE, ADMIN_PAGE_SIZE);
   tbody.innerHTML = slice.map(p => `
     <tr>
-      <td style="text-transform:capitalize">${p.booking_type}</td>
-      <td>${peso(p.amount)}</td><td>${peso(p.platform_commission)}</td><td>${peso(p.rider_payout)}</td>
-      <td style="text-transform:capitalize">${p.method}</td>
-      <td>${statusBadge(p.status)}</td>
-      <td>${formatDate(p.created_at)}</td>
+      <td class="pay-card-head"><span class="pay-kind"><i class="fa-solid ${PAY_KIND_ICON[p.booking_type] || 'fa-receipt'}"></i> ${escapeHtml(KIND_LABEL[p.booking_type] || p.booking_type)}</span></td>
+      <td data-label="Customer → Rider"><span class="pay-who">${escapeHtml(p.customer?.full_name || '—')}<small>→ ${escapeHtml(p.rider?.full_name || '—')}</small></span></td>
+      <td class="num" data-label="Amount"><strong>${peso(p.amount)}</strong></td>
+      <td class="num" data-label="Commission">${peso(p.platform_commission)}</td>
+      <td class="num" data-label="Rider share">${peso(p.rider_payout)}</td>
+      <td data-label="Method">${escapeHtml(PAY_METHOD_LABEL[p.method] || p.method)}</td>
+      <td data-label="Status">${statusBadge(p.status)}</td>
+      <td class="nowrap" data-label="Date">${formatDate(p.created_at)}</td>
     </tr>`).join('');
   if (pager) {
     pager.innerHTML = totalPages <= 1 ? '' : `
@@ -1552,35 +1581,59 @@ let ACTIVE_SETTLEMENT = null;
 async function loadRiderBalances() {
   const tbody = document.querySelector('#rider-balances-table tbody');
   if (!tbody) return;
-  showSkeleton(tbody, skeletonRows(4, 6));
+  showSkeleton(tbody, skeletonRows(4, 7));
   const [{ data, error }, { data: cfg }] = await Promise.all([
     supabase.rpc('admin_rider_balances'),
     supabase.from('platform_config').select('rider_debt_limit').single(),
   ]);
-  if (error) { tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`; return; }
-  const debtLimit = Number(cfg?.rider_debt_limit || 0);
-  RIDERS_TO_PAY = (data || []).filter(r => Number(r.net) > 0).length;
+  if (error) { tbody.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`; return; }
+  RIDER_DEBT_LIMIT = Number(cfg?.rider_debt_limit || 0);
+  RIDER_BALANCES = data || [];
+  const owe = RIDER_BALANCES.filter(r => Number(r.net) < 0), owed = RIDER_BALANCES.filter(r => Number(r.net) > 0);
+  RIDERS_TO_PAY = owed.length;
+  Object.assign(PAY_TOTALS, {
+    collect: owe.reduce((a, r) => a - Number(r.net), 0), collectRiders: owe.length,
+    pay: owed.reduce((a, r) => a + Number(r.net), 0), payRiders: owed.length,
+  });
   updatePaymentsBadge();
-  const rows = (data || []).filter(r => Number(r.net) !== 0 || Number(r.cod_unremitted) > 0 || Number(r.online_earnings) > 0 || Number(r.cash_commission) > 0);
+  renderPaymentStats();
+  renderRiderBalances();
+}
+
+// Open balances (default): riders with something to collect, pay or hand
+// over. All riders: everyone who has had a paid trip.
+let RIDER_BALANCES = [];
+let RIDER_DEBT_LIMIT = 0;
+let BALANCES_SHOW = 'open';
+function renderRiderBalances() {
+  const tbody = document.querySelector('#rider-balances-table tbody');
+  const active = RIDER_BALANCES.filter(r => Number(r.online_earnings) > 0 || Number(r.cash_commission) > 0 || Number(r.net) !== 0 || Number(r.cod_unremitted) > 0);
+  const rows = BALANCES_SHOW === 'open'
+    ? active.filter(r => Math.abs(Number(r.net)) >= 0.005 || Number(r.cod_unremitted) > 0)
+    : active;
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6">${emptyState({ icon: 'fa-scale-balanced', title: 'All settled', body: 'No rider has an open balance.' })}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7">${emptyState({ icon: 'fa-scale-balanced', title: 'All settled', body: BALANCES_SHOW === 'open' ? 'No rider owes iTULOD or is waiting to be paid.' : 'No rider has had a paid trip yet.', tone: 'success' })}</td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map(r => {
-    const net = Number(r.net);
+    const net = Math.round(Number(r.net) * 100) / 100;
     const netCell = net > 0
       ? `<span class="badge badge--pending">Pay rider ${peso(net)}</span>`
       : net < 0
         ? `<span class="badge badge--cancelled">Collect ${peso(-net)}</span>`
-          + (debtLimit > 0 && -net > debtLimit ? ` <span class="badge badge--danger" title="Owes more than the ${peso(debtLimit)} limit">Can't take jobs</span>` : '')
+          + (RIDER_DEBT_LIMIT > 0 && -net > RIDER_DEBT_LIMIT ? `<span class="pay-flag" title="Owes more than the ${peso(RIDER_DEBT_LIMIT)} limit"><i class="fa-solid fa-ban"></i> Can't take jobs</span>` : '')
         : '<span class="badge badge--completed">Settled</span>';
+    const paidIn = Number(r.collections_made), paidOut = Number(r.payouts_made);
     return `<tr>
-      <td><strong>${escapeHtml(r.full_name || '—')}</strong><div style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml(r.phone || '')}</div></td>
-      <td>${peso(r.online_earnings)}</td>
-      <td>${peso(r.cash_commission)}</td>
-      <td>${netCell}</td>
-      <td>${Number(r.cod_unremitted) > 0 ? `<span class="badge badge--pending">${peso(r.cod_unremitted)}</span>` : '—'}</td>
-      <td>${net !== 0 ? `<button class="btn btn-outline btn-sm" onclick='openSettlementModal(${JSON.stringify({ id: r.rider_id, name: r.full_name, net })})'>${net > 0 ? 'Mark sent' : 'Mark paid'}</button>` : ''}</td>
+      <td class="pay-card-head"><span class="pay-who"><strong>${escapeHtml(r.full_name || '—')}</strong><small>${escapeHtml(r.phone || '')}</small></span></td>
+      <td class="num" data-label="Online earnings">${peso(r.online_earnings)}</td>
+      <td class="num" data-label="Cash commission">${peso(r.cash_commission)}</td>
+      <td class="num" data-label="Paid in / out"><span class="pay-who">${paidIn ? `In ${peso(paidIn)}` : '—'}<small>${paidOut ? `Out ${peso(paidOut)}` : ''}</small></span></td>
+      <td data-label="Balance"><span class="pay-net">${netCell}</span></td>
+      <td data-label="COD to hand over">${Number(r.cod_unremitted) > 0 ? `<span class="badge badge--pending">${peso(r.cod_unremitted)}</span>` : '<span class="muted">—</span>'}</td>
+      <td class="act">${net !== 0
+        ? `<button class="btn ${net > 0 ? 'btn-primary' : 'btn-outline'} btn-sm" onclick='openSettlementModal(${JSON.stringify({ id: r.rider_id, name: r.full_name, net })})'>${net > 0 ? '<i class="fa-solid fa-paper-plane"></i> Mark sent' : '<i class="fa-solid fa-check"></i> Mark paid'}</button>`
+        : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -1599,25 +1652,28 @@ async function loadRiderClaims() {
   if (error) { el.innerHTML = emptyState({ icon: 'fa-triangle-exclamation', title: 'Could not load', body: error.message, tone: 'error' }); return; }
   CLAIMS_TO_CONFIRM = (data || []).length;
   updatePaymentsBadge();
+  setNavCount('claims', CLAIMS_TO_CONFIRM);
   if (!CLAIMS_TO_CONFIRM) {
-    el.innerHTML = emptyState({ icon: 'fa-circle-check', title: 'Nothing to confirm', body: 'Payments riders say they made to you show up here.', tone: 'success' });
+    el.innerHTML = `<p class="pay-empty"><i class="fa-solid fa-circle-check"></i> Nothing to confirm — when a rider taps "I paid the admin", it shows up here.</p>`;
     return;
   }
   el.innerHTML = data.map(c => `
-    <div class="booking-card claim-row" data-claim="${c.id}" style="cursor:default">
-      <div class="kind-icon" style="background:var(--green)"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-      <div class="info"><div>
-        <h4>${escapeHtml(c.rider?.full_name || 'Rider')} · ${peso(c.amount)}</h4>
-        <p>${c.method === 'gcash' ? "GCash sent to iTULOD's number" : 'Cash, handed to the admin'}${c.reference ? ' · ref. ' + escapeHtml(c.reference) : ''}</p>
-        <p style="color:var(--text-muted);font-size:var(--fs-xs)">${escapeHtml([c.rider?.phone, 'sent ' + formatDate(c.created_at)].filter(Boolean).join(' · '))}</p>
-        <div class="claim-reject" style="margin-top:8px;display:none;gap:6px;flex-wrap:wrap">
-          <input type="text" class="claim-reason" maxlength="200" placeholder="Why can't you confirm it?" style="flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--bg-input);color:var(--text)">
-          <button class="btn btn-danger-ghost btn-sm" onclick="reviewClaim('${c.id}', false, this)">Reject</button>
-        </div>
-      </div></div>
-      <div class="meta">
+    <div class="claim-row" data-claim="${c.id}">
+      <div class="claim-row__icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+      <div class="claim-row__info">
+        <strong>${escapeHtml(c.rider?.full_name || 'Rider')}</strong>
+        <span>${c.method === 'gcash' ? "GCash sent to iTULOD's number" : 'Cash, handed to the admin'}${c.reference ? ' · ref. ' + escapeHtml(c.reference) : ''}</span>
+        <small>${escapeHtml([c.rider?.phone, 'sent ' + formatDate(c.created_at)].filter(Boolean).join(' · '))}</small>
+      </div>
+      <div class="claim-row__amount">${peso(c.amount)}</div>
+      <div class="claim-row__actions">
         <button class="btn btn-primary btn-sm" onclick="reviewClaim('${c.id}', true, this)"><i class="fa-solid fa-check"></i> Mark paid</button>
-        <button class="btn btn-outline btn-sm" onclick="this.closest('.claim-row').querySelector('.claim-reject').style.display = 'flex'; this.closest('.claim-row').querySelector('.claim-reason').focus()">Reject…</button>
+        <button class="btn btn-outline btn-sm" onclick="this.closest('.claim-row').classList.add('is-rejecting'); this.closest('.claim-row').querySelector('.claim-reason').focus()">Reject…</button>
+      </div>
+      <div class="claim-reject">
+        <input type="text" class="claim-reason" maxlength="200" placeholder="Why can't you confirm it? The rider will see this.">
+        <button class="btn btn-danger-ghost btn-sm" onclick="reviewClaim('${c.id}', false, this)">Reject</button>
+        <button class="btn btn-outline btn-sm" onclick="this.closest('.claim-row').classList.remove('is-rejecting')">Cancel</button>
       </div>
     </div>`).join('');
 }
