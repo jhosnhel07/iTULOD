@@ -94,7 +94,7 @@
       : [];
     if (route[0] && route[1]) rows.push(['Route', escapeHtml(`${route[0]} → ${route[1]}`)]);
     rows.push(['Booked', escapeHtml(formatDate(b.created_at))]);
-    rows.push(['Method', b.payment_method === 'gcash' ? 'GCash' : escapeHtml(b.payment_method || '—')]);
+    rows.push(['Method', b.payment_method === 'gcash' ? 'GCash' : b.payment_method === 'wallet' ? 'iTULOD Wallet' : escapeHtml(b.payment_method || '—')]);
     rows.push(['Status', statusCell(b.payment_status)]);
 
     receiptEl.innerHTML = rows

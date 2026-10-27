@@ -118,11 +118,10 @@ async function submitWalletPayment() {
     return;
   }
 
-  toast('Paid from your wallet.', 'success');
+  // The same receipt as a GCash payment (payment-return.html; the app shows
+  // it as a popup) — already Paid, so it just shows.
   closePayModal();
-  if (typeof window.loadWalletBalance === 'function') window.loadWalletBalance();
-  if (typeof window.loadHome === 'function') window.loadHome();
-  if (typeof window.loadHistory === 'function') window.loadHistory();
+  window.location.href = `${rootPath()}payment-return.html?type=${encodeURIComponent(bookingType)}&id=${encodeURIComponent(bookingId)}&result=success`;
 }
 
 // functions.invoke() reports failures three different ways, and only one of
