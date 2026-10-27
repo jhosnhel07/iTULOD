@@ -330,12 +330,21 @@
         // rider looking at their own job.
         const isOwnJob = CURRENT_PROFILE?.id === riderId;
         const tripActive = ['accepted', 'ongoing'].includes(booking.status);
+        // A finished trip only offers View chat when there was a chat.
+        let hadChat = false;
+        if (!tripActive && !isOwnJob) {
+          const { count } = await supabase.from('booking_messages').select('id', { count: 'exact', head: true })
+            .eq('booking_type', kind).eq('booking_id', booking.id);
+          hadChat = (count || 0) > 0;
+        }
         const telHref = riderProfile.phone ? 'tel:' + riderProfile.phone.replace(/[^\d+]/g, '') : '';
         const callBtn = telHref && !isOwnJob && tripActive
           ? `<a class="btn btn-primary btn-sm bd-call-btn" href="${telHref}"><i class="fa-solid fa-phone"></i> Call</a>`
           : '';
-        const msgBtn = !isOwnJob && tripActive && typeof openBookingChat === 'function'
-          ? `<button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> Message</button>`
+        // The only chat button in booking details: Message during the trip,
+        // View chat (read-only) after.
+        const msgBtn = !isOwnJob && (tripActive || hadChat) && typeof openBookingChat === 'function'
+          ? `<button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> ${tripActive ? 'Message' : 'View chat'}</button>`
           : '';
         riderSection = `
           <div class="bd-section">
@@ -433,16 +442,6 @@
           </a>
         </div>` : '';
 
-      /* ---- 8d. Chat — lives in the Messages section (js/messages.js); this
-         just opens it. Sending is gated to 'accepted'/'ongoing' by RLS. */
-      const canChat = riderId && ['accepted', 'ongoing'].includes(booking.status);
-      const chatSection = riderId && typeof openBookingChat === 'function' ? `
-        <div class="bd-section">
-          <h4><i class="fa-solid fa-comment-dots"></i> Messages</h4>
-          <p class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">${canChat ? 'Chat about this booking — quick replies and photos too.' : 'The chat for this booking is read-only now.'}</p>
-          <button type="button" class="btn btn-outline btn-sm" onclick="openBookingChat('${kind}', '${booking.id}')"><i class="fa-solid fa-comment-dots"></i> ${canChat ? 'Open chat' : 'View chat'}</button>
-        </div>` : '';
-
       // The customer can cancel until the trip starts (pending / accepted),
       // like the Cancel on their Home and History cards (customer.js).
       const canCancelHere = typeof cancelBooking === 'function'
@@ -481,7 +480,6 @@
         ${vehicleSection}
         ${docsSection}
         ${proofSection}
-        ${chatSection}
         <div class="bd-section">
           ${canCancelHere ? `<button type="button" class="btn btn-outline btn-block btn-sm btn-danger-ghost" style="margin-bottom:8px"
             onclick="cancelBooking('${kind}', '${booking.id}').then(ok => ok && openBookingDetails({ kind: '${kind}', id: '${booking.id}' }))">
