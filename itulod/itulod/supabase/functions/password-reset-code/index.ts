@@ -8,10 +8,16 @@
 //
 // identifier is an email or a PH mobile number (09XX…, +63…). A number is
 // looked up on profiles and the code goes to that account's email — there is
-// no SMS provider — so only a masked address ever comes back. The code is
-// Supabase's own recovery OTP (the Reset Password email template shows
-// {{ .Token }}); verify checks it with Supabase and returns the session, so
-// the page can set the new password and go straight to the dashboard.
+// no SMS provider — so only a masked address ever comes back.
+//
+// The code comes in Supabase's built-in "Reauthentication" email (sql/056):
+// the free plan's default email sender can't use an edited Reset Password
+// template, and the default one only has a link. send opens a short-lived
+// session for the account here on the server, asks Supabase to email the
+// reauthentication code, and signs that session out. verify checks the code
+// with check_password_reset_code() (used once, 1 hour) and returns a fresh
+// session, so the page can set the new password and go straight to the
+// dashboard.
 //
 // Wrong codes are capped at 5 per account per 15 minutes
 // (password_reset_attempts, sql/049) — every call comes from this function,
@@ -76,12 +82,22 @@ async function findAccount(admin: ReturnType<typeof adminClient>, identifier: st
   return { id: p.id, email: email.toLowerCase(), role: p.role };
 }
 
-// Supabase Auth as the public client (anon key): the recovery email and the
-// code check behave exactly as they would from the browser.
+// Supabase Auth as the public client (anon key), as it would be in the browser.
 function authClient() {
   return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+}
+
+// A session for the account without sending anything: an admin magic link,
+// redeemed here. Never sent to the browser except after a correct code.
+async function sessionFor(admin: ReturnType<typeof adminClient>, email: string) {
+  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+  if (linkErr || !link?.properties?.hashed_token) throw linkErr ?? new Error('Could not start the reset.');
+  const auth = authClient();
+  const { data, error } = await auth.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'magiclink' });
+  if (error || !data?.session) throw error ?? new Error('Could not start the reset.');
+  return { auth, session: data.session };
 }
 
 Deno.serve(async (req: Request) => {
@@ -94,10 +110,10 @@ Deno.serve(async (req: Request) => {
     if ('error' in found) return json({ error: found.error }, found.status);
 
     if (action === 'send') {
-      const siteUrl = Deno.env.get('SITE_URL') || '';
-      const { error } = await authClient().auth.resetPasswordForEmail(found.email, {
-        redirectTo: `${siteUrl}/reset-password.html`, // the email still has the link too
-      });
+      // Supabase emails the code ("Confirm reauthentication" / "Enter the code")
+      const { auth } = await sessionFor(admin, found.email);
+      const { error } = await auth.auth.reauthenticate();
+      await auth.auth.signOut({ scope: 'local' }); // only this server-side session
       if (error) {
         const limited = /rate limit|seconds|too many/i.test(error.message);
         return json({
@@ -122,8 +138,9 @@ Deno.serve(async (req: Request) => {
         return json({ error: `Too many wrong codes. Wait ${WINDOW_MIN} minutes or send a new code.` }, 429);
       }
 
-      const { data, error } = await authClient().auth.verifyOtp({ email: found.email, token, type: 'recovery' });
-      if (error || !data?.session) {
+      const { data: ok, error: checkErr } = await admin.rpc('check_password_reset_code', { p_user: found.id, p_code: token });
+      if (checkErr) throw checkErr;
+      if (ok !== true) {
         await admin.from('password_reset_attempts').upsert({
           user_id: found.id,
           failed: windowOpen ? tries!.failed + 1 : 1,
@@ -132,9 +149,10 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'That code is wrong or has expired. Check the email or send a new code.' }, 400);
       }
       await admin.from('password_reset_attempts').delete().eq('user_id', found.id);
+      const { session } = await sessionFor(admin, found.email);
       return json({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
         role: found.role,
       });
     }

@@ -165,7 +165,7 @@ async function fpSendCode(btn) {
   try {
     const { sent_to } = await resetCodeCall({ action: 'send', identifier });
     FP.identifier = identifier;
-    document.getElementById('fp-sub').innerHTML = `We sent a 6-digit code to <strong>${escapeHtml(sent_to)}</strong>. Check your inbox (and spam).`;
+    document.getElementById('fp-sub').innerHTML = `We sent a 6-digit code to <strong>${escapeHtml(sent_to)}</strong>. The email is from Supabase Auth, titled “Confirm reauthentication” — check your inbox (and spam).`;
     document.getElementById('fp-code').value = '';
     fpShowStep(2);
     fpStartResendTimer();
