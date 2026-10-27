@@ -785,10 +785,20 @@
       /* ── Vehicle Cards Grid ───────────────────────────────── */
       .vehicle-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 10px;
         margin-bottom: 24px;
       }
+      /* Which jobs the vehicle gets (register.html) */
+      .vehicle-card .vc-name { display: block; line-height: 1.25; }
+      .vehicle-card .vc-jobs {
+        display: block;
+        margin-top: 3px;
+        font-size: 10.5px;
+        line-height: 1.3;
+        color: #9aa6b2;
+      }
+      .vehicle-card.selected .vc-jobs { color: #5a8fc4; }
       .vehicle-card {
         border: 2px solid #ecdedd;
         border-radius: var(--radius-md);
@@ -1322,7 +1332,7 @@
           border-radius: var(--radius-lg);
         }
         .vehicle-grid {
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(2, 1fr);
         }
         .upload-grid {
           grid-template-columns: 1fr;

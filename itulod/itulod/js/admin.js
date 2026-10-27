@@ -1729,7 +1729,9 @@ async function saveSettlement() {
 
 // ---- rider vehicle type (lets an admin move a rider onto hauling once
 // they've checked the new vehicle's papers) --------------------------------
-const RIDER_VEHICLE_TYPES = ['Motorcycle', 'Tricycle', 'Car', 'SUV', 'Van', 'Pickup', 'Truck'];
+// Every rider vehicle type the job matching knows (sql/033 rider_type_for_vehicle),
+// the same choices as sign-up (register.html).
+const RIDER_VEHICLE_TYPES = ['Bicycle', 'Motorcycle', 'Tricycle', 'Car', 'SUV', 'Van', 'Jeepney', 'Bus', 'Pickup', 'Truck'];
 const HAULING_VEHICLE_TYPES = ['Van', 'Pickup', 'Truck'];
 
 async function changeRiderVehicle(riderId, vehicleType, selectEl) {

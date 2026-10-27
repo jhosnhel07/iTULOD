@@ -394,81 +394,61 @@
           <div class="wizard-panel" id="step-2">
             <h2 class="panel-title">Your Vehicle</h2>
             <p class="panel-sub">
-              Select the type of vehicle you'll use for deliveries and rides.
+              Select the type of vehicle you'll use. Each one gets the jobs listed under it.
             </p>
 
+            <!-- Every rider vehicle type the job matching knows (sql/033
+                 rider_type_for_vehicle): what each gets follows vehicles.services. -->
             <div class="vehicle-grid" id="vehicle-grid">
-              <div
-                class="vehicle-card"
-                data-vehicle="Bicycle"
-                onclick="selectVehicle(this, 'Bicycle')"
-              >
+              <div class="vehicle-card" data-vehicle="Bicycle" onclick="selectVehicle(this, 'Bicycle')">
                 <span class="vc-icon"><i class="fa-solid fa-bicycle"></i></span>
                 <span class="vc-name">Bicycle</span>
+                <span class="vc-jobs">Food only</span>
               </div>
-              <div
-                class="vehicle-card selected"
-                data-vehicle="Motorcycle"
-                onclick="selectVehicle(this, 'Motorcycle')"
-              >
-                <span class="vc-icon"
-                  ><i class="fa-solid fa-motorcycle"></i
-                ></span>
+              <div class="vehicle-card selected" data-vehicle="Motorcycle" onclick="selectVehicle(this, 'Motorcycle')">
+                <span class="vc-icon"><i class="fa-solid fa-motorcycle"></i></span>
                 <span class="vc-name">Motorcycle</span>
+                <span class="vc-jobs">Rides · food · parcels</span>
               </div>
-              <div
-                class="vehicle-card"
-                data-vehicle="Tricycle"
-                onclick="selectVehicle(this, 'Tricycle')"
-              >
+              <div class="vehicle-card" data-vehicle="Tricycle" onclick="selectVehicle(this, 'Tricycle')">
                 <span class="vc-icon"><i class="fa-solid fa-tricycle"></i></span>
                 <span class="vc-name">Tricycle</span>
+                <span class="vc-jobs">Rides · food · parcels</span>
               </div>
-              <div
-                class="vehicle-card"
-                data-vehicle="Car"
-                onclick="selectVehicle(this, 'Car')"
-              >
+              <div class="vehicle-card" data-vehicle="Car" onclick="selectVehicle(this, 'Car')">
                 <span class="vc-icon"><i class="fa-solid fa-car"></i></span>
                 <span class="vc-name">Car</span>
+                <span class="vc-jobs">Rides · food · parcels</span>
               </div>
-              <div
-                class="vehicle-card"
-                data-vehicle="SUV"
-                onclick="selectVehicle(this, 'SUV')"
-              >
-                <span class="vc-icon"
-                  ><i class="fa-solid fa-car-side"></i
-                ></span>
+              <div class="vehicle-card" data-vehicle="SUV" onclick="selectVehicle(this, 'SUV')">
+                <span class="vc-icon"><i class="fa-solid fa-car-side"></i></span>
                 <span class="vc-name">SUV</span>
+                <span class="vc-jobs">Rides · parcels</span>
               </div>
-              <div
-                class="vehicle-card"
-                data-vehicle="Van"
-                onclick="selectVehicle(this, 'Van')"
-              >
-                <span class="vc-icon"
-                  ><i class="fa-solid fa-van-shuttle"></i
-                ></span>
-                <span class="vc-name">Van</span>
+              <div class="vehicle-card" data-vehicle="Van" onclick="selectVehicle(this, 'Van')">
+                <span class="vc-icon"><i class="fa-solid fa-van-shuttle"></i></span>
+                <span class="vc-name">Van / L300</span>
+                <span class="vc-jobs">Rides · parcels · hauling</span>
               </div>
-              <div
-                class="vehicle-card"
-                data-vehicle="Pickup"
-                onclick="selectVehicle(this, 'Pickup')"
-              >
-                <span class="vc-icon"
-                  ><i class="fa-solid fa-truck-pickup"></i
-                ></span>
-                <span class="vc-name">Pickup</span>
+              <div class="vehicle-card" data-vehicle="Jeepney" onclick="selectVehicle(this, 'Jeepney')">
+                <span class="vc-icon"><i class="fa-solid fa-bus-simple"></i></span>
+                <span class="vc-name">Jeepney</span>
+                <span class="vc-jobs" title="Rides for 9–14 passengers">Rides (9–14)</span>
               </div>
-              <div
-                class="vehicle-card"
-                data-vehicle="Truck"
-                onclick="selectVehicle(this, 'Truck')"
-              >
+              <div class="vehicle-card" data-vehicle="Bus" onclick="selectVehicle(this, 'Bus')">
+                <span class="vc-icon"><i class="fa-solid fa-bus"></i></span>
+                <span class="vc-name">Bus</span>
+                <span class="vc-jobs" title="Rides for 15–40 passengers">Rides (15–40)</span>
+              </div>
+              <div class="vehicle-card" data-vehicle="Pickup" onclick="selectVehicle(this, 'Pickup')">
+                <span class="vc-icon"><i class="fa-solid fa-truck-pickup"></i></span>
+                <span class="vc-name">Pickup / Multicab</span>
+                <span class="vc-jobs">Hauling</span>
+              </div>
+              <div class="vehicle-card" data-vehicle="Truck" onclick="selectVehicle(this, 'Truck')">
                 <span class="vc-icon"><i class="fa-solid fa-truck"></i></span>
                 <span class="vc-name">Truck</span>
+                <span class="vc-jobs">Parcels · hauling</span>
               </div>
             </div>
 

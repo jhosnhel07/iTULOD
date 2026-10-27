@@ -111,6 +111,8 @@
 :root[data-theme="dark"] .vehicle-card.selected { background: #102540; border-color: #2196f3; }
 :root[data-theme="dark"] .vehicle-card .vc-icon,
 :root[data-theme="dark"] .vehicle-card .vc-name { color: #a9b5c4; }
+:root[data-theme="dark"] .vehicle-card .vc-jobs { color: #7b8794; }
+:root[data-theme="dark"] .vehicle-card.selected .vc-jobs { color: #90caf9; }
 :root[data-theme="dark"] .vehicle-card.selected .vc-icon,
 :root[data-theme="dark"] .vehicle-card.selected .vc-name { color: #90caf9; }
 
