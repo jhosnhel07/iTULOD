@@ -214,62 +214,64 @@
     </section>
 
     <!-- ===================== EARNINGS ===================== -->
+    <!-- Top to bottom: what you earned → balance with iTULOD → last 7 days +
+         by payment method → every paid trip (rider.js loadEarnings) -->
     <section class="tab-panel" id="tab-earnings">
-      <div id="rider-balance"></div>
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="top">
-            <div class="icon icon--blue"><i class="fa-solid fa-calendar-day"></i></div>
+      <!-- 1. What you earned (your share, paid trips) -->
+      <div class="stat-grid earn-summary" id="earn-summary">
+        <div class="stat-card"><div class="top"><div class="icon icon--blue"><i class="fa-solid fa-calendar-day"></i></div></div>
+          <strong id="earn-daily">₱0.00</strong><span class="label">Today</span><span class="stat-sub" id="earn-daily-trips">0 trips</span></div>
+        <div class="stat-card"><div class="top"><div class="icon icon--orange"><i class="fa-solid fa-calendar-week"></i></div></div>
+          <strong id="earn-weekly">₱0.00</strong><span class="label">This week</span><span class="stat-sub" id="earn-weekly-trips">0 trips</span></div>
+        <div class="stat-card"><div class="top"><div class="icon icon--green"><i class="fa-solid fa-calendar"></i></div></div>
+          <strong id="earn-monthly">₱0.00</strong><span class="label">This month</span><span class="stat-sub" id="earn-monthly-trips">0 trips</span></div>
+        <div class="stat-card"><div class="top"><div class="icon icon--yellow"><i class="fa-solid fa-sack-dollar"></i></div></div>
+          <strong id="earn-all">₱0.00</strong><span class="label">All time</span><span class="stat-sub" id="earn-all-trips">0 trips</span></div>
+      </div>
+
+      <!-- 2. Balance with iTULOD: pay / I paid the admin / payments (rider.js loadRiderBalance) -->
+      <div class="earn-block">
+        <h3 class="earn-block__title"><i class="fa-solid fa-scale-balanced"></i> Balance with iTULOD</h3>
+        <div id="rider-balance"></div>
+      </div>
+
+      <!-- 3. Last 7 days + by payment method -->
+      <div class="earn-pair">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3><i class="fa-solid fa-chart-column"></i> Last 7 days</h3>
+              <p class="card-sub" id="earn-week-total">Your share, day by day</p>
+            </div>
           </div>
-          <strong id="earn-daily">₱0.00</strong>
-          <span class="label">Today</span>
+          <div class="bar-chart" id="earnings-chart"></div>
+          <div class="bar-labels" id="earnings-labels"></div>
         </div>
-        <div class="stat-card">
-          <div class="top">
-            <div class="icon icon--orange"><i class="fa-solid fa-calendar-week"></i></div>
+
+        <div class="card">
+          <div class="card-head card-head--wrap">
+            <div>
+              <h3><i class="fa-solid fa-wallet"></i> By payment method</h3>
+              <p class="card-sub">How customers paid for your trips</p>
+            </div>
+            <div class="segmented segmented--sm" id="pay-split-range" role="tablist" aria-label="Period">
+              <button type="button" class="seg-btn" data-range="day">Today</button>
+              <button type="button" class="seg-btn" data-range="week">Week</button>
+              <button type="button" class="seg-btn active" data-range="month">Month</button>
+              <button type="button" class="seg-btn" data-range="all">All</button>
+            </div>
           </div>
-          <strong id="earn-weekly">₱0.00</strong>
-          <span class="label">This week</span>
-        </div>
-        <div class="stat-card">
-          <div class="top">
-            <div class="icon icon--green"><i class="fa-solid fa-calendar"></i></div>
-          </div>
-          <strong id="earn-monthly">₱0.00</strong>
-          <span class="label">This month</span>
-        </div>
-        <div class="stat-card">
-          <div class="top">
-            <div class="icon icon--yellow"><i class="fa-solid fa-star"></i></div>
-          </div>
-          <strong id="earn-rating">—</strong>
-          <span class="label">Average rating</span>
+          <div class="pay-split pay-split--stack" id="pay-split"></div>
+          <p class="pay-split__note"><i class="fa-solid fa-circle-info"></i> <strong>Cash</strong>: you collected it and owe iTULOD the commission. <strong>GCash</strong> and <strong>Wallet</strong>: iTULOD received it and owes you your share.</p>
         </div>
       </div>
 
-      <!-- Earnings split by how the customer paid, and every paid trip (rider.js renderPaySplit / renderPayRecords) -->
+      <!-- 4. Every paid trip -->
       <div class="card">
         <div class="card-head card-head--wrap">
           <div>
-            <h3>Earnings by payment method</h3>
-            <p class="card-sub">What you earned, split by how the customer paid</p>
-          </div>
-          <div class="segmented segmented--sm" id="pay-split-range" role="tablist" aria-label="Period">
-            <button type="button" class="seg-btn" data-range="day">Today</button>
-            <button type="button" class="seg-btn" data-range="week">This week</button>
-            <button type="button" class="seg-btn active" data-range="month">This month</button>
-            <button type="button" class="seg-btn" data-range="all">All time</button>
-          </div>
-        </div>
-        <div class="pay-split" id="pay-split"></div>
-        <p class="pay-split__note"><i class="fa-solid fa-circle-info"></i> <strong>Cash</strong>: you collected it from the customer and owe iTULOD the commission. <strong>GCash</strong> and <strong>Wallet</strong>: iTULOD received it and pays your share out to you.</p>
-      </div>
-
-      <div class="card">
-        <div class="card-head card-head--wrap">
-          <div>
-            <h3>Earnings records</h3>
-            <p class="card-sub">Every paid trip, newest first</p>
+            <h3><i class="fa-solid fa-receipt"></i> Earnings records</h3>
+            <p class="card-sub">Every paid trip, newest first — what the customer paid, the commission and your share</p>
           </div>
           <div class="segmented segmented--sm" id="pay-records-filter" role="tablist" aria-label="Payment method">
             <button type="button" class="seg-btn active" data-method="all">All</button>
@@ -279,17 +281,6 @@
           </div>
         </div>
         <div id="pay-records"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>Earnings — last 7 days</h3>
-            <p class="card-sub">Daily breakdown (₱)</p>
-          </div>
-        </div>
-        <div class="bar-chart" id="earnings-chart"></div>
-        <div class="bar-labels" id="earnings-labels"></div>
       </div>
     </section>
 

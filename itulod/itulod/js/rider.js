@@ -880,30 +880,32 @@ async function loadEarnings() {
   const { data: payments } = await supabase.from('payments').select('*').eq('rider_id', CURRENT_PROFILE.id);
   const rows = payments || [];
   EARNING_ROWS = rows.filter(r => r.status === 'paid').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  PAY_SHOWN = PAY_PAGE;
   renderPaySplit();
   renderPayRecords();
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const sum = (filterFn) => rows.filter(filterFn).reduce((a, r) => a + Number(r.rider_payout), 0);
-  document.getElementById('earn-daily').textContent = peso(sum(r => new Date(r.created_at) >= startOfDay));
-  document.getElementById('earn-weekly').textContent = peso(sum(r => new Date(r.created_at) >= startOfWeek));
-  document.getElementById('earn-monthly').textContent = peso(sum(r => new Date(r.created_at) >= startOfMonth));
-
-  const { data: reviews } = await supabase.from('reviews').select('rating').eq('rider_id', CURRENT_PROFILE.id);
-  if (reviews && reviews.length > 0) {
-    const avg = reviews.reduce((a, r) => a + r.rating, 0) / reviews.length;
-    document.getElementById('earn-rating').textContent = avg.toFixed(1) + ' ★';
-  }
+  // What you earned: your share of paid trips (the same rows as the split
+  // and records below), with how many trips.
+  const set = (id, from) => {
+    const inRange = EARNING_ROWS.filter(r => !from || new Date(r.created_at) >= from);
+    document.getElementById(id).textContent = peso(inRange.reduce((a, r) => a + Number(r.rider_payout), 0));
+    document.getElementById(id + '-trips').textContent = `${inRange.length} trip${inRange.length === 1 ? '' : 's'}`;
+  };
+  set('earn-daily', payRangeStart('day'));
+  set('earn-weekly', payRangeStart('week'));
+  set('earn-monthly', payRangeStart('month'));
+  set('earn-all', null);
 
   // last 7 days bar chart
+  const startOfDay = payRangeStart('day');
   const days = [...Array(7)].map((_, i) => { const d = new Date(startOfDay); d.setDate(d.getDate() - (6 - i)); return d; });
-  const totals = days.map(d => sum(r => { const rd = new Date(r.created_at); return rd.toDateString() === d.toDateString(); }));
+  const totals = days.map(d => EARNING_ROWS.filter(r => new Date(r.created_at).toDateString() === d.toDateString())
+    .reduce((a, r) => a + Number(r.rider_payout), 0));
   const max = Math.max(1, ...totals);
-  document.getElementById('earnings-chart').innerHTML = totals.map(t => `<div class="bar" style="height:${Math.max(4, (t / max) * 100)}%"><span>${t > 0 ? peso(t) : ''}</span></div>`).join('');
-  document.getElementById('earnings-labels').innerHTML = days.map(d => `<span>${d.toLocaleDateString('en-PH', { weekday: 'short' })}</span>`).join('');
+  document.getElementById('earnings-chart').innerHTML = totals.map((t, i) =>
+    `<div class="bar${i === 6 ? ' bar--today' : ''}" style="height:${Math.max(4, (t / max) * 100)}%" title="${escapeHtml(days[i].toLocaleDateString('en-PH', { weekday: 'long', month: 'short', day: 'numeric' }))}: ${peso(t)}"><span>${t > 0 ? peso(t) : ''}</span></div>`).join('');
+  document.getElementById('earnings-labels').innerHTML = days.map((d, i) => `<span>${i === 6 ? 'Today' : d.toLocaleDateString('en-PH', { weekday: 'short' })}</span>`).join('');
+  document.getElementById('earn-week-total').textContent = `${peso(totals.reduce((a, t) => a + t, 0))} in the last 7 days · your share, day by day`;
 }
 
 // ---- earnings by payment method + records ------------------------------
@@ -944,11 +946,15 @@ function renderPaySplit() {
     </button>`;
   }).join('');
 }
+// The records list shows 20 at a time; "Show more" adds the next 20.
+const PAY_PAGE = 20;
+let PAY_SHOWN = PAY_PAGE;
+function showMorePayRecords() { PAY_SHOWN += PAY_PAGE; renderPayRecords(); }
 function renderPayRecords() {
   const box = document.getElementById('pay-records');
   if (!box) return;
   const all = EARNING_ROWS.filter(r => PAY_FILTER === 'all' || r.method === PAY_FILTER);
-  const rows = all.slice(0, 50);
+  const rows = all.slice(0, PAY_SHOWN);
   if (!rows.length) {
     box.innerHTML = emptyState({ icon: 'fa-receipt', title: 'No records yet', body: PAY_FILTER === 'all' ? 'Completed trips show up here with what you earned.' : 'No trips paid this way yet.' });
     return;
@@ -961,13 +967,17 @@ function renderPayRecords() {
     const m = meta[r.method] || [r.method, r.method || '—', 'fa-receipt'];
     return `<div class="pay-rec">
       <span class="pay-rec__icon pay-rec__icon--${escapeHtml(r.method || '')}"><i class="fa-solid ${m[2]}"></i></span>
-      <div class="pay-rec__main"><strong>${escapeHtml(what)}</strong><span>${formatDate(r.created_at)} · ${escapeHtml(m[1])}</span></div>
-      <div class="pay-rec__amt"><strong>+${peso(r.rider_payout)}</strong><span>Paid ${peso(r.amount)}${commission ? ' · commission ' + peso(commission) : ''}</span></div>
+      <div class="pay-rec__main"><strong>${escapeHtml(what)}</strong><span>${formatDate(r.created_at)}</span><span>${escapeHtml(m[1])}</span></div>
+      <div class="pay-rec__amt"><strong>+${peso(r.rider_payout)}</strong><span>Paid ${peso(r.amount)}</span>${commission ? `<span>−${peso(commission)} commission</span>` : ''}</div>
     </div>`;
-  }).join('')}</div>${all.length > 50 ? '<p class="pay-records__more">Showing the latest 50.</p>' : ''}`;
+  }).join('')}</div>${all.length > rows.length
+    ? `<div class="pay-records__more"><span>Showing ${rows.length} of ${all.length}</span>
+         <button type="button" class="btn btn-outline btn-sm" onclick="showMorePayRecords()"><i class="fa-solid fa-chevron-down"></i> Show more</button></div>`
+    : ''}`;
 }
 function setPayFilter(method) {
   PAY_FILTER = method;
+  PAY_SHOWN = PAY_PAGE;
   viewState('pay-filter', method);
   document.querySelectorAll('#pay-records-filter .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.method === method));
   renderPayRecords();
