@@ -11,8 +11,8 @@
 import { adminClient, getRequestUser, json, CORS_HEADERS } from '../_shared/helpers.ts';
 import { creditWallet } from '../_shared/payments.ts';
 
-const WELCOME_BONUS = 50;
-const REFERRER_BONUS = 50;
+const WELCOME_BONUS = 5; // ₱5 (sql/055)
+const REFERRER_BONUS = 5;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
