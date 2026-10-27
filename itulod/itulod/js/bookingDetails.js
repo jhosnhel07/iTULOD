@@ -315,7 +315,6 @@
           ${booking.delivery_fee  != null ? row('Delivery fee',  peso(booking.delivery_fee))  : ''}
           ${outOfStock ? row('Out of stock', '− ' + peso(outOfStock)
               + (booking.payment_status === 'paid' && ['gcash', 'wallet'].includes(booking.payment_method) ? ' · refunded to your iTULOD wallet' : '')) : ''}
-          ${Number(booking.discount_amount) > 0 ? row('Promo ' + escapeHtml(booking.promo_code || ''), '− ' + peso(booking.discount_amount)) : ''}
           ${booking.final_fare || booking.estimated_fare ? `<div class="bd-row bd-row--total"><span>Total</span><strong>${peso(booking.final_fare ?? booking.estimated_fare)}</strong></div>` : ''}
           ${!booking.estimated_fare && !booking.final_fare ? row('Fare', '—') : ''}
           ${booking.distance_km && kind === 'transport' ? row('Distance', booking.distance_km + ' km') : ''}
@@ -544,7 +543,6 @@
             <h4><i class="fa-solid fa-sack-dollar"></i> Your earnings</h4>
             ${earn ? `
               ${row(ended ? 'Fee from the customer' : 'Fare', peso(fareOnly))}
-              ${Number(booking.discount_amount) > 0 && !ended ? row('Promo ' + escapeHtml(booking.promo_code || ''), `${peso(booking.discount_amount)} · paid by iTULOD, not you`) : ''}
               ${Number(earn.commission) ? row('iTULOD commission', '− ' + peso(earn.commission)) : ''}
               ${tip ? row('Tip from the customer', peso(tip)) : ''}
               <div class="bd-row bd-row--total"><span>${earn.is_final ? 'You earned' : 'You earn (estimate)'}</span><strong>${peso(Number(earn.payout) + (earn.is_final ? 0 : tip))}</strong></div>`

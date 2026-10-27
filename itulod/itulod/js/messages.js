@@ -97,8 +97,6 @@ async function initMessages() {
 // "#messages/transport/<id>" from a notification
 function openLink(hash) {
   const [tab, kind, id] = String(hash || '').replace(/^#/, '').split('/');
-  // a tapped promo notification (link 'promo/<id>', js/promos.js)
-  if (tab === 'promo' && typeof openPromo === 'function') { openPromo(kind); return; }
   if (tab !== 'messages') return;
   if (typeof activateTab === 'function') activateTab('messages');
   if (kind && id) openConversation(kind, id);

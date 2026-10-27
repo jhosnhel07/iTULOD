@@ -86,6 +86,7 @@ once:
 | 51 | `sql/051_rider_pay_dues.sql` | **Riders settle their own balance.** "Pay with GCash" on Earnings: the new `rider-pay-dues` Edge Function charges exactly what `rider_debt_status` says they owe (a `rider_payments` row + PayMongo source, return page `payment-return.html?type=rider`); when GCash confirms, `paymongo-webhook` / `sync-payment-status` call `settle_rider_payment()` (service role only, exactly once) which records the collection in `rider_settlements` — balance ₱0.00, debt-limit block lifted. "I paid the admin": `rider_claim_payment()` (one pending at a time, never more than owed) → Admin → Payments "Rider payments to confirm" → `admin_review_rider_claim()` Mark paid / Reject with a reason (the rider is notified). Riders can't write settlements. Redeploy `sync-payment-status` and `paymongo-webhook` (`--no-verify-jwt`), deploy `rider-pay-dues`. |
 | 53 | `sql/053_promo_claims.sql` | **Promos reach customers.** `promo_codes` gets a title, `services` (transport / food / parcel / hauling) and `sent_at` / `recipients`; `admin_send_promo()` sends one as a notification (link `promo/<id>`) to every active customer; `claim_promo()` (by id or typed code) fills `promo_claims`; `my_promos()` lists them with a status (ready / used / expired / ended / full, plus sent ones to claim). Customers pick a claimed promo on every booking form; `redeem-promo` (redeploy) applies it to any service in its list, never below the minimum fare. **iTULOD pays for promos:** `booking_before_update()` pays the rider their share of the full price and takes the discount from iTULOD's commission (`payments.platform_commission` can go below zero; `payments.promo_discount` records it); `rider_booking_earnings()` matches. |
 | 52 | `sql/052_admin_live_updates.sql` | Adds `payments`, `support_requests` and `rider_applications` to the realtime publication. The admin dashboard's one channel listens to them too, and an unpublished table stopped the whole channel — so admin lists and counts only updated on refresh. |
+| 54 | `sql/054_remove_promos.sql` | **Promos removed.** Restores `booking_before_update()` (sql/050) and `rider_booking_earnings()` (sql/047) — the rider's share and iTULOD's commission come from the full price again. Drops `claim_promo` / `my_promos` / `admin_send_promo` / `send_promo_notifications` / `promo_summary`, the promo notifications (link `promo/…`), the tables `promo_claims` / `promo_redemptions` / `promo_codes` and type `promo_discount_type`, and the columns `promo_code` / `discount_amount` (all four booking tables) and `payments.promo_discount`. Redeploy `redeem-promo`: it now only answers 410 for older app versions. |
 | 39 | `sql/039_tricycle_icon.sql` | Tricycle shows its own icon (motorcycle + sidecar): `vehicles.icon = 'fa-tricycle'`, a custom class drawn from `assets/icons/tricycle.svg` in css/main.css (Font Awesome has no tricycle). |
 | 38 | `sql/038_public_vehicle_catalog.sql` | Logged-out visitors can read **available** vehicles (public price list) so the home / login / sign-up pages show the live catalog, vehicle count and sample fare. |
 | 37 | `sql/037_device_push.sql` | Phone push (Firebase Cloud Messaging): `device_tokens` + `register_device()` / `unregister_device()` (the app saves its FCM token after login, removes it on logout); new ride/food/parcel jobs notify **online** riders with the matching vehicle (`trg_notify_new_job_riders`). `send-push` delivers every notification to these tokens too — needs the Edge Function secret `FIREBASE_SERVICE_ACCOUNT_B64` (base64 of the Firebase service-account JSON, project "itulod"; never commit that file) and the app's `android/app/google-services.json` (gitignored). |
@@ -203,7 +204,7 @@ supabase functions deploy on-booking-change    --project-ref <ref>
 supabase functions deploy expire-bookings      --project-ref <ref>
 supabase functions deploy sync-payment-status  --project-ref <ref>
 supabase functions deploy check-email          --project-ref <ref>
-supabase functions deploy redeem-promo         --project-ref <ref>
+supabase functions deploy redeem-promo         --project-ref <ref>   # retired: answers 410 (sql/054)
 supabase functions deploy wallet-topup         --project-ref <ref>
 supabase functions deploy apply-referral-code  --project-ref <ref>
 supabase functions deploy send-push            --project-ref <ref> --no-verify-jwt
@@ -438,11 +439,7 @@ and it would also change OTP length, email frequency and MFA.
 15. Proof of delivery: mark a **food or parcel** booking complete as the
     rider — a photo prompt appears first; the uploaded image should show
     up in that booking's details for the customer.
-16. Promo code: admin → Settings → Promo codes → create one → book a
-    **ride** with that code in the Promo code field → confirm the toast
-    reports a discount and `transport_bookings.promo_code` /
-    `discount_amount` are set. Try the same code again as the same
-    customer — it should be rejected as already used.
+16. (Removed — promos were taken out in sql/054.)
 17. Support request: Profile → **Report an issue** (or from a booking's
     details) → submit → it should appear in admin's **Support requests**
     tab with the Open-count badge on the sidebar; replying and resolving

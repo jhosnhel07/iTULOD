@@ -35,7 +35,6 @@ let RATING_TARGET = null; // { kind, id }
   wireWalletTopupForm();
   wireReferralCard();
   if (typeof initMessages === 'function') initMessages(); // reads #messages/<chat> before restoreView()
-  if (typeof initPromos === 'function') initPromos(); // My promos + the pickers on the booking forms (sql/053)
   restoreView(); // a refresh stays on the section you were on
 
   await loadHome();
@@ -66,7 +65,6 @@ const TAB_TITLES = {
   'book': ['New booking', 'Choose your pickup, destination, and vehicle.'],
   'history': ['Booking history', 'All your rides, food, and parcel deliveries.'],
   'messages': ['Messages', 'Chat with your rider about a booking.'],
-  'promos': ['My promos', 'Claim promos and use them when you book.'],
   'notifications': ['Notifications', 'Updates about your bookings.'],
   'profile': ['Profile', 'Manage your account details.'],
 };
@@ -748,8 +746,6 @@ function wireRideForm() {
           ? 'Pay with GCash from Home or Booking history whenever you’re ready.'
           : 'Waiting for a rider to accept.'
     );
-    // the promo picked on the form (js/promos.js → redeem-promo, sql/053)
-    await applyChosenPromo('transport', booking.id);
     // Show route on map (shared geocoder — OpenStreetMap first, Mapbox backup)
     const [pLngLat, dLngLat] = await Promise.all([
       _geocodeAddress(pickup.value),
@@ -923,7 +919,6 @@ function wireFoodForm() {
       }))
     );
     if (itemsErr) toast(`Order placed, but the item list didn't save: ${itemsErr.message}`, 'error');
-    await applyChosenPromo('food', booking.id);
 
     celebrate(
       'Order placed!',
@@ -1176,7 +1171,6 @@ function wireParcelForm() {
     const { data: booking, error } = await supabase.from('parcel_deliveries').insert(payload).select('id').single();
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
-    await applyChosenPromo('parcel', booking.id);
 
     // GCash isn't charged here: "Pay ₱X" shows in Booking history once a
     // rider accepts (the booking gets its final_fare then — sql/050).
@@ -1320,10 +1314,9 @@ function wireHaulingForm() {
 
     if (!(await okToBookAgain('hauling'))) return;
     setLoading(btn, true);
-    const { data: hauled, error } = await supabase.from('hauling_bookings').insert(payload).select('id').single();
+    const { error } = await supabase.from('hauling_bookings').insert(payload);
     setLoading(btn, false);
     if (error) { toast(error.message, 'error'); return; }
-    await applyChosenPromo('hauling', hauled.id);
 
     celebrate(
       payload.scheduled_for ? 'Hauling scheduled' : 'Hauling booked!',
@@ -1898,6 +1891,6 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'food_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'food'); loadHome(); if (HISTORY_KIND === 'food') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'parcel_deliveries', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'parcel'); loadHome(); if (HISTORY_KIND === 'parcel') loadHistory(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'hauling_bookings', filter: `customer_id=eq.${CURRENT_PROFILE.id}` }, (p) => { celebrateIfJustCompleted(p, 'hauling'); loadHome(); if (HISTORY_KIND === 'hauling') loadHistory(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => { loadNotifications(); if (typeof loadMyPromos === 'function') loadMyPromos(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${CURRENT_PROFILE.id}` }, () => loadNotifications())
     .subscribe();
 }

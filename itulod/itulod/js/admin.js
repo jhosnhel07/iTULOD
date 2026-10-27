@@ -27,7 +27,6 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   wireMenuItemForm();
   wireCatalogUploads();
   wireAnnouncementForm();
-  wirePromoForm();
   wireSupportSubTabs();
   wireSettingsForm();
   wireChartRange();
@@ -43,7 +42,6 @@ const TABLE_BY_KIND = { transport: 'transport_bookings', food: 'food_deliveries'
   await loadAllRiders();
   await loadVehicles();
   await loadRestaurants();
-  await loadPromoCodes();
   await loadSupportRequests();
   await loadBookings();
   await loadPayments();
@@ -1381,116 +1379,6 @@ function subscribeRealtime() {
     .subscribe();
 }
 
-// ---- promo codes -----------------------------------------------------------
-let ALL_PROMOS = [];
-async function loadPromoCodes() {
-  const tbody = document.querySelector('#promo-table tbody');
-  if (!tbody) return;
-  const [{ data, error }, { data: claims }] = await Promise.all([
-    supabase.from('promo_codes').select('*').order('created_at', { ascending: false }),
-    supabase.from('promo_claims').select('promo_code_id'),
-  ]);
-  if (error) { console.error('loadPromoCodes error:', error); return; }
-  ALL_PROMOS = data || [];
-  const claimed = {};
-  (claims || []).forEach(c => { claimed[c.promo_code_id] = (claimed[c.promo_code_id] || 0) + 1; });
-  if (ALL_PROMOS.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6">${emptyState({ icon: 'fa-tag', title: 'No promo codes yet', body: 'Create one above and send it — customers claim it from their notifications.' })}</td></tr>`;
-    return;
-  }
-  const SERVICE = { transport: 'Rides', food: 'Food', parcel: 'Parcel', hauling: 'Hauling' };
-  const now = new Date();
-  tbody.innerHTML = ALL_PROMOS.map(p => {
-    const expired = p.expires_at && new Date(p.expires_at) < now;
-    const full = p.max_uses != null && p.uses_count >= p.max_uses;
-    const status = !p.active ? ['Inactive', 'badge--cancelled'] : expired ? ['Expired', 'badge--cancelled'] : full ? ['Fully used', 'badge--expired'] : ['Active', 'badge--completed'];
-    const value = p.discount_type === 'percent' ? Number(p.discount_value) + '% off' : peso(p.discount_value) + ' off';
-    const terms = [value, Number(p.min_fare) ? 'min ' + peso(p.min_fare) : '', p.expires_at ? 'until ' + new Date(p.expires_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : ''].filter(Boolean).join(' · ');
-    const services = (p.services || []).length === 4 ? 'All services' : (p.services || []).map(s => SERVICE[s] || s).join(', ');
-    return `
-    <tr>
-      <td><div class="promo-cell"><code>${escapeHtml(p.code)}</code><strong>${escapeHtml(p.title || '')}</strong><small>${escapeHtml(terms)}</small></div></td>
-      <td>${escapeHtml(services)}</td>
-      <td>${claimed[p.id] || 0} · ${p.uses_count}${p.max_uses ? ' / ' + p.max_uses : ''}</td>
-      <td>${p.sent_at
-        ? `<span class="muted">${p.recipients} customer${p.recipients === 1 ? '' : 's'} · ${escapeHtml(formatDate(p.sent_at))}</span>`
-        : p.active && !expired && !full ? `<button class="btn btn-outline btn-sm" onclick="sendPromo('${p.id}', this)"><i class="fa-solid fa-paper-plane"></i> Send now</button>` : '<span class="muted">Not sent</span>'}</td>
-      <td><span class="badge ${status[1]}">${status[0]}</span></td>
-      <td><div class="row-actions">
-        <button class="icon-btn" title="${p.active ? 'Deactivate' : 'Activate'}" onclick="togglePromoActive('${p.id}', ${p.active})"><i class="fa-solid ${p.active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i></button>
-        <button class="icon-btn danger" title="Delete" onclick="deletePromoCode('${p.id}')"><i class="fa-solid fa-trash"></i></button>
-      </div></td>
-    </tr>`;
-  }).join('');
-}
-
-// Sends a promo to every active customer as a notification (sql/053).
-async function sendPromo(id, btn) {
-  if (!(await appConfirm('Every active customer gets it as a notification (and on their phone) and can claim it.', { title: 'Send this promo?', confirmText: 'Send', icon: 'fa-paper-plane' }))) return;
-  if (btn) setLoading(btn, true);
-  const { data, error } = await supabase.rpc('admin_send_promo', { p_id: id });
-  if (btn) setLoading(btn, false);
-  if (error) { toast(error.message, 'error'); return; }
-  toast(`Sent to ${data} customer${data === 1 ? '' : 's'}.`, 'success');
-  await loadPromoCodes();
-}
-function wirePromoForm() {
-  const form = document.getElementById('promo-form');
-  if (!form) return;
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('promo-submit');
-    const code = document.getElementById('promo-code').value.trim().toUpperCase();
-    const discount_type = document.getElementById('promo-type').value;
-    const discount_value = parseFloat(document.getElementById('promo-value').value);
-    const maxUsesRaw = document.getElementById('promo-max-uses').value;
-    const max_uses = maxUsesRaw ? parseInt(maxUsesRaw, 10) : null;
-    const title = document.getElementById('promo-title').value.trim() || null;
-    const minRaw = document.getElementById('promo-min').value;
-    const min_fare = minRaw ? parseFloat(minRaw) : null;
-    const expiresRaw = document.getElementById('promo-expires').value;
-    // the end of that day, Philippine time
-    const expires_at = expiresRaw ? new Date(expiresRaw + 'T23:59:59+08:00').toISOString() : null;
-    const services = [...document.querySelectorAll('#promo-services input:checked')].map(i => i.value);
-    const send = document.getElementById('promo-send').checked;
-    if (!requireFields({ Code: code, Value: discount_value })) return;
-    if (discount_type === 'percent' && discount_value > 100) {
-      toast("A percentage discount can't be more than 100.", 'error');
-      return;
-    }
-    if (!services.length) { toast('Choose at least one service the promo works for.', 'error'); return; }
-    if (expires_at && new Date(expires_at) < new Date()) { toast('Pick an expiry date from today on.', 'error'); return; }
-    setLoading(btn, true);
-    const { data: created, error } = await supabase.from('promo_codes').insert({
-      code, title, discount_type, discount_value, max_uses, min_fare, expires_at, services, created_by: CURRENT_PROFILE.id,
-    }).select('id').single();
-    let sentTo = null;
-    if (!error && send) {
-      const res = await supabase.rpc('admin_send_promo', { p_id: created.id });
-      if (res.error) toast(`Created, but not sent: ${res.error.message}`, 'error');
-      else sentTo = res.data;
-    }
-    setLoading(btn, false);
-    if (error) { toast(error.message, 'error'); return; }
-    toast(sentTo != null ? `Promo created and sent to ${sentTo} customer${sentTo === 1 ? '' : 's'}.` : 'Promo code created.', 'success');
-    form.reset();
-    document.querySelectorAll('#promo-services input').forEach(i => { i.checked = true; });
-    document.getElementById('promo-send').checked = true;
-    await loadPromoCodes();
-  });
-}
-async function togglePromoActive(id, currentlyActive) {
-  const { error } = await supabase.from('promo_codes').update({ active: !currentlyActive }).eq('id', id);
-  if (error) { toast(error.message, 'error'); return; }
-  await loadPromoCodes();
-}
-async function deletePromoCode(id) {
-  if (!(await appConfirm('This does not undo discounts already given.', { title: 'Delete this promo code?', confirmText: 'Delete', danger: true, icon: 'fa-trash-can' }))) return;
-  const { error } = await supabase.from('promo_codes').delete().eq('id', id);
-  if (error) { toast(error.message, 'error'); return; }
-  await loadPromoCodes();
-}
-
 // ---- support requests --------------------------------------------------
 let SUPPORT_TAB = 'open';
 let ACTIVE_SUPPORT = null;
@@ -1808,7 +1696,7 @@ const BACKUP_TABLES = [
   'profiles', 'rider_applications', 'vehicles',
   'transport_bookings', 'food_deliveries', 'parcel_deliveries', 'hauling_bookings',
   'payments', 'reviews', 'notifications', 'announcements', 'platform_config',
-  'saved_addresses', 'promo_codes', 'promo_redemptions', 'support_requests',
+  'saved_addresses', 'support_requests',
   'wallets', 'wallet_transactions', 'wallet_topups', 'referral_events',
   'booking_messages', 'push_subscriptions', 'rider_locations',
 ];

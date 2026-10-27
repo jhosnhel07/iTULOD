@@ -49,7 +49,7 @@ itulod/
 │   ├── 008_food_parcel_cancel_reason.sql         # cancelled_reason on food/parcel
 │   ├── 009_booking_expiration.sql                # expired/no_show statuses + expire_stale_bookings()
 │   ├── 010_growth_features.sql                   # saved addresses, tips, cancellation fee, rider release
-│   ├── 011_proof_promo_support.sql               # proof of delivery, promo codes, support requests
+│   ├── 011_proof_promo_support.sql               # proof of delivery, promo codes (removed in 054), support requests
 │   ├── 012_wallet.sql                            # in-app wallet: balance, ledger, top-ups
 │   ├── 013_referrals.sql                         # referral codes, welcome + referrer bonuses
 │   ├── 014_scheduled_bookings.sql                # "book later" rides: scheduled_for + expiry grace period fix
@@ -65,7 +65,7 @@ itulod/
 │   ├── expire-bookings/        # Scheduled sweep: flips stale bookings to 'expired'
 │   ├── sync-payment-status/    # On-demand: completes an authorized GCash payment instead of waiting on the webhook (bookings + wallet top-ups)
 │   ├── check-email/            # Anonymous: is this email already registered?
-│   ├── redeem-promo/           # Validates + applies a promo code (transport only, for now)
+│   ├── redeem-promo/           # Retired (promos removed, sql/054): answers 410 for older app versions
 │   ├── wallet-topup/           # Opens a PayMongo GCash source to top up a customer's wallet
 │   ├── rider-pay-dues/         # A rider pays what they owe iTULOD by GCash (back to ₱0.00)
 │   ├── apply-referral-code/    # Redeems a referral code: welcome bonus now, referrer bonus on first completed booking

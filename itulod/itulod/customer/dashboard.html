@@ -51,10 +51,6 @@
             <i class="fa-solid fa-comment-dots"></i> Messages
             <span class="badge side-count js-msg-count" hidden>0</span>
           </button>
-          <button class="side-link" data-tab="promos">
-            <i class="fa-solid fa-ticket"></i> My promos
-            <span class="badge side-count js-count-promos" hidden title="Ready to use">0</span>
-          </button>
         </nav>
 
       </aside>
@@ -273,7 +269,6 @@
                     <small id="ride-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
-                <div class="field promo-pick" data-kind="transport" data-fare="ride-fare"></div>
 
                 <div class="field" data-step="Payment">
                   <label>Payment method</label>
@@ -461,7 +456,6 @@
                     <strong id="food-fare">₱0.00</strong>
                   </div>
                 </div>
-                <div class="field promo-pick" data-kind="food" data-fare="food-fare"></div>
 
                 <div class="field">
                   <label>Payment method</label>
@@ -722,7 +716,6 @@
                     <small id="parcel-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
-                <div class="field promo-pick" data-kind="parcel" data-fare="parcel-fare"></div>
 
                 <div class="field" data-step="Payment">
                   <label>Payment method</label>
@@ -947,7 +940,6 @@
                     <small id="hauling-fare-breakdown" class="fare-breakdown"></small>
                   </div>
                 </div>
-                <div class="field promo-pick" data-kind="hauling" data-fare="hauling-fare"></div>
 
                 <div class="field" data-step="Payment">
                   <label>Payment method</label>
@@ -1004,23 +996,6 @@
         <!-- ===================== HISTORY ===================== -->
         <!-- ===================== MESSAGES (js/messages.js) ===================== -->
         <section class="tab-panel" id="tab-messages"></section>
-
-        <!-- =================== MY PROMOS (js/promos.js, sql/053) =================== -->
-        <section class="tab-panel" id="tab-promos">
-          <div class="card">
-            <div class="card-head card-head--wrap">
-              <div>
-                <h3><i class="fa-solid fa-ticket"></i> My promos</h3>
-                <p class="card-sub">Claim a promo, then pick it when you book. iTULOD pays the discount — your rider still earns the full fare.</p>
-              </div>
-              <div class="promo-code-form">
-                <input type="text" id="promo-code-input" placeholder="Have a code?" maxlength="40" style="text-transform:uppercase" />
-                <button type="button" class="btn btn-primary btn-sm" id="promo-code-claim"><i class="fa-solid fa-plus"></i> Claim</button>
-              </div>
-            </div>
-            <div id="my-promos" class="promo-list"></div>
-          </div>
-        </section>
 
         <section class="tab-panel" id="tab-history">
           <div class="card card--flush">
@@ -1318,12 +1293,6 @@
 
           <!-- Shown only on phones, where the sidebar (and its log-out) is hidden -->
           <div class="card card--narrow mobile-account">
-            <nav class="mobile-account__links" style="margin-bottom:12px">
-              <button type="button" onclick="activateTab('promos')">
-                <i class="fa-solid fa-ticket"></i> My promos <span class="badge side-count js-count-promos" hidden>0</span>
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
-            </nav>
             <button class="btn btn-danger-ghost btn-block" onclick="logout()">
               <i class="fa-solid fa-right-from-bracket"></i> Log out
             </button>
@@ -1581,7 +1550,6 @@
     <script src="../js/liquid-nav.js"></script>
     <script src="../js/restaurant-finder.js"></script>
     <script src="../js/messages.js"></script>
-    <script src="../js/promos.js"></script>
     <script src="../js/customer.js"></script>
   </body>
 </html>
